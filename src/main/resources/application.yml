@@ -1,0 +1,25 @@
+#Sun Mar 23 02:53:58 UTC 2025
+micronaut:
+  application:
+    name: raven-brain
+  security:
+    authentication: bearer
+    token:
+      jwt:
+        signatures:
+          secret:
+            generator:
+              secret: ${JWT_GENERATOR_SIGNATURE_SECRET\:pleaseChangeThisSecretForANewOne}
+  servlet:
+    async-supported: false
+    test-async-supported: false
+    async-file-serving-enabled: false
+
+flyway:
+  datasources:
+    default:
+      enabled: true
+datasources:
+  default:
+    db-type: mysql
+    driver-class-name: com.mysql.cj.jdbc.Driver
