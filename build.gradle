@@ -17,15 +17,20 @@ dependencies {
     annotationProcessor("io.micronaut.security:micronaut-security-annotations")
     annotationProcessor("io.micronaut.serde:micronaut-serde-processor")
     annotationProcessor("io.micronaut.servlet:micronaut-servlet-processor")
+    annotationProcessor 'org.projectlombok:lombok:1.18.36'
+    testAnnotationProcessor 'org.projectlombok:lombok:1.18.36'
     implementation("io.micronaut.flyway:micronaut-flyway")
     implementation("io.micronaut.security:micronaut-security-jwt")
     implementation("io.micronaut.serde:micronaut-serde-jackson")
     implementation("io.micronaut.sql:micronaut-jdbc-hikari")
+    compileOnly("org.projectlombok:lombok:1.18.36")
     compileOnly("io.micronaut:micronaut-http-client")
     runtimeOnly("ch.qos.logback:logback-classic")
     runtimeOnly("com.mysql:mysql-connector-j")
     runtimeOnly("org.flywaydb:flyway-mysql")
+    runtimeOnly("org.yaml:snakeyaml")
     testImplementation("io.micronaut:micronaut-http-client")
+    testCompileOnly 'org.projectlombok:lombok:1.18.36'
     aotPlugins platform("io.micronaut.platform:micronaut-platform:4.7.6")
     aotPlugins("io.micronaut.security:micronaut-security-aot")
 }

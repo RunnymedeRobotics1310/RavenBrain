@@ -10,16 +10,27 @@ micronaut:
           secret:
             generator:
               secret: ${JWT_GENERATOR_SIGNATURE_SECRET\:pleaseChangeThisSecretForANewOne}
+    enabled: true
+    intercept-url-map:
+      -
+        pattern: /api/auth
+        http-method: POST
+        access:
+          - isAnonymous()
+      -
+  server:
+    cors:
+      enabled: true
   servlet:
     async-supported: false
     test-async-supported: false
     async-file-serving-enabled: false
 
-flyway:
-  datasources:
-    default:
-      enabled: true
-datasources:
-  default:
-    db-type: mysql
-    driver-class-name: com.mysql.cj.jdbc.Driver
+#flyway:
+#  datasources:
+#    default:
+#      enabled: true
+#datasources:
+#  default:
+#    db-type: mysql
+#    driver-class-name: com.mysql.cj.jdbc.Driver
