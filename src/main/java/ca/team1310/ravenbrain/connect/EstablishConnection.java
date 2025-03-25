@@ -6,7 +6,6 @@ package ca.team1310.ravenbrain.connect;
 import io.micronaut.http.MediaType;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
-import io.micronaut.security.authentication.UsernamePasswordCredentials;
 import io.micronaut.security.rules.SecurityRule;
 
 
@@ -15,20 +14,20 @@ import io.micronaut.security.rules.SecurityRule;
  * @since 2025-03-25 08:02
  */
 @Controller("/api")
-@Secured(SecurityRule.IS_ANONYMOUS)
-public class Ping {
+public class EstablishConnection {
 
     @Get("/ping")
     @Produces(MediaType.TEXT_PLAIN)
+    @Secured(SecurityRule.IS_ANONYMOUS)
     public String ping() {
         return "pong";
     }
 
-    @Post("/auth")
-    @Consumes(MediaType.APPLICATION_JSON)
+    @Get("/validate")
     @Produces(MediaType.TEXT_PLAIN)
-    public String auth(@Body UsernamePasswordCredentials credentials) {
-        System.out.println("auth");
-        return "hello " + credentials.getUsername();
+    @Secured(SecurityRule.IS_AUTHENTICATED)
+    public String validate() {
+        System.out.println("validate");
+        return "validated";
     }
 }
