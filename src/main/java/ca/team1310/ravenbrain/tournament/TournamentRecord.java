@@ -3,12 +3,15 @@
  */
 package ca.team1310.ravenbrain.tournament;
 
+import io.micronaut.serde.annotation.Serdeable;
+
 import java.time.Instant;
 
 /**
  * @author Tony Field
  * @since 2025-03-23 13:58
  */
+@Serdeable
 public class TournamentRecord {
     private int id;
     private String name;
