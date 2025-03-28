@@ -3,12 +3,15 @@
  */
 package ca.team1310.ravenbrain.tournament;
 
+import io.micronaut.serde.annotation.Serdeable;
+
 import java.time.Instant;
 
 /**
  * @author Tony Field
  * @since 2025-03-23 13:58
  */
+@Serdeable
 public class TournamentRecord {
     private int id;
     private String name;
@@ -45,5 +48,22 @@ public class TournamentRecord {
 
     public void setEndTime(Instant endTime) {
         this.endTime = endTime;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+
+        TournamentRecord that = (TournamentRecord) o;
+        return id == that.id && name.equals(that.name) && startTime.equals(that.startTime) && endTime.equals(that.endTime);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id;
+        result = 31 * result + name.hashCode();
+        result = 31 * result + startTime.hashCode();
+        result = 31 * result + endTime.hashCode();
+        return result;
     }
 }
