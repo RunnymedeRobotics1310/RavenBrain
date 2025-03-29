@@ -20,7 +20,7 @@ public class ScheduleService {
 
   public ScheduleService() {
     var t = new ScheduleRecord();
-    t.setTournamentId(1);
+    t.setTournamentId("fake-newmarket");
     t.setMatch(1);
     t.setRed1(1310);
     t.setRed2(9262);
@@ -31,7 +31,7 @@ public class ScheduleService {
     FAKE_REPO.add(t);
 
     t = new ScheduleRecord();
-    t.setTournamentId(1);
+    t.setTournamentId("fake-newmarket");
     t.setMatch(2);
     t.setRed1(1310);
     t.setRed2(9262);
@@ -42,7 +42,7 @@ public class ScheduleService {
     FAKE_REPO.add(t);
 
     t = new ScheduleRecord();
-    t.setTournamentId(1);
+    t.setTournamentId("fake-newmarket");
     t.setMatch(3);
     t.setRed1(1310);
     t.setRed2(9262);
@@ -61,7 +61,7 @@ public class ScheduleService {
     FAKE_REPO.add(record);
   }
 
-  List<ScheduleRecord> listScheduleForTournament(int id) {
+  List<ScheduleRecord> listScheduleForTournament(String id) {
     log.info("Listing schedule for tournament {}", id);
     // todo: fixme: implement
     return FAKE_REPO.stream()

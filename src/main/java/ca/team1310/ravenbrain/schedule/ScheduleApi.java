@@ -34,7 +34,7 @@ public class ScheduleApi {
 
   @Get
   @Produces(APPLICATION_JSON)
-  public List<ScheduleRecord> getScheduleForTournament(@Parameter int tournamentId) {
+  public List<ScheduleRecord> getScheduleForTournament(@Parameter String tournamentId) {
     return scheduleService.listScheduleForTournament(tournamentId);
   }
 }
