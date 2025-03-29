@@ -3,10 +3,13 @@
  */
 package ca.team1310.ravenbrain.schedule;
 
+import io.micronaut.serde.annotation.Serdeable;
+
 /**
  * @author Tony Field
  * @since 2025-03-23 13:59
  */
+@Serdeable
 public class ScheduleRecord {
   String tournamentId;
   int match;
