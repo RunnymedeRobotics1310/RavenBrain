@@ -6,10 +6,7 @@ package ca.team1310.ravenbrain.tournament;
 import jakarta.inject.Singleton;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -19,23 +16,23 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Singleton
 public class TournamentService {
-  private final Map<Integer, TournamentRecord> FAKE_REPO = new HashMap<>();
+  private final Map<String, TournamentRecord> FAKE_REPO = new HashMap<>();
 
   public TournamentService() {
     var t = new TournamentRecord();
-    t.setId(1);
+    t.setId("fake-newmarket");
     t.setName("Fake Newmarket");
     t.setStartTime(Instant.now());
     t.setEndTime(Instant.now().plus(48, ChronoUnit.HOURS));
     FAKE_REPO.put(t.getId(), t);
     t = new TournamentRecord();
-    t.setId(2);
+    t.setId("fake-centennial");
     t.setName("Fake Centennial");
     t.setStartTime(Instant.now());
     t.setEndTime(Instant.now().plus(48, ChronoUnit.HOURS));
     FAKE_REPO.put(t.getId(), t);
     t = new TournamentRecord();
-    t.setId(3);
+    t.setId("fake-north-bay");
     t.setName("Fake North Bay");
     t.setStartTime(Instant.now());
     t.setEndTime(Instant.now().plus(48, ChronoUnit.HOURS));
@@ -43,7 +40,7 @@ public class TournamentService {
   }
 
   void addTournament(TournamentRecord tournamentRecord) {
-    tournamentRecord.setId(FAKE_REPO.size() + 1);
+    tournamentRecord.setId(tournamentRecord.getName().toLowerCase(Locale.ROOT).replace(" ", "-"));
     log.info("Adding tournament record: {}", tournamentRecord);
     // todo: fixme: implement
     // table needs to auto-increment the ID field

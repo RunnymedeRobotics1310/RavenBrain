@@ -8,7 +8,7 @@ package ca.team1310.ravenbrain.schedule;
  * @since 2025-03-23 13:59
  */
 public class ScheduleRecord {
-  int tournamentId;
+  String tournamentId;
   int match;
   int red1;
   int red2;
@@ -17,11 +17,11 @@ public class ScheduleRecord {
   int blue2;
   int blue3;
 
-  public int getTournamentId() {
+  public String getTournamentId() {
     return tournamentId;
   }
 
-  public void setTournamentId(int tournamentId) {
+  public void setTournamentId(String tournamentId) {
     this.tournamentId = tournamentId;
   }
 
