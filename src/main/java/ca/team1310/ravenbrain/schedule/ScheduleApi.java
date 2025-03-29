@@ -32,7 +32,7 @@ public class ScheduleApi {
     scheduleService.addMatch(item);
   }
 
-  @Get
+  @Get("/{tournamentId}")
   @Produces(APPLICATION_JSON)
   public List<ScheduleRecord> getScheduleForTournament(@Parameter String tournamentId) {
     return scheduleService.listScheduleForTournament(tournamentId);
