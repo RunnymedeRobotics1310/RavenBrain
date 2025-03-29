@@ -65,7 +65,11 @@ public class ScheduleService {
     log.info("Listing schedule for tournament {}", id);
     // todo: fixme: implement
     return FAKE_REPO.stream()
-        .filter(record -> record.getTournamentId().equals(id))
+        .filter(record -> {
+          System.out.println("Record: " + record);
+          System.out.println("ID: " + id);
+          return record.getTournamentId().equals(id);
+        })
         .collect(Collectors.toList());
   }
 }
