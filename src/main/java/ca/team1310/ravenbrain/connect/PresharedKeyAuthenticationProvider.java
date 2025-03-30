@@ -11,6 +11,7 @@ import io.micronaut.security.authentication.AuthenticationRequest;
 import io.micronaut.security.authentication.AuthenticationResponse;
 import io.micronaut.security.authentication.provider.HttpRequestAuthenticationProvider;
 import jakarta.inject.Singleton;
+import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -19,17 +20,32 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Singleton
 @Slf4j
-public class PresharedKeyAuthenticationProvider<B>  implements HttpRequestAuthenticationProvider<B> {
+public class PresharedKeyAuthenticationProvider<B> implements HttpRequestAuthenticationProvider<B> {
 
-    private final String presharedKey = "abc123";
-//    @Override
-    public AuthenticationResponse authenticate(
-            @Nullable HttpRequest<B> httpRequest,
-            @NonNull AuthenticationRequest<String, String> authenticationRequest
-    ) {
-        String identity = authenticationRequest.getIdentity();
-        return authenticationRequest.getSecret().equals(presharedKey)
-                ? AuthenticationResponse.success(identity)
-                : AuthenticationResponse.failure(AuthenticationFailureReason.CREDENTIALS_DO_NOT_MATCH);
+  private final Config config;
+
+  public PresharedKeyAuthenticationProvider(Config config) {
+    this.config = config;
+  }
+
+  @Override
+  public AuthenticationResponse authenticate(
+      @Nullable HttpRequest<B> httpRequest,
+      @NonNull AuthenticationRequest<String, String> authenticationRequest) {
+    String identity = authenticationRequest.getIdentity();
+    String secret = authenticationRequest.getSecret();
+    if (config.getMember().equals(secret)) {
+      return AuthenticationResponse.success(identity, Arrays.asList("ROLE_MEMBER"));
     }
+    if (config.getDatascout().equals(secret)) {
+      return AuthenticationResponse.success(identity, Arrays.asList("ROLE_DATASCOUT"));
+    }
+    if (config.getExpertscout().equals(secret)) {
+      return AuthenticationResponse.success(identity, Arrays.asList("ROLE_EXPERTSCOUT"));
+    }
+    if (config.getAdmin().equals(secret)) {
+      return AuthenticationResponse.success(identity, Arrays.asList("ROLE_ADMIN"));
+    }
+    return AuthenticationResponse.failure(AuthenticationFailureReason.CREDENTIALS_DO_NOT_MATCH);
+  }
 }

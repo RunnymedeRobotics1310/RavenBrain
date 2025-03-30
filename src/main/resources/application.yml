@@ -27,3 +27,10 @@ micronaut:
 #  default:
 #    db-type: mysql
 #    driver-class-name: com.mysql.cj.jdbc.Driver
+
+raven-eye:
+  role-passwords:
+    admin: ${ADMIN_PASSWORD:default_admin_password_123}
+    expertscout: ${EXPERTSCOUT_PASSWORD:default_expert_scout_password_876}
+    datascout: ${DATASCOUT_PASSWORD:default_data_scout_password__1}
+    member: ${MEMBER_PASSWORD:team1310IsTheBest}
