@@ -38,13 +38,17 @@ public class PresharedKeyAuthenticationProvider<B> implements HttpRequestAuthent
       return AuthenticationResponse.success(identity, Arrays.asList("ROLE_MEMBER"));
     }
     if (config.getDatascout().equals(secret)) {
-      return AuthenticationResponse.success(identity, Arrays.asList("ROLE_DATASCOUT"));
+      return AuthenticationResponse.success(
+          identity, Arrays.asList("ROLE_DATASCOUT", "ROLE_MEMBER"));
     }
     if (config.getExpertscout().equals(secret)) {
-      return AuthenticationResponse.success(identity, Arrays.asList("ROLE_EXPERTSCOUT"));
+      return AuthenticationResponse.success(
+          identity, Arrays.asList("ROLE_EXPERTSCOUT", "ROLE_DATASCOUT", "ROLE_MEMBER"));
     }
     if (config.getAdmin().equals(secret)) {
-      return AuthenticationResponse.success(identity, Arrays.asList("ROLE_ADMIN"));
+      return AuthenticationResponse.success(
+          identity,
+          Arrays.asList("ROLE_ADMIN", "ROLE_EXPERTSCOUT", "ROLE_DATASCOUT", "ROLE_MEMBER"));
     }
     return AuthenticationResponse.failure(AuthenticationFailureReason.CREDENTIALS_DO_NOT_MATCH);
   }
