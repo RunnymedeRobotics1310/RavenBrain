@@ -37,6 +37,42 @@ public class TournamentService {
     t.setStartTime(Instant.now());
     t.setEndTime(Instant.now().plus(48, ChronoUnit.HOURS));
     FAKE_REPO.put(t.getId(), t);
+    t = new TournamentRecord();
+    t.setId("newmarket");
+    t.setName("Newmarket");
+    t.setStartTime(Instant.parse("2025-01-28T00:00:00Z"));
+    t.setEndTime(Instant.parse("2025-01-31T00:00:00Z"));
+    FAKE_REPO.put(t.getId(), t);
+    t = new TournamentRecord();
+    t.setId("centennial");
+    t.setName("Centennial");
+    t.setStartTime(Instant.parse("2025-03-06T00:00:00Z"));
+    t.setEndTime(Instant.parse("2025-03-08T00:00:00Z"));
+    FAKE_REPO.put(t.getId(), t);
+    t = new TournamentRecord();
+    t.setId("centennial_practice");
+    t.setName("Centennial Practice Matches");
+    t.setStartTime(Instant.parse("2025-03-06T00:00:00Z"));
+    t.setEndTime(Instant.parse("2025-03-08T00:00:00Z"));
+    FAKE_REPO.put(t.getId(), t);
+    t = new TournamentRecord();
+    t.setId("northbay");
+    t.setName("North Bay");
+    t.setStartTime(Instant.parse("2025-03-22T00:00:00Z"));
+    t.setEndTime(Instant.parse("2025-03-24T00:00:00Z"));
+    FAKE_REPO.put(t.getId(), t);
+    t = new TournamentRecord();
+    t.setId("ontario_dcmp_science");
+    t.setName("Ontario District Championship - Science Division");
+    t.setStartTime(Instant.parse("2025-04-03T00:00:00Z"));
+    t.setEndTime(Instant.parse("2025-04-06T00:00:00Z"));
+    FAKE_REPO.put(t.getId(), t);
+    t = new TournamentRecord();
+    t.setId("ontario_dcmp_technology");
+    t.setName("Ontario District Championship - Technology Division");
+    t.setStartTime(Instant.parse("2025-04-03T00:00:00Z"));
+    t.setEndTime(Instant.parse("2025-04-06T00:00:00Z"));
+    FAKE_REPO.put(t.getId(), t);
   }
 
   void addTournament(TournamentRecord tournamentRecord) {
