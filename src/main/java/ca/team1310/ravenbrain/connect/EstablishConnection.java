@@ -29,7 +29,6 @@ public class EstablishConnection {
   @Produces(MediaType.APPLICATION_JSON)
   @Secured(SecurityRule.IS_AUTHENTICATED)
   public Map<String, String> validate(Authentication authentication) {
-    System.out.println("validate");
     var map = new LinkedHashMap<String, String>();
     map.put("status", "ok");
     map.put("username", authentication.getName());
