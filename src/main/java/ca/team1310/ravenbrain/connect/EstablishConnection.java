@@ -31,8 +31,6 @@ public class EstablishConnection {
   public Map<String, String> validate(Authentication authentication) {
     var map = new LinkedHashMap<String, String>();
     map.put("status", "ok");
-    map.put("username", authentication.getName());
-    map.put("role", authentication.getRoles().iterator().next());
     return map;
   }
 }
