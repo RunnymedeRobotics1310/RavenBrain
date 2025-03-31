@@ -1,0 +1,49 @@
+/*
+ * Copyright 2025 The Kingsway Digital Company Limited. All rights reserved.
+ */
+package ca.team1310.ravenbrain.quickcomment;
+
+import static io.micronaut.http.MediaType.APPLICATION_JSON;
+
+import io.micronaut.http.annotation.*;
+import io.micronaut.security.annotation.Secured;
+import io.micronaut.serde.annotation.Serdeable;
+import java.util.ArrayList;
+import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * @author Tony Field
+ * @since 2025-03-31 00:28
+ */
+@Controller("/api/quickcomment")
+@Slf4j
+public class QuickCommentApi {
+  private final QuickCommentService quickCommentService;
+
+  public QuickCommentApi(QuickCommentService quickCommentService) {
+    this.quickCommentService = quickCommentService;
+  }
+
+  @Serdeable
+  public record QuickCommentPostResult(
+      QuickComment eventLogRecord, boolean success, String reason) {}
+
+  @Post
+  @Consumes(APPLICATION_JSON)
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_MEMBER"})
+  public List<QuickCommentPostResult> postComments(@Body List<QuickComment> comments) {
+    var result = new ArrayList<QuickCommentPostResult>();
+    for (QuickComment record : comments) {
+      try {
+        quickCommentService.addQuickComment(record);
+        result.add(new QuickCommentPostResult(record, true, null));
+      } catch (Exception e) {
+        log.error("Failed to save quick comment: {}", record, e);
+        result.add(new QuickCommentPostResult(record, false, e.getMessage()));
+      }
+    }
+    return result;
+  }
+}
