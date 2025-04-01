@@ -26,8 +26,7 @@ public class QuickCommentApi {
   }
 
   @Serdeable
-  public record QuickCommentPostResult(
-      QuickComment eventLogRecord, boolean success, String reason) {}
+  public record QuickCommentPostResult(QuickComment comment, boolean success, String reason) {}
 
   @Post
   @Consumes(APPLICATION_JSON)
