@@ -18,16 +18,17 @@ micronaut:
     async-supported: false
     test-async-supported: false
     async-file-serving-enabled: false
-
-#flyway:
-#  datasources:
-#    default:
-#      enabled: true
-#datasources:
-#  default:
-#    db-type: mysql
-#    driver-class-name: com.mysql.cj.jdbc.Driver
-
+flyway:
+  datasources:
+    default:
+      enabled: true
+datasources:
+  default:
+    db-type: mysql
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:ravenbrain}?enabledTLSProtocols=TLSv1.2&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
+    driverClassName: com.mysql.cj.jdbc.Driver
+    username: ${MYSQL_USERNAME:rb}
+    password: ${MYSQL_PASSWORD:rb}
 raven-eye:
   role-passwords:
     admin: ${ADMIN_PASSWORD:default_admin_password_123}

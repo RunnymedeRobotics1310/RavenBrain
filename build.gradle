@@ -20,6 +20,10 @@ dependencies {
     annotationProcessor 'org.projectlombok:lombok:1.18.36'
     testAnnotationProcessor 'org.projectlombok:lombok:1.18.36'
     implementation("io.micronaut.flyway:micronaut-flyway")
+
+    annotationProcessor 'io.micronaut.data:micronaut-data-processor'
+    implementation 'io.micronaut.data:micronaut-data-jdbc'
+
     implementation("io.micronaut.security:micronaut-security-jwt")
     implementation("io.micronaut.serde:micronaut-serde-jackson")
     implementation("io.micronaut.sql:micronaut-jdbc-hikari")
@@ -68,7 +72,7 @@ micronaut {
         deduceEnvironment = true
         optimizeNetty = true
         replaceLogbackXml = true
-        configurationProperties.put("micronaut.security.jwks.enabled","false")
+        configurationProperties.put("micronaut.security.jwks.enabled", "false")
     }
 }
 
