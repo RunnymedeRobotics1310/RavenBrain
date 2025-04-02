@@ -3,9 +3,10 @@ plugins {
     id("io.micronaut.application") version "4.4.4"
     id("io.micronaut.test-resources") version "4.4.4"
     id("io.micronaut.aot") version "4.4.4"
+    id("com.coditory.manifest") version "0.2.6"
 }
 
-version = "0.1"
+version = "0.2.2"
 group = "ca.team1310.ravenbrain"
 
 repositories {
@@ -82,3 +83,33 @@ tasks.named("dockerfileNative") {
 }
 
 
+manifest {
+    buildAttributes = false
+    implementationAttributes = true
+    scmAttributes = false
+    attributes = [
+            "Implementation-Title": "Runnymede Robotics Team 1310 Raven Brain",
+            "Build-Time"          : Instant.now().toString().substring(0, 19).replace("T", " ") + " UTC"
+    ]
+}
+distributions {
+    eb {
+        contents {
+            into('lib') {
+                from shadowJar
+            }
+            into('') {
+                from 'aws'
+            }
+            rename 'raven-brain-(.*).jar', 'raven-brain.jar'
+        }
+    }
+}
+tasks.register('createElasticbeanstalkDist', Copy) {
+    from clean
+    from ebDistZip
+    destinationDir file('build/distributions')
+    rename { String fileName ->
+        fileName.replace("-$project.version", "")
+    }
+}
