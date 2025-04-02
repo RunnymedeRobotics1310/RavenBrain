@@ -5,7 +5,7 @@ phases:
       java: corretto21
   build:
     commands:
-      - echo "Entered build"
+      - echo "Entered CodePipeline build"
       - gradle createElasticbeanstalkDist
   post_build:
     commands:
