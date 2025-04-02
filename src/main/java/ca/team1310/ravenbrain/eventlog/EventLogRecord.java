@@ -3,94 +3,43 @@
  */
 package ca.team1310.ravenbrain.eventlog;
 
+import io.micronaut.data.annotation.Id;
+import io.micronaut.data.annotation.MappedEntity;
+import io.micronaut.data.annotation.MappedProperty;
 import io.micronaut.serde.annotation.Serdeable;
 import java.time.Instant;
+import lombok.Data;
 
 /**
  * @author Tony Field
  * @since 2025-03-23 13:58
  */
+@MappedEntity(value = "RB_EVENT")
 @Serdeable
+@Data
 public class EventLogRecord {
+  @Id private long id;
+
+  @MappedProperty("eventtimestamp")
   private Instant timestamp;
+
+  @MappedProperty("scoutname")
   private String scoutName;
+
+  @MappedProperty("tournamentid")
   private String tournamentId;
+
+  @MappedProperty("matchid")
   private int matchId;
+
   private String alliance;
+
+  @MappedProperty("teamnumber")
   private int teamNumber;
+
+  @MappedProperty("eventtype")
   private String eventType;
+
   private double amount;
   private String note;
-
-  public Instant getTimestamp() {
-    return timestamp;
-  }
-
-  public void setTimestamp(Instant timestamp) {
-    this.timestamp = timestamp;
-  }
-
-  public String getScoutName() {
-    return scoutName;
-  }
-
-  public void setScoutName(String scoutName) {
-    this.scoutName = scoutName;
-  }
-
-  public String getTournamentId() {
-    return tournamentId;
-  }
-
-  public void setTournamentId(String tournamentId) {
-    this.tournamentId = tournamentId;
-  }
-
-  public int getMatchId() {
-    return matchId;
-  }
-
-  public void setMatchId(int matchId) {
-    this.matchId = matchId;
-  }
-
-  public String getAlliance() {
-    return alliance;
-  }
-
-  public void setAlliance(String alliance) {
-    this.alliance = alliance;
-  }
-
-  public int getTeamNumber() {
-    return teamNumber;
-  }
-
-  public void setTeamNumber(int teamNumber) {
-    this.teamNumber = teamNumber;
-  }
-
-  public String getEventType() {
-    return eventType;
-  }
-
-  public void setEventType(String eventType) {
-    this.eventType = eventType;
-  }
-
-  public double getAmount() {
-    return amount;
-  }
-
-  public void setAmount(double amount) {
-    this.amount = amount;
-  }
-
-  public String getNote() {
-    return note;
-  }
-
-  public void setNote(String note) {
-    this.note = note;
-  }
 }

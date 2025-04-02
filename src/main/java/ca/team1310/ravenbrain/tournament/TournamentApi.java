@@ -31,29 +31,23 @@ public class TournamentApi {
 
   @Introspected
   @Serdeable
-  record TournamentDTO(String name, LocalDateTime startTime, LocalDateTime endTime) {}
+  record TournamentDTO(String id, String name, LocalDateTime startTime, LocalDateTime endTime) {}
 
   @Post
   @Consumes(APPLICATION_JSON)
   public void createTournament(@Body TournamentDTO tournamentRecord) {
     log.info("Saving tournament record: {}", tournamentRecord);
     var t = new TournamentRecord();
+    t.setId(tournamentRecord.id());
     t.setName(tournamentRecord.name());
     t.setStartTime(tournamentRecord.startTime().toInstant(ZoneOffset.UTC));
     t.setEndTime(tournamentRecord.endTime().toInstant(ZoneOffset.UTC));
-    tournamentService.addTournament(t);
+    tournamentService.save(t);
   }
 
   @Get
   @Produces(APPLICATION_JSON)
   public List<TournamentRecord> getTournaments() {
-    return tournamentService.listTournaments();
-  }
-
-  @Post("/update")
-  @Consumes(APPLICATION_JSON)
-  @Produces(APPLICATION_JSON)
-  public void updateTournament(TournamentRecord tournamentRecord) {
-    tournamentService.updateTournament(tournamentRecord);
+    return tournamentService.findAllSortByStartTime();
   }
 }

@@ -5,6 +5,7 @@ package ca.team1310.ravenbrain.quickcomment;
 
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
+import io.micronaut.data.exceptions.DataAccessException;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.serde.annotation.Serdeable;
@@ -36,8 +37,16 @@ public class QuickCommentApi {
     var result = new ArrayList<QuickCommentPostResult>();
     for (QuickComment record : comments) {
       try {
-        quickCommentService.addQuickComment(record);
+        quickCommentService.save(record);
         result.add(new QuickCommentPostResult(record, true, null));
+      } catch (DataAccessException e) {
+        if (e.getMessage().contains("Duplicate entry")) {
+          log.warn("Duplicate quick comment: {}", record);
+          result.add(new QuickCommentPostResult(record, true, null));
+        } else {
+          log.error("Failed to save quick comment: {}", record, e);
+          result.add(new QuickCommentPostResult(record, false, e.getMessage()));
+        }
       } catch (Exception e) {
         log.error("Failed to save quick comment: {}", record, e);
         result.add(new QuickCommentPostResult(record, false, e.getMessage()));

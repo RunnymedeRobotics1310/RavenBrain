@@ -5,6 +5,7 @@ package ca.team1310.ravenbrain.eventlog;
 
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
+import io.micronaut.data.exceptions.DataAccessException;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.serde.annotation.Serdeable;
@@ -36,10 +37,18 @@ public class EventApi {
     var result = new ArrayList<EventLogPostResult>();
     for (EventLogRecord record : eventLogRecord) {
       try {
-        eventLogService.addEventLogRecord(record);
+        eventLogService.save(record);
         result.add(new EventLogPostResult(record, true, null));
+      } catch (DataAccessException e) {
+        if (e.getMessage().contains("Duplicate entry")) {
+          log.warn("Duplicate event log record: {}", record);
+          result.add(new EventLogPostResult(record, true, null));
+        } else {
+          log.error("Failed to save event log record: {}", record, e);
+          result.add(new EventLogPostResult(record, false, e.getMessage()));
+        }
       } catch (Exception e) {
-        EventApi.log.error("Failed to save event log record: {}", record, e);
+        log.error("Failed to save event log record: {}", record, e);
         result.add(new EventLogPostResult(record, false, e.getMessage()));
       }
     }

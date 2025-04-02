@@ -3,9 +3,10 @@
  */
 package ca.team1310.ravenbrain.quickcomment;
 
+import io.micronaut.data.jdbc.annotation.JdbcRepository;
+import io.micronaut.data.model.query.builder.sql.Dialect;
+import io.micronaut.data.repository.CrudRepository;
 import jakarta.inject.Singleton;
-import java.util.ArrayList;
-import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -14,11 +15,5 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Singleton
 @Slf4j
-public class QuickCommentService {
-  private final List<QuickComment> FAKE_REPO = new ArrayList<>();
-
-  public void addQuickComment(QuickComment comment) {
-    FAKE_REPO.add(comment);
-    log.info("Added comment to repo: {}", comment);
-  }
-}
+@JdbcRepository(dialect = Dialect.MYSQL)
+abstract class QuickCommentService implements CrudRepository<QuickComment, Long> {}

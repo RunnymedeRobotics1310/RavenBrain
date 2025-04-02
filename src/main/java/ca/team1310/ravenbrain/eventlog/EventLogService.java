@@ -3,6 +3,10 @@
  */
 package ca.team1310.ravenbrain.eventlog;
 
+import ca.team1310.ravenbrain.schedule.ScheduleRecord;
+import io.micronaut.data.jdbc.annotation.JdbcRepository;
+import io.micronaut.data.model.query.builder.sql.Dialect;
+import io.micronaut.data.repository.CrudRepository;
 import jakarta.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,12 +16,5 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Singleton
-public class EventLogService {
-  void addEventLogRecord(EventLogRecord eventLogRecord) {
-    log.info("Saving event log record: {}", eventLogRecord);
-    if (eventLogRecord.getTimestamp() == null) {
-      throw new IllegalArgumentException("Event log record has no timestamp");
-    }
-    // todo: throw on fail
-  }
-}
+@JdbcRepository(dialect = Dialect.MYSQL)
+abstract class EventLogService implements CrudRepository<EventLogRecord, Long> {}
