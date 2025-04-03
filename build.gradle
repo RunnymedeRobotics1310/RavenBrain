@@ -6,7 +6,7 @@ plugins {
     id("com.coditory.manifest") version "0.2.6"
 }
 
-version = "0.2.3"
+version = "1.0.0"
 group = "ca.team1310.ravenbrain"
 
 repositories {
