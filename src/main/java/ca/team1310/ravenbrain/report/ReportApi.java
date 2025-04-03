@@ -10,6 +10,7 @@ import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.security.annotation.Secured;
+import io.micronaut.serde.annotation.Serdeable;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -36,23 +37,33 @@ public class ReportApi {
 
 
        */
+  @Serdeable
   public record TournamentReportCell(String colId, String value) {}
 
+  @Serdeable
   public record TournamentReportRow(TournamentReportCell[] values) {}
 
+  @Serdeable
   public record TournamentReportTable(
       TournamentReportRow[] headerRows,
       TournamentReportRow[] dataRows,
       TournamentReportRow[] footerRows) {}
 
+  @Serdeable
   public record TournamentReportResponse(
       TournamentReportTable report, boolean success, String reason) {}
 
   @Get("/tournament/{tournamentId}/{teamId}")
   @Produces(APPLICATION_JSON)
-  @Secured({"EXPERT_SCOUT"})
+  @Secured({"ROLE_EXPERTSCOUT"})
   public TournamentReportResponse getTournamentReport(
       @PathVariable String tournamentId, @PathVariable int teamId) {
-    return new TournamentReportResponse(null, false, "Not implemented yet");
+    log.info("Getting tournament report for tournament {} and team {}", tournamentId, teamId);
+    final TournamentReportResponse resp;
+
+    log.info(
+        "Finished getting tournament report for tournament {} and team {}", tournamentId, teamId);
+    resp = new TournamentReportResponse(null, false, "Not implemented yet");
+    return resp;
   }
 }
