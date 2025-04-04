@@ -3,29 +3,23 @@
  */
 package ca.team1310.ravenbrain.report;
 
-import static io.micronaut.http.MediaType.APPLICATION_JSON;
-
 import ca.team1310.ravenbrain.eventlog.EventLogRecord;
 import ca.team1310.ravenbrain.eventlog.EventLogService;
-import io.micronaut.http.annotation.*;
-import io.micronaut.security.annotation.Secured;
-import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.annotation.Serdeable;
+import jakarta.inject.Singleton;
 import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Tony Field
- * @since 2025-04-02 21:39
+ * @since 2025-04-04 14:43
  */
-@Controller("/api/report")
-@Secured(SecurityRule.IS_AUTHENTICATED)
+@Singleton
 @Slf4j
-public class ReportApi {
-
+public class TournamentReport {
   private final EventLogService eventService;
 
-  public ReportApi(EventLogService eventService) {
+  public TournamentReport(EventLogService eventService) {
     this.eventService = eventService;
   }
 
@@ -63,11 +57,7 @@ public class ReportApi {
   public record TournamentReportResponse(
       TournamentReportTable report, boolean success, String reason) {}
 
-  @Get("/tournament/{tournamentId}/{teamId}")
-  @Produces(APPLICATION_JSON)
-  @Secured({"ROLE_EXPERTSCOUT"})
-  public TournamentReportResponse getTournamentReport(
-      @QueryValue String tournamentId, @QueryValue int teamId) {
+  public TournamentReportResponse getTournamentReport(String tournamentId, int teamId) {
     log.info("Getting tournament report for {} team {}", tournamentId, teamId);
     final TournamentReportResponse resp;
 
