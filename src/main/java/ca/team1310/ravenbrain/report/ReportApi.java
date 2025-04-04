@@ -73,8 +73,8 @@ public class ReportApi {
     final TournamentReportResponse resp;
 
     List<EventLogRecord> data =
-        eventService.findAllByTournamentIdAndTeamNumber(tournamentId, teamId);
-    Map<Integer, List<EventLogRecord>> recordsByMatch = new HashMap<>();
+        eventService.findAllByTournamentIdAndTeamNumberOrderByMatchId(tournamentId, teamId);
+    Map<Integer, List<EventLogRecord>> recordsByMatch = new LinkedHashMap<>();
     for (EventLogRecord record : data) {
       var match = record.getMatchId();
       List<EventLogRecord> records = recordsByMatch.computeIfAbsent(match, k -> new ArrayList<>());
@@ -94,7 +94,6 @@ public class ReportApi {
             Collections.singletonList(headerRow).toArray(new TournamentReportRow[0]),
             bodyRows.toArray(new TournamentReportRow[0]),
             Collections.singletonList(footerRows).toArray(new TournamentReportRow[0]));
-    log.info("Tournament report complete ({} team {})", tournamentId, teamId);
     resp = new TournamentReportResponse(report, true, null);
     return resp;
   }
@@ -238,6 +237,9 @@ public class ReportApi {
   private String getComments(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("comment")) {
+        val.add(record.getNote());
+      }
       if (record.getEventType().equals("COMMENTS-comment")) {
         val.add(record.getNote());
       }
@@ -261,10 +263,19 @@ public class ReportApi {
       if (record.getEventType().equals("AUTO-auto-start-center")) {
         val.add("Center");
       }
+      if (record.getEventType().equals("auto-start-center")) {
+        val.add("Center");
+      }
       if (record.getEventType().equals("AUTO-auto-start-left")) {
         val.add("Left");
       }
+      if (record.getEventType().equals("auto-start-left")) {
+        val.add("Left");
+      }
       if (record.getEventType().equals("AUTO-auto-start-right")) {
+        val.add("Right");
+      }
+      if (record.getEventType().equals("auto-start-right")) {
         val.add("Right");
       }
     }
@@ -277,10 +288,16 @@ public class ReportApi {
       if (record.getEventType().equals("AUTO-preloaded-coral")) {
         val.add("Coral");
       }
+      if (record.getEventType().equals("preloaded-coral")) {
+        val.add("Coral");
+      }
       if (record.getEventType().equals("AUTO-preloaded-algae")) {
         val.add("Algae");
       }
       if (record.getEventType().equals("AUTO-preloaded-nothing")) {
+        val.add("--");
+      }
+      if (record.getEventType().equals("preloaded-nothing")) {
         val.add("--");
       }
     }
@@ -323,6 +340,15 @@ public class ReportApi {
       if (record.getEventType().equals("AUTO-pickup-algae-auto-center")) {
         val.add("Y");
       }
+      if (record.getEventType().equals("pickup-algae-auto-left")) {
+        val.add("Y");
+      }
+      if (record.getEventType().equals("pickup-algae-auto-center")) {
+        val.add("Y");
+      }
+      if (record.getEventType().equals("pickup-algae-auto-right")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("AUTO-pickup-algae-reef")) {
         val.add("Y");
       }
@@ -333,6 +359,9 @@ public class ReportApi {
   private String getAutoAlgaeDrop(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("drop-algae")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("AUTO-drop-algae")) {
         val.add("Y");
       }
@@ -367,6 +396,15 @@ public class ReportApi {
         val.add("Y");
       }
       if (record.getEventType().equals("AUTO-pickup-coral-auto-center")) {
+        val.add("Y");
+      }
+      if (record.getEventType().equals("pickup-coral-auto-left")) {
+        val.add("Y");
+      }
+      if (record.getEventType().equals("pickup-coral-auto-center")) {
+        val.add("Y");
+      }
+      if (record.getEventType().equals("pickup-coral-auto-right")) {
         val.add("Y");
       }
     }
@@ -459,6 +497,9 @@ public class ReportApi {
       if (record.getEventType().equals("TELEOP-remove-algae")) {
         val.add("Y");
       }
+      if (record.getEventType().equals("remove-algae")) {
+        val.add("Y");
+      }
     }
     return Integer.toString(val.size());
   }
@@ -466,6 +507,9 @@ public class ReportApi {
   private String getTeleopAlgaePluck(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("pickup-algae-reef")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("TELEOP-pickup-algae-reef")) {
         val.add("Y");
       }
@@ -476,6 +520,9 @@ public class ReportApi {
   private String getTeleopAlgaePickup(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("pickup-algae-floor")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("TELEOP-pickup-algae-floor")) {
         val.add("Y");
       }
@@ -499,6 +546,9 @@ public class ReportApi {
       if (record.getEventType().equals("TELEOP-score-algae-net")) {
         val.add("Y");
       }
+      if (record.getEventType().equals("score-algae-net")) {
+        val.add("Y");
+      }
     }
     return Integer.toString(val.size());
   }
@@ -507,6 +557,9 @@ public class ReportApi {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
       if (record.getEventType().equals("TELEOP-score-algae-processor")) {
+        val.add("Y");
+      }
+      if (record.getEventType().equals("score-algae-processor")) {
         val.add("Y");
       }
     }
@@ -519,6 +572,9 @@ public class ReportApi {
       if (record.getEventType().equals("TELEOP-pickup-coral-floor")) {
         val.add("Y");
       }
+      if (record.getEventType().equals("pickup-coral-floor")) {
+        val.add("Y");
+      }
     }
     return Integer.toString(val.size());
   }
@@ -527,6 +583,9 @@ public class ReportApi {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
       if (record.getEventType().equals("TELEOP-pickup-coral-station-left")) {
+        val.add("Y");
+      }
+      if (record.getEventType().equals("pickup-coral-station-left")) {
         val.add("Y");
       }
     }
@@ -539,6 +598,9 @@ public class ReportApi {
       if (record.getEventType().equals("TELEOP-pickup-coral-station-right")) {
         val.add("Y");
       }
+      if (record.getEventType().equals("pickup-coral-station-right")) {
+        val.add("Y");
+      }
     }
     return Integer.toString(val.size());
   }
@@ -549,6 +611,9 @@ public class ReportApi {
       if (record.getEventType().equals("TELEOP-drop-coral")) {
         val.add("Y");
       }
+      if (record.getEventType().equals("drop-coral")) {
+        val.add("Y");
+      }
     }
     return Integer.toString(val.size());
   }
@@ -556,6 +621,9 @@ public class ReportApi {
   private String getTeleopCoralScoreL1(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("score-reef-l1")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("TELEOP-score-reef-l1")) {
         val.add("Y");
       }
@@ -566,6 +634,9 @@ public class ReportApi {
   private String getTeleopCoralScoreL2(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("score-reef-l2")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("TELEOP-score-reef-l2")) {
         val.add("Y");
       }
@@ -576,6 +647,9 @@ public class ReportApi {
   private String getTeleopCoralScoreL3(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("score-reef-l3")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("TELEOP-score-reef-l3")) {
         val.add("Y");
       }
@@ -586,6 +660,9 @@ public class ReportApi {
   private String getTeleopCoralScoreL4(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("score-reef-l4")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("TELEOP-score-reef-l4")) {
         val.add("Y");
       }
@@ -596,6 +673,9 @@ public class ReportApi {
   private String getTeleopCoralScoreMiss(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("score-reef-miss")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("TELEOP-score-reef-miss")) {
         val.add("Y");
       }
@@ -647,11 +727,20 @@ public class ReportApi {
   private String getEndgame(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("climb-park")) {
+        val.add("Park");
+      }
       if (record.getEventType().equals("COMMENTS-climb-park")) {
         val.add("Park");
       }
       if (record.getEventType().equals("ENDGAME-climb-deep")) {
         val.add("Deep");
+      }
+      if (record.getEventType().equals("climb-deep")) {
+        val.add("Deep");
+      }
+      if (record.getEventType().equals("climb-none")) {
+        val.add("None");
       }
       if (record.getEventType().equals("ENDGAME-climb-none")) {
         val.add("None");
@@ -661,6 +750,12 @@ public class ReportApi {
       }
       if (record.getEventType().equals("ENDGAME-climb-shallow")) {
         val.add("Shallow");
+      }
+      if (record.getEventType().equals("climb-shallow")) {
+        val.add("Shallow");
+      }
+      if (record.getEventType().equals("attempted-climb")) {
+        val.add("Attempted");
       }
       if (record.getEventType().equals("ENDGAME-attempted-climb")) {
         val.add("Attempted");
@@ -762,6 +857,9 @@ public class ReportApi {
   private String getInfoRpAuto(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("auto-rp")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("COMMENTS-auto-rp")) {
         val.add("Y");
       }
@@ -772,6 +870,9 @@ public class ReportApi {
   private String getInfoRpBarge(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("barge-rp")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("COMMENTS-barge-rp")) {
         val.add("Y");
       }
@@ -782,6 +883,9 @@ public class ReportApi {
   private String getInfoRpCoral(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("coral-rp")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("COMMENTS-coral-rp")) {
         val.add("Y");
       }
@@ -806,6 +910,21 @@ public class ReportApi {
       if (record.getEventType().equals("COMMENTS-star-rating-5")) {
         return "5";
       }
+      if (record.getEventType().equals("star-rating-1")) {
+        return "1";
+      }
+      if (record.getEventType().equals("star-rating-2")) {
+        return "2";
+      }
+      if (record.getEventType().equals("star-rating-3")) {
+        return "3";
+      }
+      if (record.getEventType().equals("star-rating-4")) {
+        return "4";
+      }
+      if (record.getEventType().equals("star-rating-5")) {
+        return "5";
+      }
     }
     return "";
   }
@@ -813,6 +932,9 @@ public class ReportApi {
   private String getDefenceStarted(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("defence-started")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("TELEOP-defence-started")) {
         val.add("Y");
       }
@@ -826,6 +948,9 @@ public class ReportApi {
       if (record.getEventType().equals("TELEOP-defence-stopped")) {
         secs += record.getAmount();
       }
+      if (record.getEventType().equals("defence-stopped")) {
+        secs += record.getAmount();
+      }
     }
     return String.format("%.1f", secs);
   }
@@ -833,6 +958,9 @@ public class ReportApi {
   private String getDefencePlayed(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("feedback-play-defence")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("COMMENTS-feedback-play-defence")) {
         val.add("Y");
       }
@@ -846,6 +974,9 @@ public class ReportApi {
       if (record.getEventType().equals("COMMENTS-feedback-effective-defence")) {
         val.add("Y");
       }
+      if (record.getEventType().equals("feedback-effective-defence")) {
+        val.add("Y");
+      }
     }
     return String.join(", ", val);
   }
@@ -854,6 +985,9 @@ public class ReportApi {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
       if (record.getEventType().equals("COMMENTS-feedback-drove-fast")) {
+        val.add("Y");
+      }
+      if (record.getEventType().equals("feedback-drove-fast")) {
         val.add("Y");
       }
     }
@@ -873,6 +1007,9 @@ public class ReportApi {
   private String getInfoConsistent(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("feedback-score-consistently")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("COMMENTS-feedback-score-consistently")) {
         val.add("Y");
       }
@@ -883,6 +1020,9 @@ public class ReportApi {
   private String getInfoShutDown(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("feedback-shut-down")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("COMMENTS-feedback-shut-down")) {
         val.add("Y");
       }
@@ -893,6 +1033,9 @@ public class ReportApi {
   private String getInfoFalldowngoboom(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("feedback-fell-over")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("COMMENTS-feedback-fell-over")) {
         val.add("Y");
       }
@@ -903,6 +1046,9 @@ public class ReportApi {
   private String getInfoRecovered(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("feedback-recover")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("COMMENTS-feedback-recover")) {
         val.add("Y");
       }
@@ -913,6 +1059,9 @@ public class ReportApi {
   private String getInfoMeanOrIncompetent(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
+      if (record.getEventType().equals("feedback-foul-often")) {
+        val.add("Y");
+      }
       if (record.getEventType().equals("COMMENTS-feedback-foul-often")) {
         val.add("Y");
       }
