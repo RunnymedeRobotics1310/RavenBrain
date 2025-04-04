@@ -69,7 +69,7 @@ public class ReportApi {
   @Secured({"ROLE_EXPERTSCOUT"})
   public TournamentReportResponse getTournamentReport(
       @PathVariable String tournamentId, @PathVariable int teamId) {
-    log.info("Getting tournament report for tournament {} and team {}", tournamentId, teamId);
+    log.info("Getting tournament report for {} team {}", tournamentId, teamId);
     final TournamentReportResponse resp;
 
     List<EventLogRecord> data =
