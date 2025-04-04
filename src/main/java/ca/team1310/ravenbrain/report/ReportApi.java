@@ -9,6 +9,7 @@ import ca.team1310.ravenbrain.eventlog.EventLogRecord;
 import ca.team1310.ravenbrain.eventlog.EventLogService;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
+import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.annotation.Serdeable;
 import java.util.*;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
  * @since 2025-04-02 21:39
  */
 @Controller("/api/report")
+@Secured(SecurityRule.IS_AUTHENTICATED)
 @Slf4j
 public class ReportApi {
 
