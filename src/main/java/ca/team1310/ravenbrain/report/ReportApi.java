@@ -7,10 +7,7 @@ import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
 import ca.team1310.ravenbrain.eventlog.EventLogRecord;
 import ca.team1310.ravenbrain.eventlog.EventLogService;
-import io.micronaut.http.annotation.Controller;
-import io.micronaut.http.annotation.Get;
-import io.micronaut.http.annotation.PathVariable;
-import io.micronaut.http.annotation.Produces;
+import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.serde.annotation.Serdeable;
 import java.util.*;
@@ -68,7 +65,7 @@ public class ReportApi {
   @Produces(APPLICATION_JSON)
   @Secured({"ROLE_EXPERTSCOUT"})
   public TournamentReportResponse getTournamentReport(
-      @PathVariable String tournamentId, @PathVariable int teamId) {
+      @QueryValue String tournamentId, @QueryValue int teamId) {
     log.info("Getting tournament report for {} team {}", tournamentId, teamId);
     final TournamentReportResponse resp;
 
