@@ -19,4 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 @JdbcRepository(dialect = Dialect.MYSQL)
 public abstract class QuickCommentService implements CrudRepository<QuickComment, Long> {
   public abstract List<QuickComment> findAllByTeamOrderByTimestamp(int teamNumber);
+
+  public abstract List<QuickComment> findAllOrderByTeamAndTimestamp();
 }

@@ -55,5 +55,10 @@ public class QuickCommentApi {
     return result;
   }
 
-
+  @Get
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_EXPERTSCOUT"})
+  public List<QuickComment> getAll() {
+    return quickCommentService.findAllOrderByTeamAndTimestamp();
+  }
 }
