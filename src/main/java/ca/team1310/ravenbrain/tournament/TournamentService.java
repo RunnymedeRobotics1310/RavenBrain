@@ -17,6 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Singleton
 @JdbcRepository(dialect = Dialect.MYSQL)
-abstract class TournamentService implements CrudRepository<TournamentRecord, String> {
+public abstract class TournamentService implements CrudRepository<TournamentRecord, String> {
   public abstract List<TournamentRecord> findAllSortByStartTime();
 }

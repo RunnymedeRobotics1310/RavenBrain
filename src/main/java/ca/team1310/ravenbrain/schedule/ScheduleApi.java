@@ -5,7 +5,7 @@ package ca.team1310.ravenbrain.schedule;
 
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
-import ca.team1310.ravenbrain.report.TournamentReport;
+import ca.team1310.ravenbrain.report.TournamentReportService;
 import io.micronaut.context.annotation.Parameter;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
@@ -23,9 +23,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class ScheduleApi {
   private final ScheduleService scheduleService;
-  private final TournamentReport tournamentReportService;
+  private final TournamentReportService tournamentReportService;
 
-  ScheduleApi(ScheduleService scheduleService, TournamentReport reportService) {
+  ScheduleApi(ScheduleService scheduleService, TournamentReportService reportService) {
     this.scheduleService = scheduleService;
     this.tournamentReportService = reportService;
   }
@@ -61,7 +61,7 @@ public class ScheduleApi {
   @Get("/tournament/{tournamentId}/{teamId}")
   @Produces(APPLICATION_JSON)
   @Secured({"ROLE_EXPERTSCOUT"})
-  public TournamentReport.TournamentReportResponse getTournamentReport(
+  public TournamentReportService.TournamentReportResponse getTournamentReport(
       @QueryValue String tournamentId, @QueryValue int teamId) {
     return tournamentReportService.getTournamentReport(tournamentId, teamId);
   }

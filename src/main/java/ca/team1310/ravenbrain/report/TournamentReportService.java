@@ -5,6 +5,8 @@ package ca.team1310.ravenbrain.report;
 
 import ca.team1310.ravenbrain.eventlog.EventLogRecord;
 import ca.team1310.ravenbrain.eventlog.EventLogService;
+import ca.team1310.ravenbrain.tournament.TournamentRecord;
+import ca.team1310.ravenbrain.tournament.TournamentService;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.inject.Singleton;
 import java.util.*;
@@ -16,11 +18,14 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Singleton
 @Slf4j
-public class TournamentReport {
+public class TournamentReportService {
   private final EventLogService eventService;
+  private final TournamentService tournamentService;
 
-  public TournamentReport(EventLogService eventService) {
+  public TournamentReportService(
+      EventLogService eventService, TournamentService tournamentService) {
     this.eventService = eventService;
+    this.tournamentService = tournamentService;
   }
 
   /*
@@ -49,6 +54,7 @@ public class TournamentReport {
 
   @Serdeable
   public record TournamentReportTable(
+      TournamentRecord tournament,
       TournamentReportRow[] headerRows,
       TournamentReportRow[] dataRows,
       TournamentReportRow[] footerRows) {}
@@ -59,6 +65,10 @@ public class TournamentReport {
 
   public TournamentReportResponse getTournamentReport(String tournamentId, int teamId) {
     log.info("Getting tournament report for {} team {}", tournamentId, teamId);
+    var t = tournamentService.findById(tournamentId);
+    if (t.isEmpty()) {
+      return new TournamentReportResponse(null, false, "Tournament " + tournamentId + " not found");
+    }
     final TournamentReportResponse resp;
 
     List<EventLogRecord> data =
@@ -80,6 +90,7 @@ public class TournamentReport {
 
     var report =
         new TournamentReportTable(
+            t.get(),
             Collections.singletonList(headerRow).toArray(new TournamentReportRow[0]),
             bodyRows.toArray(new TournamentReportRow[0]),
             Collections.singletonList(footerRows).toArray(new TournamentReportRow[0]));
