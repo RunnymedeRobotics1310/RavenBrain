@@ -7,6 +7,7 @@ import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
 import jakarta.inject.Singleton;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -16,4 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 @Singleton
 @Slf4j
 @JdbcRepository(dialect = Dialect.MYSQL)
-abstract class QuickCommentService implements CrudRepository<QuickComment, Long> {}
+public abstract class QuickCommentService implements CrudRepository<QuickComment, Long> {
+  public abstract List<QuickComment> findAllByTeamOrderByTimestamp(int teamNumber);
+
+  public abstract List<QuickComment> findAllOrderByTeamAndTimestamp();
+}

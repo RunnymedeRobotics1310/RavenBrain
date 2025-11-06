@@ -14,6 +14,7 @@ micronaut:
   server:
     cors:
       enabled: true
+    port: 8888
   servlet:
     async-supported: false
     test-async-supported: false
