@@ -36,8 +36,8 @@ following properties:
 # SMTP Settings
 datasources.default.username=rb
 datasources.default.password=rb
-raven-eye.frc-api.user=tfield
-raven-eye.frc-api.key=abc123
+raven-eye.frc-api.user=the_frc_api_account_user
+raven-eye.frc-api.key=the_frc_api_account_password
 raven-eye.role-passwords.admin=actual_admin_password_123
 raven-eye.role-passwords.expertscout=actual_expert_scout_password_876
 raven-eye.role-passwords.datascout=actual_data_scout_password__1
