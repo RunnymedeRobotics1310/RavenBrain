@@ -36,6 +36,7 @@ dependencies {
     runtimeOnly("org.yaml:snakeyaml")
     testImplementation("io.micronaut:micronaut-http-client")
     testCompileOnly 'org.projectlombok:lombok:1.18.36'
+    testAnnotationProcessor("io.micronaut.serde:micronaut-serde-processor")
     aotPlugins platform("io.micronaut.platform:micronaut-platform:4.7.6")
     aotPlugins("io.micronaut.security:micronaut-security-aot")
 }
