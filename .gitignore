@@ -15,3 +15,7 @@ out/
 .factorypath
 ravenbrain.log
 
+# local property config
+src/main/resources/application-local.properties
+src/test/resources/application.yml
+

@@ -1,16 +1,4 @@
 #Sun Mar 23 02:53:58 UTC 2025
-logger:
-  levels:
-    ca:
-      team1310:
-        ravenbrain:
-          frcapi:
-            FrcService: DEBUG
-            FrcClient: INFO
-    io:
-      micronaut:
-        data:
-          query: INFO
 micronaut:
   application:
     name: raven-brain
