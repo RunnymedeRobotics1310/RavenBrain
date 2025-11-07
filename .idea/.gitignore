@@ -1,0 +1,18 @@
+# Default ignored files
+/shelf/
+/workspace.xml
+# Editor-based HTTP Client requests
+/httpRequests/
+# Datasource local storage ignored files
+/dataSources/
+/dataSources.local.xml
+
+# Other additions to keep things simple
+/inspectionProfiles
+aws.xml
+compiler.xml
+data_source_mapping.xml
+dataSources.xml
+gradle.xml
+misc.xml
+sqldialects.xml
