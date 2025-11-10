@@ -31,6 +31,13 @@ sdk install java 21.0.8-zulu
   https://www.azul.com/downloads/?package=jdk#zulu
 - Run the installer and choose default options
 
+## Install JetBrains' IntelliJ IDEA Ultimate
+
+The Ultimate version of IntelliJ IDEA is a commercial product but it is available for free to full-time students.
+
+Request the student license by following the instructions on this page: https://www.jetbrains.com/academy/student-pack/
+and then download IntelliJ IDEA Ultimate for your computer.
+
 ## Install MySQL Database
 
 - Install MySQL Community Server 8.4 LTS from https://dev.mysql.com/downloads/mysql/
