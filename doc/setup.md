@@ -3,6 +3,7 @@
 ## Setup
 
 - Install Java
+- Install JetBrains' IntelliJ IDEA Ultimate
 - Install MySQL Database
 - Creating the Database
 - Loading Data into the Database
