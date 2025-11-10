@@ -6,13 +6,16 @@ Created March 22, 2025, North Bay, Ontario, Canada by Tony Field, Team 1310, Run
 
 ## Overview
 
-- rest service backed with mysql database
-- uses micronaut framework - initially 4.7.6
-- intended to run on a battery-powered raspberry pi in the stands at competitions
-- later hosted on the home server of a team mentor
+- RavenBrain is a REST service backed with MySQL database
+- It uses the Micronaut Framework - initially 4.7.6
+- Original designs were intended to run on a battery-powered Raspberry Pi in the stands at competitions
+- Later, the app was updated to be hosted on a home server of a team mentor.
+- The app synchronizes data automatically from the FRC API on a regular schedule. This includes season, schedule, and
+  match data.
 
-## Developer Instructions
+## Table of Contents
 
-[Click Here for Developer Setup Instructions](doc/developer.md)
+- [Developer Environment Setup Instructions](doc/setup.md)
+- [Developer Programming Instructions](doc/setup.md)
 
 Happy strategizing!
