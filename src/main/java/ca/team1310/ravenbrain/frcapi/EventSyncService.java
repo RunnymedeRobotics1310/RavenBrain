@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Loads all of the events for the current season and the last season.
  *
- * <p>NOTE, "Tournament" in this app maps to "EVENT" in the FRC API.</p>
+ * <p>NOTE, "Tournament" in this app maps to "EVENT" in the FRC API.
  *
  * <p>TODO: FINISH IMPLEMENTATION
  *
