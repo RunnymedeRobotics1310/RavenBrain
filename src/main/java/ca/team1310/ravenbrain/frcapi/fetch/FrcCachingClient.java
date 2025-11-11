@@ -5,6 +5,7 @@ import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Singleton;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -32,6 +33,15 @@ class FrcCachingClient {
     return response.statuscode == 200;
   }
 
+  void markProcessed(long requestId) {
+    Optional<FrcRawResponse> or = repo.findById(requestId);
+    if (or.isPresent()) {
+      FrcRawResponse response = or.get();
+      response.setProcessed(true);
+      repo.update(response);
+    }
+  }
+
   /**
    * Fetch content from cache, or if not found or found but old, fetch from FRC.
    *
@@ -54,7 +64,8 @@ class FrcCachingClient {
           db.lastcheck = Instant.now();
           log.trace("Not modified for: {}", uri);
           return repo.update(db);
-        } else if (db.statuscode >= 200 && db.statuscode <= 299) /* SUCCESS CODES */ {
+        } else if ((db.statuscode >= 200 && db.statuscode <= 299)
+            || db.statuscode == 404) /* PROCESSABLE CODES */ {
           // new data - update it
           db.lastcheck = Instant.now();
           boolean same =
@@ -70,7 +81,7 @@ class FrcCachingClient {
             db.lastmodified = api.lastmodified;
             db.statuscode = api.statuscode;
             db.body = api.body;
-            log.trace("Updated data for: {}", uri);
+            log.trace("Updated cached response for: {}", uri);
           }
           return repo.update(db);
         } else {

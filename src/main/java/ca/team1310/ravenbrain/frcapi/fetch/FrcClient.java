@@ -89,6 +89,10 @@ class FrcClient {
         case 304:
           // not modified - do not need body
           return new FrcRawResponse(null, Instant.now(), respLastModified, false, code, uri, null);
+        case 404:
+          // not found - return anyway
+          return new FrcRawResponse(
+              null, Instant.now(), respLastModified, false, code, uri, response.body());
         default:
           throw new FrcClientException("Response " + code + ": " + response.body());
       }

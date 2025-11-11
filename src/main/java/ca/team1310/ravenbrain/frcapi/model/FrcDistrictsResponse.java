@@ -11,6 +11,8 @@ import lombok.Data;
 @Serdeable
 @Data
 public class FrcDistrictsResponse {
+  long id;
+  boolean processed;
   List<FrcDistrict> districts;
   int districtCount;
 }

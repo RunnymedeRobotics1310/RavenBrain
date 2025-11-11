@@ -62,34 +62,39 @@ class EventSyncService {
 
   private void loadTournamentsForYear(int year) {
     EventResponse resp = frcClientService.getEventListingsForTeam(year, teamNumber);
-    if (resp != null) {
-      for (Event event : resp.getEvents()) {
-        Instant start = event.getDateStart().atZone(ZoneId.of("America/New_York")).toInstant();
-        Instant end = event.getDateEnd().atZone(ZoneId.of("America/New_York")).toInstant();
-        TournamentRecord tournamentRecord = new TournamentRecord();
-        tournamentRecord.setId(year + event.getCode());
-        tournamentRecord.setSeason(year);
-        tournamentRecord.setCode(event.getCode());
-        tournamentRecord.setName(event.getName());
-        tournamentRecord.setStartTime(start);
-        tournamentRecord.setEndTime(end);
-        log.trace("Saving tournament {}", tournamentRecord);
-        try {
-          tournamentService.save(tournamentRecord);
-        } catch (DataAccessException e) {
-          if (e.getCause() != null
-              && e.getCause() instanceof SQLIntegrityConstraintViolationException) {
-            tournamentService.update(tournamentRecord);
-          } else {
-            throw e;
-          }
+    if (resp == null) return;
+    if (resp.isProcessed()) {
+      log.trace("Tournament data is already processed for year {}", year);
+      return;
+    }
+    for (Event event : resp.getEvents()) {
+      Instant start = event.getDateStart().atZone(ZoneId.of("America/New_York")).toInstant();
+      Instant end = event.getDateEnd().atZone(ZoneId.of("America/New_York")).toInstant();
+      TournamentRecord tournamentRecord = new TournamentRecord();
+      tournamentRecord.setId(year + event.getCode());
+      tournamentRecord.setSeason(year);
+      tournamentRecord.setCode(event.getCode());
+      tournamentRecord.setName(event.getName());
+      tournamentRecord.setStartTime(start);
+      tournamentRecord.setEndTime(end);
+      log.trace("Saving tournament {}", tournamentRecord);
+      try {
+        tournamentService.save(tournamentRecord);
+      } catch (DataAccessException e) {
+        if (e.getCause() != null
+            && e.getCause() instanceof SQLIntegrityConstraintViolationException) {
+          tournamentService.update(tournamentRecord);
+        } else {
+          throw e;
         }
       }
     }
+    frcClientService.markProcessed(resp.getId());
   }
 
   /** Once a week, load tournament schedules for all tournaments this year. */
   @Scheduled(cron = "0 23 * * 1")
+  //  @Scheduled(fixedDelay = "1m")
   void loadAllTournamentSchedulesForThisYear() {
     log.trace("Loading all tournament schedules for this year");
     int thisYear = Year.now(ZoneOffset.UTC).getValue();
@@ -123,32 +128,40 @@ class EventSyncService {
             tournamentRecord.getCode(),
             e.getMessage());
       }
-      if (scheduleResponse != null) {
-        for (Schedule schedule : scheduleResponse.getSchedule()) {
-          ScheduleRecord scheduleRecord = new ScheduleRecord();
-          scheduleRecord.setTournamentId(tournamentRecord.getId());
-          scheduleRecord.setMatch(schedule.getMatchNumber());
-          for (ScheduleTeam team : schedule.getTeams()) {
-            switch (team.getStation()) {
-              case "Red1" -> scheduleRecord.setRed1(team.getTeamNumber());
-              case "Red2" -> scheduleRecord.setRed2(team.getTeamNumber());
-              case "Red3" -> scheduleRecord.setRed3(team.getTeamNumber());
-              case "Blue1" -> scheduleRecord.setBlue1(team.getTeamNumber());
-              case "Blue2" -> scheduleRecord.setBlue2(team.getTeamNumber());
-              case "Blue3" -> scheduleRecord.setBlue3(team.getTeamNumber());
-            }
-          }
-          Optional<ScheduleRecord> existingRecord =
-              scheduleService.findByTournamentIdAndMatch(
-                  tournamentRecord.getId(), schedule.getMatchNumber());
-          if (existingRecord.isPresent()) {
-            scheduleRecord.setId(existingRecord.get().getId());
-            scheduleService.update(scheduleRecord);
-          } else {
-            scheduleService.save(scheduleRecord);
+      if (scheduleResponse == null) continue;
+      if (scheduleResponse.isProcessed()) {
+        log.trace(
+            "Schedule response for season {} and tournament code {} and level {} is already processed.",
+            tournamentRecord.getSeason(),
+            tournamentRecord.getCode(),
+            level);
+        continue;
+      }
+      for (Schedule schedule : scheduleResponse.getSchedule()) {
+        ScheduleRecord scheduleRecord = new ScheduleRecord();
+        scheduleRecord.setTournamentId(tournamentRecord.getId());
+        scheduleRecord.setMatch(schedule.getMatchNumber());
+        for (ScheduleTeam team : schedule.getTeams()) {
+          switch (team.getStation()) {
+            case "Red1" -> scheduleRecord.setRed1(team.getTeamNumber());
+            case "Red2" -> scheduleRecord.setRed2(team.getTeamNumber());
+            case "Red3" -> scheduleRecord.setRed3(team.getTeamNumber());
+            case "Blue1" -> scheduleRecord.setBlue1(team.getTeamNumber());
+            case "Blue2" -> scheduleRecord.setBlue2(team.getTeamNumber());
+            case "Blue3" -> scheduleRecord.setBlue3(team.getTeamNumber());
           }
         }
+        Optional<ScheduleRecord> existingRecord =
+            scheduleService.findByTournamentIdAndMatch(
+                tournamentRecord.getId(), schedule.getMatchNumber());
+        if (existingRecord.isPresent()) {
+          scheduleRecord.setId(existingRecord.get().getId());
+          scheduleService.update(scheduleRecord);
+        } else {
+          scheduleService.save(scheduleRecord);
+        }
       }
+      frcClientService.markProcessed(scheduleResponse.getId());
     }
   }
 }

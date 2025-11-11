@@ -11,6 +11,8 @@ import lombok.Data;
 @Serdeable
 @Data
 public class SeasonSummaryResponse {
+  long id;
+  boolean processed;
   int eventCount;
   String gameName;
   LocalDateTime kickoff;

@@ -37,11 +37,21 @@ public class FrcClientService {
     if (body == null || body.isEmpty()) {
       return null;
     }
+    if (response.statuscode == 404) {
+      return null;
+    }
     try {
-      return objectMapper.readValue(body, SeasonSummaryResponse.class);
+      SeasonSummaryResponse res = objectMapper.readValue(body, SeasonSummaryResponse.class);
+      res.setId(response.id);
+      res.setProcessed(response.processed);
+      return res;
     } catch (Exception e) {
       throw new FrcClientException("Failed to parse SeasonSummaryResponse: '" + body + "'", e);
     }
+  }
+
+  public void markProcessed(long responseId) {
+    client.markProcessed(responseId);
   }
 
   public FrcDistrictsResponse getDistrictListings(int season) {
@@ -50,8 +60,14 @@ public class FrcClientService {
     if (body == null || body.isEmpty()) {
       return null;
     }
+    if (response.statuscode == 404) {
+      return null;
+    }
     try {
-      return objectMapper.readValue(body, FrcDistrictsResponse.class);
+      FrcDistrictsResponse res = objectMapper.readValue(body, FrcDistrictsResponse.class);
+      res.setId(response.id);
+      res.setProcessed(response.processed);
+      return res;
     } catch (Exception e) {
       throw new FrcClientException("Failed to parse FrcDistrictsResponse: '" + body + "'", e);
     }
@@ -63,8 +79,14 @@ public class FrcClientService {
     if (body == null || body.isEmpty()) {
       return null;
     }
+    if (response.statuscode == 404) {
+      return null;
+    }
     try {
-      return objectMapper.readValue(body, EventResponse.class);
+      EventResponse res = objectMapper.readValue(body, EventResponse.class);
+      res.setId(response.id);
+      res.setProcessed(response.processed);
+      return res;
     } catch (Exception e) {
       throw new FrcClientException("Failed to parse EventResponse: '" + body + "'", e);
     }
@@ -76,8 +98,14 @@ public class FrcClientService {
     if (body == null || body.isEmpty()) {
       return null;
     }
+    if (response.statuscode == 404) {
+      return null;
+    }
     try {
-      return objectMapper.readValue(body, EventResponse.class);
+      EventResponse res = objectMapper.readValue(body, EventResponse.class);
+      res.setId(response.id);
+      res.setProcessed(response.processed);
+      return res;
     } catch (Exception e) {
       throw new FrcClientException("Failed to parse EventResponse: '" + body + "'", e);
     }
@@ -91,8 +119,14 @@ public class FrcClientService {
     if (body == null || body.isEmpty()) {
       return null;
     }
+    if (response.statuscode == 404) {
+      return null;
+    }
     try {
-      return objectMapper.readValue(body, ScheduleResponse.class);
+      ScheduleResponse res = objectMapper.readValue(body, ScheduleResponse.class);
+      res.setId(response.id);
+      res.setProcessed(response.processed);
+      return res;
     } catch (Exception e) {
       throw new FrcClientException("Failed to parse ScheduleResponse: '" + body + "'", e);
     }
@@ -105,8 +139,14 @@ public class FrcClientService {
     if (body == null || body.isEmpty()) {
       return null;
     }
+    if (response.statuscode == 404) {
+      return null;
+    }
     try {
-      return objectMapper.readValue(body, ScheduleResponse.class);
+      ScheduleResponse res = objectMapper.readValue(body, ScheduleResponse.class);
+      res.setId(response.id);
+      res.setProcessed(response.processed);
+      return res;
     } catch (Exception e) {
       throw new FrcClientException("Failed to parse ScheduleResponse: '" + body + "'", e);
     }
