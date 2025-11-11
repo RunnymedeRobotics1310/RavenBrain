@@ -67,7 +67,7 @@ mysql -uroot -p -e "SET GLOBAL time_zone = UTC;"
 mysqladmin -u root -p create ravenbrain 
 mysql -uroot -p mysql -e  "CREATE USER 'rb'@'localhost' IDENTIFIED BY 'rb'" 
 mysql -uroot -p mysql -e  "GRANT ALL ON ravenbrain.* TO 'rb'@'localhost'"
-mysql --database=ravenbrain --user=root -p --host=127.0.0.1 --port=3306 < "ravenbrain-2024-2024-dump.sql"
+mysql --database=ravenbrain --user=root -p --host=127.0.0.1 --port=3306 < "ravenbrain-dumps/ravenbrain-2025-04-05-dump.sql"
 ```
 
 - Micronaut/Flyway will automatically generate schema updates as necessary.
@@ -84,7 +84,7 @@ Use this if the DB becomes corrupted or a new DB dump is available.
 ```bash
 mysqladmin -u root -p drop ravenbrain 
 mysqladmin -u root -p create ravenbrain
-mysql --database=ravenbrain --user=root -p --host=127.0.0.1 --port=3306 < ravenbrain-2024-2024-dump.sql
+mysql --database=ravenbrain --user=root -p --host=127.0.0.1 --port=3306 < "ravenbrain-dumps/ravenbrain-2025-04-05-dump.sql"
 ```
 
 ### Exporting the database
@@ -92,7 +92,7 @@ mysql --database=ravenbrain --user=root -p --host=127.0.0.1 --port=3306 < ravenb
 Use this to dump the database from localhost:
 
 ```bash
-mysqldump --compress -u root -p rbdb > ../ravenbrain-dumps/ravenbrain-local-$(date +"%Y%m%dT%I%M%S").sql
+mysqldump --compress -u root -p ravenbrain > ../ravenbrain-dumps/ravenbrain-local-$(date +"%Y%m%dT%I%M%S").sql
 ```
 
 ## Configuring the Application
