@@ -51,6 +51,7 @@ class EventSyncService {
    */
   // [sec] min hr dom mon dow
   @Scheduled(cron = "0 22 * * 1")
+  //  @Scheduled(fixedDelay = "1m")
   void loadTournaments() {
     int thisYear = Year.now(ZoneOffset.UTC).getValue();
 
@@ -66,7 +67,7 @@ class EventSyncService {
         Instant start = event.getDateStart().atZone(ZoneId.of("America/New_York")).toInstant();
         Instant end = event.getDateEnd().atZone(ZoneId.of("America/New_York")).toInstant();
         TournamentRecord tournamentRecord = new TournamentRecord();
-        tournamentRecord.setId("" + year + event.getCode());
+        tournamentRecord.setId(year + event.getCode());
         tournamentRecord.setSeason(year);
         tournamentRecord.setCode(event.getCode());
         tournamentRecord.setName(event.getName());

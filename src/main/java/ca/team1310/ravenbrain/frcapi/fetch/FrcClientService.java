@@ -22,7 +22,7 @@ public class FrcClientService {
   private final FrcCachingClient client;
   private final ObjectMapper objectMapper;
 
-  public FrcClientService(FrcCachingClient client, ObjectMapper objectMapper) {
+  FrcClientService(FrcCachingClient client, ObjectMapper objectMapper) {
     this.client = client;
     this.objectMapper = objectMapper;
   }
@@ -114,8 +114,8 @@ public class FrcClientService {
 
   /**
    * Return a stringified array of match scores for the season specified. The resultant object will
-   * need to be parsed into a season-specific result object.
-   * https://frc-api.firstinspires.org/v3.0/:season/scores/:eventCode/:tournamentLevel?matchNumber=&start=&end=
+   * need to be parsed into a season-specific result object. <a
+   * href="https://frc-api.firstinspires.org/v3.0/:season/scores/:eventCode/:tournamentLevel?matchNumber=&start=&end=">API</a>
    */
   public String getScoreDetails(int season, String eventCode, TournamentLevel level) {
     String path = season + "/scores/" + eventCode + "/" + level.name();
