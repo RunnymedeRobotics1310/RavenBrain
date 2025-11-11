@@ -1,6 +1,3 @@
-/*
- * Copyright 2025 The Kingsway Digital Company Limited. All rights reserved.
- */
 package ca.team1310.ravenbrain.schedule;
 
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
