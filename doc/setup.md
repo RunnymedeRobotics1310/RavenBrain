@@ -104,13 +104,20 @@ following properties:
 # SMTP Settings
 datasources.default.username=rb
 datasources.default.password=rb
-raven-eye.frc-api.user=tfield
-raven-eye.frc-api.key=abc123
+raven-eye.frc-api.user=frc_api_user_id
+raven-eye.frc-api.key=frc_api_user_key
 raven-eye.role-passwords.admin=actual_admin_password_123
 raven-eye.role-passwords.expertscout=actual_expert_scout_password_876
 raven-eye.role-passwords.datascout=actual_data_scout_password__1
 raven-eye.role-passwords.member=actual_team_shared_secret_team1310IsTheBest
 ```
+
+You will need to substitute the placeholder keys and secrets with the appropriate values. Speak with the mentor to learn
+how to get these details.
+
+Next, create a second file, this time called `application.properties` (i.e. without the `-local`), and place it in your
+`src/test/resources` folder, and include the same contents. These configuration overrides are overlaid on top of the
+properties in `application.yml`.
 
 If you want to change any of the logging levels, add the appropriate logger property to the above file. Valid levels are
 `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, and `FATAL`. These can be left out if not used, and you can add more detailed
