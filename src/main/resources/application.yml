@@ -37,5 +37,5 @@ raven-eye:
     datascout: ${DATASCOUT_PASSWORD:default_data_scout_password__1}
     member: ${MEMBER_PASSWORD:team1310IsTheBest}
   frc-api:
-    user: ${FRC_USER:tfield}
-    key: ${FRC_KEY:abc123}
+    user: ${FRC_USER:frc_api_user_id}
+    key: ${FRC_KEY:frc_api_user_key}
