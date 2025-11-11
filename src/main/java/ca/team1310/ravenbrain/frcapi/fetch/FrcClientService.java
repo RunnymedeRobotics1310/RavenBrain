@@ -8,7 +8,6 @@ import ca.team1310.ravenbrain.frcapi.model.ScheduleResponse;
 import ca.team1310.ravenbrain.frcapi.model.SeasonSummaryResponse;
 import io.micronaut.serde.ObjectMapper;
 import jakarta.inject.Singleton;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * Service for accessing data from FRC. This service intelligently manages communication with the
@@ -18,7 +17,6 @@ import lombok.extern.slf4j.Slf4j;
  * @since 2025-09-21 18:50
  */
 @Singleton
-@Slf4j
 public class FrcClientService {
 
   private final FrcCachingClient client;
@@ -35,37 +33,53 @@ public class FrcClientService {
 
   public SeasonSummaryResponse getSeasonSummary(int year) {
     FrcRawResponse response = client.fetch(Integer.toString(year));
+    String body = response.body;
+    if (body == null || body.isEmpty()) {
+      return null;
+    }
     try {
-      return objectMapper.readValue(response.body, SeasonSummaryResponse.class);
+      return objectMapper.readValue(body, SeasonSummaryResponse.class);
     } catch (Exception e) {
-      throw new FrcClientException("Failed to parse SeasonSummaryResponse", e);
+      throw new FrcClientException("Failed to parse SeasonSummaryResponse: '" + body + "'", e);
     }
   }
 
   public FrcDistrictsResponse getDistrictListings(int season) {
     FrcRawResponse response = client.fetch(season + "/districts");
+    String body = response.body;
+    if (body == null || body.isEmpty()) {
+      return null;
+    }
     try {
-      return objectMapper.readValue(response.body, FrcDistrictsResponse.class);
+      return objectMapper.readValue(body, FrcDistrictsResponse.class);
     } catch (Exception e) {
-      throw new FrcClientException("Failed to parse SeasonSummaryResponse", e);
+      throw new FrcClientException("Failed to parse FrcDistrictsResponse: '" + body + "'", e);
     }
   }
 
   public EventResponse getEventListingsForTeam(int season, int teamNumber) {
     FrcRawResponse response = client.fetch(season + "/events?teamNumber=" + teamNumber);
+    String body = response.body;
+    if (body == null || body.isEmpty()) {
+      return null;
+    }
     try {
-      return objectMapper.readValue(response.body, EventResponse.class);
+      return objectMapper.readValue(body, EventResponse.class);
     } catch (Exception e) {
-      throw new FrcClientException("Failed to parse EventResponse", e);
+      throw new FrcClientException("Failed to parse EventResponse: '" + body + "'", e);
     }
   }
 
   public EventResponse getEventListingsForDistrict(int season, DistrictCode districtCode) {
     FrcRawResponse response = client.fetch(season + "/events?districtCode=" + districtCode.name());
+    String body = response.body;
+    if (body == null || body.isEmpty()) {
+      return null;
+    }
     try {
-      return objectMapper.readValue(response.body, EventResponse.class);
+      return objectMapper.readValue(body, EventResponse.class);
     } catch (Exception e) {
-      throw new FrcClientException("Failed to parse EventResponse", e);
+      throw new FrcClientException("Failed to parse EventResponse: '" + body + "'", e);
     }
   }
 
@@ -73,20 +87,28 @@ public class FrcClientService {
       int season, String eventCode, TournamentLevel tournamentLevel) {
     String path = season + "/schedule/" + eventCode + "?tournamentLevel=" + tournamentLevel.name();
     FrcRawResponse response = client.fetch(path);
+    String body = response.body;
+    if (body == null || body.isEmpty()) {
+      return null;
+    }
     try {
-      return objectMapper.readValue(response.body, ScheduleResponse.class);
+      return objectMapper.readValue(body, ScheduleResponse.class);
     } catch (Exception e) {
-      throw new FrcClientException("Failed to parse EventResponse", e);
+      throw new FrcClientException("Failed to parse ScheduleResponse: '" + body + "'", e);
     }
   }
 
   public ScheduleResponse getEventSchedule(int season, String eventCode, int team) {
     String path = season + "/schedule/" + eventCode + "?teamNumber=" + team;
     FrcRawResponse response = client.fetch(path);
+    String body = response.body;
+    if (body == null || body.isEmpty()) {
+      return null;
+    }
     try {
-      return objectMapper.readValue(response.body, ScheduleResponse.class);
+      return objectMapper.readValue(body, ScheduleResponse.class);
     } catch (Exception e) {
-      throw new FrcClientException("Failed to parse EventResponse", e);
+      throw new FrcClientException("Failed to parse ScheduleResponse: '" + body + "'", e);
     }
   }
 
