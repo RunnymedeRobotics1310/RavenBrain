@@ -28,7 +28,13 @@ public class TournamentApi {
 
   @Introspected
   @Serdeable
-  record TournamentDTO(String id, String name, LocalDateTime startTime, LocalDateTime endTime) {}
+  record TournamentDTO(
+      String id,
+      int season,
+      String code,
+      String name,
+      LocalDateTime startTime,
+      LocalDateTime endTime) {}
 
   @Post
   @Consumes(APPLICATION_JSON)
@@ -36,6 +42,8 @@ public class TournamentApi {
     log.info("Saving tournament record: {}", tournamentRecord);
     var t = new TournamentRecord();
     t.setId(tournamentRecord.id());
+    t.setCode(tournamentRecord.code());
+    t.setSeason(tournamentRecord.season());
     t.setName(tournamentRecord.name());
     t.setStartTime(tournamentRecord.startTime().toInstant(ZoneOffset.UTC));
     t.setEndTime(tournamentRecord.endTime().toInstant(ZoneOffset.UTC));

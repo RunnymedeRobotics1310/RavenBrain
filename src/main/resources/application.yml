@@ -31,6 +31,7 @@ datasources:
     username: ${MYSQL_USERNAME:rb}
     password: ${MYSQL_PASSWORD:rb}
 raven-eye:
+  team: 1310
   role-passwords:
     admin: ${ADMIN_PASSWORD:default_admin_password_123}
     expertscout: ${EXPERTSCOUT_PASSWORD:default_expert_scout_password_876}
