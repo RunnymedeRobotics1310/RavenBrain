@@ -1,5 +1,6 @@
 package ca.team1310.ravenbrain.frcapi.fetch;
 
+import io.micronaut.context.annotation.Property;
 import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Singleton;
 import java.time.Instant;
@@ -13,13 +14,17 @@ import lombok.extern.slf4j.Slf4j;
 @Singleton
 @Slf4j
 class FrcCachingClient {
-  private static final long MAX_AGE_SECONDS = 30;
   private final FrcClient frcClient;
   private final FrcRawResponseRepo repo;
+  private final long maxAgeSeconds;
 
-  public FrcCachingClient(FrcClient frcClient, FrcRawResponseRepo repo) {
+  public FrcCachingClient(
+      FrcClient frcClient,
+      FrcRawResponseRepo repo,
+      @Property(name = "raven-eye.frc-api.request-cache-seconds") long maxAgeSeconds) {
     this.frcClient = frcClient;
     this.repo = repo;
+    this.maxAgeSeconds = maxAgeSeconds;
   }
 
   boolean ping() {
@@ -41,7 +46,7 @@ class FrcCachingClient {
       log.trace("Saving first request for: {}", uri);
       return repo.save(api);
     } else {
-      if (Instant.now().minus(MAX_AGE_SECONDS, ChronoUnit.SECONDS).isAfter(db.lastcheck)) {
+      if (Instant.now().minus(maxAgeSeconds, ChronoUnit.SECONDS).isAfter(db.lastcheck)) {
         // check again
         FrcRawResponse api = frcClient.get(uri, db.lastmodified);
         if (api.statuscode == 304) /* i.e. NOT MODIFIED since db.lastmodified */ {
