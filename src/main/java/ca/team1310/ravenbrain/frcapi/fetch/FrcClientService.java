@@ -1,12 +1,11 @@
-/*
- * Copyright 2025 The Kingsway Digital Company Limited. All rights reserved.
- */
 package ca.team1310.ravenbrain.frcapi.fetch;
 
 import ca.team1310.ravenbrain.frcapi.DistrictCode;
 import ca.team1310.ravenbrain.frcapi.TournamentLevel;
 import ca.team1310.ravenbrain.frcapi.model.EventResponse;
+import ca.team1310.ravenbrain.frcapi.model.FrcDistrictsResponse;
 import ca.team1310.ravenbrain.frcapi.model.ScheduleResponse;
+import ca.team1310.ravenbrain.frcapi.model.SeasonSummaryResponse;
 import io.micronaut.serde.ObjectMapper;
 import jakarta.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
@@ -34,17 +33,22 @@ public class FrcClientService {
     return client.ping();
   }
 
-  // todo: fixme: return object from model package not a raw string
-  public String getSeasonSummary(int year) {
+  public SeasonSummaryResponse getSeasonSummary(int year) {
     FrcRawResponse response = client.fetch(Integer.toString(year));
-
-    return response.body;
+    try {
+      return objectMapper.readValue(response.body, SeasonSummaryResponse.class);
+    } catch (Exception e) {
+      throw new FrcClientException("Failed to parse SeasonSummaryResponse", e);
+    }
   }
 
-  // todo: fixme: return object from model package not a raw string
-  public String getDistrictListings(int season) {
+  public FrcDistrictsResponse getDistrictListings(int season) {
     FrcRawResponse response = client.fetch(season + "/districts");
-    return response.body;
+    try {
+      return objectMapper.readValue(response.body, FrcDistrictsResponse.class);
+    } catch (Exception e) {
+      throw new FrcClientException("Failed to parse SeasonSummaryResponse", e);
+    }
   }
 
   public EventResponse getEventListingsForTeam(int season, int teamNumber) {
@@ -86,8 +90,11 @@ public class FrcClientService {
     }
   }
 
-  // todo: fixme: return object from model package not a raw string
-  // https://frc-api.firstinspires.org/v3.0/:season/scores/:eventCode/:tournamentLevel?matchNumber=&start=&end=
+  /**
+   * Return a stringified array of match scores for the season specified. The resultant object will
+   * need to be parsed into a season-specific result object.
+   * https://frc-api.firstinspires.org/v3.0/:season/scores/:eventCode/:tournamentLevel?matchNumber=&start=&end=
+   */
   public String getScoreDetails(int season, String eventCode, TournamentLevel level) {
     String path = season + "/scores/" + eventCode + "/" + level.name();
     FrcRawResponse response = client.fetch(path);
