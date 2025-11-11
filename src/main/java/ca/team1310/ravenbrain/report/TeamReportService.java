@@ -1,6 +1,3 @@
-/*
- * Copyright 2025 The Kingsway Digital Company Limited. All rights reserved.
- */
 package ca.team1310.ravenbrain.report;
 
 import ca.team1310.ravenbrain.quickcomment.QuickComment;
@@ -8,7 +5,6 @@ import ca.team1310.ravenbrain.quickcomment.QuickCommentService;
 import ca.team1310.ravenbrain.tournament.TournamentService;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.inject.Singleton;
-
 import java.util.ArrayList;
 import java.util.List;
 

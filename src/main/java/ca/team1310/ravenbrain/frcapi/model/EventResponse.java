@@ -1,6 +1,3 @@
-/*
- * Copyright 2025 The Kingsway Digital Company Limited. All rights reserved.
- */
 package ca.team1310.ravenbrain.frcapi.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -14,8 +11,8 @@ import java.util.List;
 @Serdeable
 public class EventResponse {
 
-    // API uses "Events" (capital E). We keep idiomatic Java field "events" and map it.
-    @JsonProperty("Events")
+  // API uses "Events" (capital E). We keep idiomatic Java field "events" and map it.
+  @JsonProperty("Events")
   private List<Event> events;
 
   public List<Event> getEvents() {

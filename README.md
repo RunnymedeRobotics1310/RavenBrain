@@ -17,5 +17,6 @@ Created March 22, 2025, North Bay, Ontario, Canada by Tony Field, Team 1310, Run
 
 - [Developer Environment Setup Instructions](doc/setup.md)
 - [Developer Programming Instructions](doc/setup.md)
+- [Server setup Instructions](doc/server.md)
 
 Happy strategizing!
