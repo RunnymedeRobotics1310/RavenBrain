@@ -12,7 +12,13 @@ import lombok.Data;
 @Serdeable
 @Data
 public class Schedule {
-
+  private String description;
+  private LocalDateTime startTime;
+  private int matchNumber;
+  private String field;
+  private String tournamentLevel;
+  private List<ScheduleTeam> teams;
+}
   /*
    "description": "Qualification 1",
    "startTime": "2025-03-22T11:30:00",
@@ -26,10 +32,3 @@ public class Schedule {
        "surrogate": false
      },
   */
-  String description;
-  LocalDateTime startTime;
-  int matchNumber;
-  String field;
-  String tournamentLevel;
-  List<ScheduleTeam> teams;
-}

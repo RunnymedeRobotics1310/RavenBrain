@@ -12,30 +12,30 @@ import lombok.Data;
 @Serdeable
 @Data
 public class ScoreData {
-  TournamentLevel matchLevel;
-  int matchNumber;
-  int winningAlliance;
-  boolean coopertitionBonusAchieved;
-  int coralBonusLevelsThresholdCoop;
-  int coralBonusLevelsThresholdNonCoop;
-  int coralBonusLevelsThreshold;
-  int bargeBonusThreshold;
-  int autoBonusCoralThreshold;
-  Tiebreaker tiebreaker;
-  List<Alliance> alliances;
-  /*
-   "matchLevel": "Playoff",
-   "matchNumber": 1,
-   "winningAlliance": 1,
-   "tiebreaker": {
-     "item1": -1,
-     "item2": ""
-   },
-   "coopertitionBonusAchieved": false,
-   "coralBonusLevelsThresholdCoop": 3,
-   "coralBonusLevelsThresholdNonCoop": 4,
-   "coralBonusLevelsThreshold": 4,
-   "bargeBonusThreshold": 0,
-   "autoBonusCoralThreshold": 1,
-  */
+  private TournamentLevel matchLevel;
+  private int matchNumber;
+  private int winningAlliance;
+  private boolean coopertitionBonusAchieved;
+  private int coralBonusLevelsThresholdCoop;
+  private int coralBonusLevelsThresholdNonCoop;
+  private int coralBonusLevelsThreshold;
+  private int bargeBonusThreshold;
+  private int autoBonusCoralThreshold;
+  private Tiebreaker tiebreaker;
+  private List<Alliance> alliances;
 }
+ /*
+  "matchLevel": "Playoff",
+  "matchNumber": 1,
+  "winningAlliance": 1,
+  "tiebreaker": {
+    "item1": -1,
+    "item2": ""
+  },
+  "coopertitionBonusAchieved": false,
+  "coralBonusLevelsThresholdCoop": 3,
+  "coralBonusLevelsThresholdNonCoop": 4,
+  "coralBonusLevelsThreshold": 4,
+  "bargeBonusThreshold": 0,
+  "autoBonusCoralThreshold": 1,
+ */

@@ -7,11 +7,10 @@ import lombok.Data;
  * @author Tony Field
  * @since 2025-09-22 00:44
  */
-@Data
 @Serdeable
+@Data
 public class ScheduleTeam {
-
-  int teamNumber;
-  String station;
-  boolean surrogate;
+  private int teamNumber;
+  private String station;
+  private boolean surrogate;
 }

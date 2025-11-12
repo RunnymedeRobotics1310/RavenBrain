@@ -10,6 +10,6 @@ import lombok.Data;
 @Serdeable
 @Data
 public class Tiebreaker {
-  int item1;
-  String item2;
+  private int item1;
+  private String item2;
 }

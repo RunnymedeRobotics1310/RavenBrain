@@ -1,8 +1,8 @@
 package ca.team1310.ravenbrain.frcapi;
 
-import ca.team1310.ravenbrain.frcapi.fetch.FrcClientException;
-import ca.team1310.ravenbrain.frcapi.fetch.FrcClientService;
 import ca.team1310.ravenbrain.frcapi.model.*;
+import ca.team1310.ravenbrain.frcapi.service.FrcClientService;
+import ca.team1310.ravenbrain.frcapi.service.ServiceResponse;
 import ca.team1310.ravenbrain.schedule.ScheduleRecord;
 import ca.team1310.ravenbrain.schedule.ScheduleService;
 import ca.team1310.ravenbrain.tournament.TournamentRecord;
@@ -51,7 +51,7 @@ class EventSyncService {
    */
   // [sec] min hr dom mon dow
   @Scheduled(cron = "0 22 * * 1")
-  //  @Scheduled(fixedDelay = "1m")
+  @Scheduled(fixedDelay = "1m")
   void loadTournaments() {
     int thisYear = Year.now(ZoneOffset.UTC).getValue();
 
@@ -61,13 +61,10 @@ class EventSyncService {
   }
 
   private void loadTournamentsForYear(int year) {
-    EventResponse resp = frcClientService.getEventListingsForTeam(year, teamNumber);
+    ServiceResponse<EventResponse> resp =
+        frcClientService.getEventListingsForTeam(year, teamNumber);
     if (resp == null) return;
-    if (resp.isProcessed()) {
-      log.trace("Tournament data is already processed for year {}", year);
-      return;
-    }
-    for (Event event : resp.getEvents()) {
+    for (Event event : resp.getResponse().getEvents()) {
       Instant start = event.getDateStart().atZone(ZoneId.of("America/New_York")).toInstant();
       Instant end = event.getDateEnd().atZone(ZoneId.of("America/New_York")).toInstant();
       TournamentRecord tournamentRecord = new TournamentRecord();
@@ -94,7 +91,7 @@ class EventSyncService {
 
   /** Once a week, load tournament schedules for all tournaments this year. */
   @Scheduled(cron = "0 23 * * 1")
-  //  @Scheduled(fixedDelay = "1m")
+  @Scheduled(fixedDelay = "1m")
   void loadAllTournamentSchedulesForThisYear() {
     log.trace("Loading all tournament schedules for this year");
     int thisYear = Year.now(ZoneOffset.UTC).getValue();
@@ -117,27 +114,13 @@ class EventSyncService {
   private void _populateScheduleForTournament(TournamentRecord tournamentRecord) {
     for (var level : TournamentLevel.values()) {
       if (level == TournamentLevel.None) continue;
-      ScheduleResponse scheduleResponse = null;
-      try {
-        scheduleResponse =
-            frcClientService.getEventSchedule(
-                tournamentRecord.getSeason(), tournamentRecord.getCode(), level);
-      } catch (FrcClientException e) {
-        log.error(
-            "Error fetching schedule for tournament {}: {}",
-            tournamentRecord.getCode(),
-            e.getMessage());
-      }
+      ServiceResponse<ScheduleResponse> scheduleResponse =
+          frcClientService.getEventSchedule(
+              tournamentRecord.getSeason(), tournamentRecord.getCode(), level);
+      ;
       if (scheduleResponse == null) continue;
-      if (scheduleResponse.isProcessed()) {
-        log.trace(
-            "Schedule response for season {} and tournament code {} and level {} is already processed.",
-            tournamentRecord.getSeason(),
-            tournamentRecord.getCode(),
-            level);
-        continue;
-      }
-      for (Schedule schedule : scheduleResponse.getSchedule()) {
+
+      for (Schedule schedule : scheduleResponse.getResponse().getSchedule()) {
         ScheduleRecord scheduleRecord = new ScheduleRecord();
         scheduleRecord.setTournamentId(tournamentRecord.getId());
         scheduleRecord.setMatch(schedule.getMatchNumber());

@@ -13,5 +13,5 @@ import lombok.Data;
 @Data
 public class MatchScores {
   @JsonProperty("MatchScores")
-  List<ScoreData> scores;
+  private List<ScoreData> scores;
 }

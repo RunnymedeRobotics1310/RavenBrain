@@ -28,8 +28,8 @@ datasources:
     db-type: mysql
     url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/${MYSQL_DB:ravenbrain}?enabledTLSProtocols=TLSv1.2&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
     driverClassName: com.mysql.cj.jdbc.Driver
-    username: ${MYSQL_USERNAME:rb}
-    password: ${MYSQL_PASSWORD:rb}
+    username: ${MYSQL_USERNAME:foo}
+    password: ${MYSQL_PASSWORD:bar}
 raven-eye:
   team: 1310
   role-passwords:

@@ -10,6 +10,6 @@ import lombok.Data;
 @Serdeable
 @Data
 public class FrcDistrict {
-  String code;
-  String name;
+  private String code;
+  private String name;
 }

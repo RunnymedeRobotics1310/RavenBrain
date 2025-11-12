@@ -39,7 +39,7 @@ public class TournamentApi {
   @Post
   @Consumes(APPLICATION_JSON)
   public void createTournament(@Body TournamentDTO tournamentRecord) {
-    log.info("Saving tournament record: {}", tournamentRecord);
+    log.debug("Saving tournament record: {}", tournamentRecord);
     var t = new TournamentRecord();
     t.setId(tournamentRecord.id());
     t.setCode(tournamentRecord.code());

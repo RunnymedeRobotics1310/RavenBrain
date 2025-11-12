@@ -54,7 +54,9 @@ public class FrcCachingClient {
     if (db == null) {
       FrcRawResponse api = frcClient.get(uri, null);
       log.debug("Saving first request for: {}", uri);
-      return repo.save(api);
+      repo.save(api);
+      db = repo.find(uri);
+      return db;
     } else {
       if (Instant.now().minus(maxAgeSeconds, ChronoUnit.SECONDS).isAfter(db.lastcheck)) {
         // check again
@@ -93,6 +95,14 @@ public class FrcCachingClient {
         log.debug("Too early to check again for: {}", uri);
         return db;
       }
+    }
+  }
+
+  /** Clear the processed flag for all items. For test use only. */
+  void clearProcessed() {
+    for (FrcRawResponse response : repo.findAll()) {
+      response.setProcessed(false);
+      repo.update(response);
     }
   }
 }

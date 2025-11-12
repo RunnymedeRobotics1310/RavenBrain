@@ -11,14 +11,12 @@ import lombok.Data;
 @Serdeable
 @Data
 public class SeasonSummaryResponse {
-  long id;
-  boolean processed;
-  int eventCount;
-  String gameName;
-  LocalDateTime kickoff;
-  int rookieStart;
-  int teamCount;
-  //    List<Object> frcChampionships;
+
+  private int eventCount;
+  private String gameName;
+  private LocalDateTime kickoff;
+  private int rookieStart;
+  private int teamCount;
 }
 /*
 {

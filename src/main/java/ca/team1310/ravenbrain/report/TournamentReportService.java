@@ -61,7 +61,7 @@ public class TournamentReportService {
       TournamentReportTable report, boolean success, String reason) {}
 
   public TournamentReportResponse getTournamentReport(String tournamentId, int teamId) {
-    log.info("Getting tournament report for {} team {}", tournamentId, teamId);
+    log.debug("Getting tournament report for {} team {}", tournamentId, teamId);
     var t = tournamentService.findById(tournamentId);
     if (t.isEmpty()) {
       return new TournamentReportResponse(null, false, "Tournament " + tournamentId + " not found");

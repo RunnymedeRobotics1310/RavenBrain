@@ -10,8 +10,8 @@ import lombok.Data;
 @Serdeable
 @Data
 public class Reef {
-  ReefRow topRow;
-  ReefRow midRow;
-  ReefRow botRow;
-  int trough;
+  private ReefRow topRow;
+  private ReefRow midRow;
+  private ReefRow botRow;
+  private int trough;
 }

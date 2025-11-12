@@ -10,16 +10,16 @@ import lombok.Data;
 @Serdeable
 @Data
 public class ReefRow {
-  boolean nodeA;
-  boolean nodeB;
-  boolean nodeC;
-  boolean nodeD;
-  boolean nodeE;
-  boolean nodeF;
-  boolean nodeG;
-  boolean nodeH;
-  boolean nodeI;
-  boolean nodeJ;
-  boolean nodeK;
-  boolean nodeL;
+  private boolean nodeA;
+  private boolean nodeB;
+  private boolean nodeC;
+  private boolean nodeD;
+  private boolean nodeE;
+  private boolean nodeF;
+  private boolean nodeG;
+  private boolean nodeH;
+  private boolean nodeI;
+  private boolean nodeJ;
+  private boolean nodeK;
+  private boolean nodeL;
 }
