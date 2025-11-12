@@ -12,9 +12,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Base64;
-import java.util.Locale;
-import java.util.Optional;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -52,35 +50,46 @@ class FrcClient {
     if (uri == null) uri = "";
     if (uri.startsWith("/")) uri = uri.substring(1);
     try {
+      // prepare the request
       String fullyQualifiedUri = ENDPOINT + uri;
-      log.debug("Requesting {}", fullyQualifiedUri);
       HttpRequest.Builder rb =
           HttpRequest.newBuilder()
               .uri(new URI(fullyQualifiedUri))
               .GET()
               .header("Authorization", authorizationHeader);
 
-      // include if-modified-since header
       if (lastModified != null) {
         var olm = toIfModifiedSince(lastModified);
-        if (olm.isPresent()) {
-          rb.header("If-Modified-Since", olm.get());
-          log.trace("Sending If-Modified-Since: {}", olm.orElse(null));
+        olm.ifPresent(s -> rb.header("If-Modified-Since", s));
+      }
+
+      HttpRequest request = rb.build();
+      if (log.isDebugEnabled()) {
+        log.debug("Request: GET {}", fullyQualifiedUri);
+        Map<String, List<String>> hdrs = request.headers().map();
+        for (Map.Entry<String, List<String>> hdr : hdrs.entrySet()) {
+          for (String value : hdr.getValue()) {
+            if (hdr.getKey().equalsIgnoreCase("Authorization")) value = "[[REDACTED]]";
+            log.debug("Request Header: " + hdr.getKey() + ": " + value);
+          }
         }
       }
-      HttpRequest request = rb.build();
+
+      // send the request
       HttpClient client = HttpClient.newHttpClient();
       HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+      // process the resposne
       HttpHeaders headers = response.headers();
       Optional<String> lastModHdr = headers.firstValue("last-modified");
       Instant respLastModified = parseLastModified(lastModHdr.orElse(null)).orElse(Instant.now());
 
       int code = response.statusCode();
-      log.debug("Status: {}", code);
+      log.debug("Response Status: {}", code);
       if (log.isDebugEnabled()) {
         for (String key : headers.map().keySet()) {
           for (String value : headers.map().get(key)) {
-            log.debug("header: " + key + ": " + value);
+            log.debug("Response Header: " + key + ": " + value);
           }
         }
       }
@@ -88,7 +97,7 @@ class FrcClient {
       switch (code) {
         case 200:
           String body = response.body();
-          log.trace("Raw response from server: {}", body);
+          log.trace("Response Body: {}", body);
           return new FrcRawResponse(
               null, Instant.now(), respLastModified, false, code, uri, response.body());
         case 304:

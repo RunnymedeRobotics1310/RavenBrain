@@ -14,12 +14,12 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Singleton
 @Slf4j
-class FrcCachingClient {
+public class FrcCachingClient {
   private final FrcClient frcClient;
   private final FrcRawResponseRepo repo;
   private final long maxAgeSeconds;
 
-  public FrcCachingClient(
+  FrcCachingClient(
       FrcClient frcClient,
       FrcRawResponseRepo repo,
       @Property(name = "raven-eye.frc-api.ttl-seconds") long maxAgeSeconds) {
@@ -28,12 +28,12 @@ class FrcCachingClient {
     this.maxAgeSeconds = maxAgeSeconds;
   }
 
-  boolean ping() {
+  public boolean ping() {
     FrcRawResponse response = frcClient.get(null, null);
     return response.statuscode == 200;
   }
 
-  void markProcessed(long requestId) {
+  public void markProcessed(long requestId) {
     Optional<FrcRawResponse> or = repo.findById(requestId);
     if (or.isPresent()) {
       FrcRawResponse response = or.get();
@@ -49,11 +49,11 @@ class FrcCachingClient {
    * @return the unprocessed response data
    */
   @Transactional
-  FrcRawResponse fetch(String uri) {
+  public FrcRawResponse fetch(String uri) {
     FrcRawResponse db = repo.find(uri);
     if (db == null) {
       FrcRawResponse api = frcClient.get(uri, null);
-      log.trace("Saving first request for: {}", uri);
+      log.debug("Saving first request for: {}", uri);
       return repo.save(api);
     } else {
       if (Instant.now().minus(maxAgeSeconds, ChronoUnit.SECONDS).isAfter(db.lastcheck)) {
@@ -62,7 +62,7 @@ class FrcCachingClient {
         if (api.statuscode == 304) /* i.e. NOT MODIFIED since db.lastmodified */ {
           // update cache
           db.lastcheck = Instant.now();
-          log.trace("Not modified for: {}", uri);
+          log.debug("Not modified for: {}", uri);
           return repo.update(db);
         } else if ((db.statuscode >= 200 && db.statuscode <= 299)
             || db.statuscode == 404) /* PROCESSABLE CODES */ {
@@ -74,23 +74,23 @@ class FrcCachingClient {
                   && (db.body.equals(api.body));
           if (same) {
             // not sure why we didn't get a 304 for this - we should have
-            log.trace("Did not get a 304 but data has not changed for {}", uri);
+            log.debug("Did not get a 304 but data has not changed for {}", uri);
           } else {
             // changed data needs reprocessing
             db.processed = false;
             db.lastmodified = api.lastmodified;
             db.statuscode = api.statuscode;
             db.body = api.body;
-            log.trace("Updated cached response for: {}", uri);
+            log.debug("Updated cached response for: {}", uri);
           }
           return repo.update(db);
         } else {
-          log.trace("Unexpected response code for {}", uri);
+          log.debug("Unexpected response code for {}", uri);
           throw new FrcClientException(db);
         }
       } else {
         // too early to check again
-        log.trace("Too early to check again for: {}", uri);
+        log.debug("Too early to check again for: {}", uri);
         return db;
       }
     }
