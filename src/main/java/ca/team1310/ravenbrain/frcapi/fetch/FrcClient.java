@@ -76,7 +76,9 @@ class FrcClient {
       log.debug("Status: {}", code);
       if (log.isDebugEnabled()) {
         for (String key : headers.map().keySet()) {
-          log.debug("header: " + key + ": " + headers.map().get(key));
+          for (String value : headers.map().get(key)) {
+            log.debug("header: " + key + ": " + value);
+          }
         }
       }
 
