@@ -1,5 +1,6 @@
 package ca.team1310.ravenbrain.frcapi.fetch;
 
+import io.micronaut.context.annotation.Property;
 import jakarta.inject.Singleton;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -29,8 +30,10 @@ class FrcClient {
 
   private final String authorizationHeader;
 
-  FrcClient(FrcClientConfig cfg) {
-    String ut = cfg.user + ':' + cfg.key;
+  FrcClient(
+      @Property(name = "raven-eye.frc-api.user") String user,
+      @Property(name = "raven-eye.frc-api.key") String key) {
+    String ut = user + ':' + key;
     String token = Base64.getEncoder().encodeToString(ut.getBytes());
     this.authorizationHeader = "Basic " + token;
   }

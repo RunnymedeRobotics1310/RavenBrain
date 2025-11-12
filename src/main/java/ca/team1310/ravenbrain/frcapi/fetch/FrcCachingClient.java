@@ -22,7 +22,7 @@ class FrcCachingClient {
   public FrcCachingClient(
       FrcClient frcClient,
       FrcRawResponseRepo repo,
-      @Property(name = "raven-eye.frc-api.request-cache-seconds") long maxAgeSeconds) {
+      @Property(name = "raven-eye.frc-api.ttl-seconds") long maxAgeSeconds) {
     this.frcClient = frcClient;
     this.repo = repo;
     this.maxAgeSeconds = maxAgeSeconds;
