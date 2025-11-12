@@ -53,14 +53,14 @@ class EventSyncService {
   @Scheduled(cron = "0 22 * * 1")
   @Scheduled(fixedDelay = "1m")
   void loadTournaments() {
-    int thisYear = Year.now(ZoneOffset.UTC).getValue();
-
-    loadTournamentsForYear(thisYear);
-    loadTournamentsForYear(--thisYear);
-    loadTournamentsForYear(--thisYear);
+    int year = Year.now(ZoneOffset.UTC).getValue();
+    while (year >= 2020) { // api versions before 2020 not supported
+      loadTournamentsForYear(year--);
+    }
   }
 
   private void loadTournamentsForYear(int year) {
+    log.debug("Loading tournaments for year {}", year);
     ServiceResponse<EventResponse> resp =
         frcClientService.getEventListingsForTeam(year, teamNumber);
     if (resp == null) return;
@@ -93,7 +93,7 @@ class EventSyncService {
   @Scheduled(cron = "0 23 * * 1")
   @Scheduled(fixedDelay = "1m")
   void loadAllTournamentSchedulesForThisYear() {
-    log.trace("Loading all tournament schedules for this year");
+    log.debug("Loading all tournament schedules for this year");
     int thisYear = Year.now(ZoneOffset.UTC).getValue();
     for (TournamentRecord tournamentRecord : tournamentService.findAll()) {
       if (tournamentRecord.getSeason() == thisYear) {
@@ -103,9 +103,9 @@ class EventSyncService {
   }
 
   /** Every five minutes, load the tournament schedule for the current tournament. */
-  @Scheduled(fixedDelay = "5m")
+  @Scheduled(fixedDelay = "3m")
   void loadScheduleForCurrentTournament() {
-    log.trace("Loading tournament schedule for current tournament");
+    log.debug("Loading tournament schedule for current tournament");
     for (TournamentRecord tournamentRecord : tournamentService.findCurrentTournaments()) {
       _populateScheduleForTournament(tournamentRecord);
     }
@@ -123,7 +123,7 @@ class EventSyncService {
       for (Schedule schedule : scheduleResponse.getResponse().getSchedule()) {
         ScheduleRecord scheduleRecord = new ScheduleRecord();
         scheduleRecord.setTournamentId(tournamentRecord.getId());
-        scheduleRecord.setLevel(TournamentLevel.valueOf(schedule.getTournamentLevel()));
+        scheduleRecord.setLevel(level);
         scheduleRecord.setMatch(schedule.getMatchNumber());
         for (ScheduleTeam team : schedule.getTeams()) {
           switch (team.getStation()) {
@@ -136,8 +136,8 @@ class EventSyncService {
           }
         }
         Optional<ScheduleRecord> existingRecord =
-            scheduleService.findByTournamentIdAndMatch(
-                tournamentRecord.getId(), schedule.getMatchNumber());
+            scheduleService.findByTournamentIdAndLevelAndMatch(
+                tournamentRecord.getId(), level, schedule.getMatchNumber());
         if (existingRecord.isPresent()) {
           scheduleRecord.setId(existingRecord.get().getId());
           scheduleService.update(scheduleRecord);
