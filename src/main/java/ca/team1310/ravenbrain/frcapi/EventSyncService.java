@@ -123,6 +123,7 @@ class EventSyncService {
       for (Schedule schedule : scheduleResponse.getResponse().getSchedule()) {
         ScheduleRecord scheduleRecord = new ScheduleRecord();
         scheduleRecord.setTournamentId(tournamentRecord.getId());
+        scheduleRecord.setLevel(TournamentLevel.valueOf(schedule.getTournamentLevel()));
         scheduleRecord.setMatch(schedule.getMatchNumber());
         for (ScheduleTeam team : schedule.getTeams()) {
           switch (team.getStation()) {
