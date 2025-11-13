@@ -7,9 +7,8 @@ import ca.team1310.ravenbrain.frcapi.DistrictCode;
 import ca.team1310.ravenbrain.frcapi.TournamentLevel;
 import ca.team1310.ravenbrain.frcapi.model.EventResponse;
 import ca.team1310.ravenbrain.frcapi.model.FrcDistrictsResponse;
-import ca.team1310.ravenbrain.frcapi.model.ScoreParser;
 import ca.team1310.ravenbrain.frcapi.model.SeasonSummaryResponse;
-import ca.team1310.ravenbrain.frcapi.model.year2025.MatchScores;
+import ca.team1310.ravenbrain.frcapi.model.year2025.MatchScores2025;
 import ca.team1310.ravenbrain.frcapi.model.year2025.ScoreData;
 import ca.team1310.ravenbrain.frcapi.service.FrcClientService;
 import ca.team1310.ravenbrain.frcapi.service.ServiceResponse;
@@ -28,13 +27,11 @@ public class FrcClientTests {
 
   private final FrcCachingClient frcCachingClient;
   private final FrcClientService service;
-  private final ScoreParser scoreParser;
 
   public FrcClientTests(
-      FrcCachingClient frcCachingClient, FrcClientService service, ScoreParser scoreParser) {
+      FrcCachingClient frcCachingClient, FrcClientService service) {
     this.frcCachingClient = frcCachingClient;
     this.service = service;
-    this.scoreParser = scoreParser;
   }
 
   @Test
@@ -125,12 +122,13 @@ public class FrcClientTests {
   void testGetScoreDetails() {
     try {
       frcCachingClient.clearProcessed();
-      var scoreDetails = service.getScoreDetails(2025, "ONSCA2", TournamentLevel.Playoff);
-      assertNotNull(scoreDetails);
-      scoreDetails = service.getScoreDetails(2025, "ONSCA2", TournamentLevel.Playoff);
-      assertNotNull(scoreDetails);
-      MatchScores scores = scoreParser.parse2025(scoreDetails);
+      ServiceResponse<MatchScores2025> sr =
+          service.get2025Scores("ONSCA2", TournamentLevel.Playoff);
+      assertNotNull(sr);
+      MatchScores2025 scores = sr.getResponse();
+      assertNotNull(scores);
       ScoreData data = scores.getScores().get(1);
+
       assertEquals(1, data.getWinningAlliance(), "Winning alliance is 1");
     } catch (Exception e) {
       log.error("testGetSchedule", e);

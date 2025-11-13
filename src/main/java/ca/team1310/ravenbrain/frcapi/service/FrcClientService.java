@@ -8,6 +8,7 @@ import ca.team1310.ravenbrain.frcapi.model.EventResponse;
 import ca.team1310.ravenbrain.frcapi.model.FrcDistrictsResponse;
 import ca.team1310.ravenbrain.frcapi.model.ScheduleResponse;
 import ca.team1310.ravenbrain.frcapi.model.SeasonSummaryResponse;
+import ca.team1310.ravenbrain.frcapi.model.year2025.MatchScores2025;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.core.type.Argument;
@@ -139,9 +140,14 @@ public class FrcClientService {
    * need to be parsed into a season-specific result object. <a
    * href="https://frc-api.firstinspires.org/v3.0/:season/scores/:eventCode/:tournamentLevel?matchNumber=&start=&end=">API</a>
    */
-  public String getScoreDetails(int season, String eventCode, TournamentLevel level) {
-    String path = season + "/scores/" + eventCode + "/" + level.name();
-    FrcRawResponse response = client.fetch(path);
-    return response.getBody();
+  private FrcRawResponse getScoreDetails(int season, String eventCode, TournamentLevel level) {
+    return fetchWork(season + "/scores/" + eventCode + "/" + level.name());
+  }
+
+  public ServiceResponse<MatchScores2025> get2025Scores(String eventCode, TournamentLevel level) {
+    FrcRawResponse response = getScoreDetails(2025, eventCode, level);
+    if (response == null) return null;
+    MatchScores2025 parsedResponse = parse(response.getBody(), MatchScores2025.class);
+    return new ServiceResponse<>(response.getId(), parsedResponse);
   }
 }

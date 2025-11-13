@@ -51,7 +51,7 @@ class EventSyncService {
    */
   // [sec] min hr dom mon dow
   @Scheduled(cron = "0 22 * * 1")
-  @Scheduled(fixedDelay = "1m")
+  //  @Scheduled(fixedDelay = "1m")
   void loadTournaments() {
     int year = Year.now(ZoneOffset.UTC).getValue();
     while (year >= 2020) { // api versions before 2020 not supported
@@ -91,7 +91,7 @@ class EventSyncService {
 
   /** Once a week, load tournament schedules for all tournaments this year. */
   @Scheduled(cron = "0 23 * * 1")
-  @Scheduled(fixedDelay = "1m")
+  //  @Scheduled(fixedDelay = "1m")
   void loadAllTournamentSchedulesForThisYear() {
     log.debug("Loading all tournament schedules for this year");
     int thisYear = Year.now(ZoneOffset.UTC).getValue();

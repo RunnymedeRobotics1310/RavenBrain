@@ -11,7 +11,7 @@ import lombok.Data;
  */
 @Serdeable
 @Data
-public class MatchScores {
+public class MatchScores2025 {
   @JsonProperty("MatchScores")
   private List<ScoreData> scores;
 }
