@@ -117,7 +117,7 @@ class EventSyncService {
       ServiceResponse<ScheduleResponse> scheduleResponse =
           frcClientService.getEventSchedule(
               tournamentRecord.getSeason(), tournamentRecord.getCode(), level);
-      ;
+
       if (scheduleResponse == null) continue;
 
       for (Schedule schedule : scheduleResponse.getResponse().getSchedule()) {
