@@ -13,5 +13,5 @@ ravenbrain.log
 
 # local property config
 src/main/resources/application-local.properties
-src/test/resources/application.properties
+src/test/resources/application-test.properties
 

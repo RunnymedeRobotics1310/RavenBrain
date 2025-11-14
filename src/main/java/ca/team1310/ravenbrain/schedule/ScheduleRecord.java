@@ -1,5 +1,6 @@
 package ca.team1310.ravenbrain.schedule;
 
+import ca.team1310.ravenbrain.frcapi.TournamentLevel;
 import io.micronaut.data.annotation.Id;
 import io.micronaut.data.annotation.MappedEntity;
 import io.micronaut.data.annotation.MappedProperty;
@@ -18,6 +19,8 @@ public class ScheduleRecord {
 
   @MappedProperty("tournamentid")
   String tournamentId;
+
+  TournamentLevel level;
 
   @MappedProperty("matchnum")
   int match;

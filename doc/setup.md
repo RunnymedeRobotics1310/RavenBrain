@@ -115,7 +115,8 @@ raven-eye.role-passwords.member=actual_team_shared_secret_team1310IsTheBest
 You will need to substitute the placeholder keys and secrets with the appropriate values. Speak with the mentor to learn
 how to get these details.
 
-Next, create a second file, this time called `application.properties` (i.e. without the `-local`), and place it in your
+Next, create a second file, this time called `application-test.properties` (i.e. with `-test` instead of `-local`), and
+place it in your
 `src/test/resources` folder, and include the same contents. These configuration overrides are overlaid on top of the
 properties in `application.yml`.
 

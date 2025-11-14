@@ -1,4 +1,4 @@
-package ca.team1310.ravenbrain.frcapi.model;
+package ca.team1310.ravenbrain.frcapi.model.year2025;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.micronaut.serde.annotation.Serdeable;
@@ -7,12 +7,11 @@ import lombok.Data;
 
 /**
  * @author Tony Field
- * @since 2025-09-22 00:49
+ * @since 2025-11-10 22:51
  */
 @Serdeable
 @Data
-public class ScheduleResponse {
-
-  @JsonProperty("Schedule")
-  private List<Schedule> schedule;
+public class MatchScores2025 {
+  @JsonProperty("MatchScores")
+  private List<ScoreData> scores;
 }

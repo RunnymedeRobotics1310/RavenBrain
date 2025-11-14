@@ -5,12 +5,11 @@ import lombok.Data;
 
 /**
  * @author Tony Field
- * @since 2025-09-22 00:44
+ * @since 2025-11-10 21:48
  */
 @Serdeable
 @Data
-public class ScheduleTeam {
-  private int teamNumber;
-  private String station;
-  private boolean surrogate;
+public class FrcDistrict {
+  private String code;
+  private String name;
 }

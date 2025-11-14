@@ -17,6 +17,12 @@ import lombok.Data;
 public class TournamentRecord {
   @Id private String id;
 
+  @MappedProperty("code")
+  private String code;
+
+  @MappedProperty("season")
+  private int season;
+
   @MappedProperty("tournamentname")
   private String name;
 

@@ -18,7 +18,7 @@ import lombok.Data;
 @Serdeable
 @Data
 @AllArgsConstructor
-class FrcRawResponse {
+public class FrcRawResponse {
   @Id Long id;
   Instant lastcheck;
   Instant lastmodified;
