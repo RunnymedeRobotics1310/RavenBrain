@@ -24,9 +24,22 @@ If you do not have it there, follow these instructions to add it:
 
 Via gradle, execute the following, which sets the variable and runs the app.
 
+#### Mac:
 ```bash
 MICRONAUT_ENVIRONMENTS=local gradle run
 ```
+
+#### Windows:
+```bash
+set MICRONAUT_ENVIRONMENTS=local
+.\gradlew run
+```
+
+---
+
+
+Allow public and private networks to access `Zulu Platform x64 Architecture`.
+
 
 When RavenBrain starts, you should see the following at the top of the log, after the banner:
 
