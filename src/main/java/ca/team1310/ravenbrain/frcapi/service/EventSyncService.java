@@ -122,27 +122,47 @@ class EventSyncService {
       if (scheduleResponse == null) continue;
 
       for (Schedule schedule : scheduleResponse.getResponse().schedule()) {
-        ScheduleRecord scheduleRecord = new ScheduleRecord();
-        scheduleRecord.setTournamentId(tournamentRecord.getId());
-        scheduleRecord.setLevel(level);
-        scheduleRecord.setMatch(schedule.matchNumber());
+        int red1 = 0, red2 = 0, red3 = 0, blue1 = 0, blue2 = 0, blue3 = 0;
         for (ScheduleTeam team : schedule.teams()) {
           switch (team.station()) {
-            case "Red1" -> scheduleRecord.setRed1(team.teamNumber());
-            case "Red2" -> scheduleRecord.setRed2(team.teamNumber());
-            case "Red3" -> scheduleRecord.setRed3(team.teamNumber());
-            case "Blue1" -> scheduleRecord.setBlue1(team.teamNumber());
-            case "Blue2" -> scheduleRecord.setBlue2(team.teamNumber());
-            case "Blue3" -> scheduleRecord.setBlue3(team.teamNumber());
+            case "Red1" -> red1 = team.teamNumber();
+            case "Red2" -> red2 = team.teamNumber();
+            case "Red3" -> red3 = team.teamNumber();
+            case "Blue1" -> blue1 = team.teamNumber();
+            case "Blue2" -> blue2 = team.teamNumber();
+            case "Blue3" -> blue3 = team.teamNumber();
           }
         }
         Optional<ScheduleRecord> existingRecord =
             scheduleService.findByTournamentIdAndLevelAndMatch(
                 tournamentRecord.getId(), level, schedule.matchNumber());
         if (existingRecord.isPresent()) {
-          scheduleRecord.setId(existingRecord.get().getId());
+          ScheduleRecord scheduleRecord =
+              new ScheduleRecord(
+                  existingRecord.get().id(),
+                  tournamentRecord.getId(),
+                  level,
+                  schedule.matchNumber(),
+                  red1,
+                  red2,
+                  red3,
+                  blue1,
+                  blue2,
+                  blue3);
           scheduleService.update(scheduleRecord);
         } else {
+          ScheduleRecord scheduleRecord =
+              new ScheduleRecord(
+                  0,
+                  tournamentRecord.getId(),
+                  level,
+                  schedule.matchNumber(),
+                  red1,
+                  red2,
+                  red3,
+                  blue1,
+                  blue2,
+                  blue3);
           scheduleService.save(scheduleRecord);
         }
       }

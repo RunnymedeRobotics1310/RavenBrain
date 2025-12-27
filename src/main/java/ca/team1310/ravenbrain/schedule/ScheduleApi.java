@@ -45,12 +45,12 @@ public class ScheduleApi {
   public List<Integer> getTeamsForTournament(@QueryValue String tournamentId) {
     var teams = new TreeSet<Integer>();
     for (var s : scheduleService.findAllByTournamentIdOrderByMatch(tournamentId)) {
-      teams.add(s.blue1);
-      teams.add(s.blue2);
-      teams.add(s.blue3);
-      teams.add(s.red1);
-      teams.add(s.red2);
-      teams.add(s.red3);
+      teams.add(s.blue1());
+      teams.add(s.blue2());
+      teams.add(s.blue3());
+      teams.add(s.red1());
+      teams.add(s.red2());
+      teams.add(s.red3());
     }
     return teams.stream().toList();
   }

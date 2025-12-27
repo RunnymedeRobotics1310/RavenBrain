@@ -27,16 +27,8 @@ public class ScheduleApiTest {
   @Test
   void testCreateScheduleItem() {
     String tournId = "TEST_TOURN_1_" + System.currentTimeMillis();
-    ScheduleRecord record = new ScheduleRecord();
-    record.setTournamentId(tournId);
-    record.setLevel(TournamentLevel.Qualification);
-    record.setMatch(1);
-    record.setRed1(1310);
-    record.setRed2(1);
-    record.setRed3(2);
-    record.setBlue1(3);
-    record.setBlue2(4);
-    record.setBlue3(5);
+    ScheduleRecord record =
+        new ScheduleRecord(0, tournId, TournamentLevel.Qualification, 1, 1310, 1, 2, 3, 4, 5);
 
     HttpRequest<ScheduleRecord> request =
         HttpRequest.POST("/api/schedule", record).basicAuth("user", "team1310IsTheBest");
@@ -48,16 +40,14 @@ public class ScheduleApiTest {
     // Verify it was saved
     List<ScheduleRecord> saved = scheduleService.findAllByTournamentIdOrderByMatch(tournId);
     assertFalse(saved.isEmpty());
-    assertEquals(1, saved.get(0).getMatch());
-    assertEquals(1310, saved.get(0).getRed1());
+    assertEquals(1, saved.get(0).match());
+    assertEquals(1310, saved.get(0).red1());
   }
 
   @Test
   void testCreateScheduleItemInvalid() {
-    ScheduleRecord record = new ScheduleRecord();
-    // Missing tournamentId which is NOT NULL in DB
-    record.setLevel(TournamentLevel.Qualification);
-    record.setMatch(2);
+    ScheduleRecord record =
+        new ScheduleRecord(0, null, TournamentLevel.Qualification, 2, 0, 0, 0, 0, 0, 0);
 
     HttpRequest<ScheduleRecord> request =
         HttpRequest.POST("/api/schedule", record).basicAuth("user", "team1310IsTheBest");
@@ -73,16 +63,9 @@ public class ScheduleApiTest {
   @Test
   void testGetScheduleForTournament() {
     String tournId = "TEST_TOURN_2_" + System.currentTimeMillis();
-    ScheduleRecord record = new ScheduleRecord();
-    record.setTournamentId(tournId);
-    record.setLevel(TournamentLevel.Qualification);
-    record.setMatch(1);
-    record.setRed1(100);
-    record.setRed2(101);
-    record.setRed3(102);
-    record.setBlue1(103);
-    record.setBlue2(104);
-    record.setBlue3(105);
+    ScheduleRecord record =
+        new ScheduleRecord(
+            0, tournId, TournamentLevel.Qualification, 1, 100, 101, 102, 103, 104, 105);
 
     // Save via API so it's committed and visible to subsequent GET
     client
@@ -97,22 +80,14 @@ public class ScheduleApiTest {
 
     assertNotNull(response);
     assertEquals(1, response.size());
-    assertEquals(tournId, response.get(0).getTournamentId());
+    assertEquals(tournId, response.get(0).tournamentId());
   }
 
   @Test
   void testGetTeamsForTournament() {
     String tournId = "TEST_TOURN_3_" + System.currentTimeMillis();
-    ScheduleRecord record = new ScheduleRecord();
-    record.setTournamentId(tournId);
-    record.setLevel(TournamentLevel.Qualification);
-    record.setMatch(1);
-    record.setRed1(10);
-    record.setRed2(11);
-    record.setRed3(12);
-    record.setBlue1(13);
-    record.setBlue2(14);
-    record.setBlue3(15);
+    ScheduleRecord record =
+        new ScheduleRecord(0, tournId, TournamentLevel.Qualification, 1, 10, 11, 12, 13, 14, 15);
 
     // Save via API
     client
