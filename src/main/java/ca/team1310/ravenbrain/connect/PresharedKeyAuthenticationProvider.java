@@ -9,6 +9,7 @@ import io.micronaut.security.authentication.AuthenticationResponse;
 import io.micronaut.security.authentication.provider.HttpRequestAuthenticationProvider;
 import jakarta.inject.Singleton;
 import java.util.Arrays;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -32,7 +33,7 @@ public class PresharedKeyAuthenticationProvider<B> implements HttpRequestAuthent
     String identity = authenticationRequest.getIdentity();
     String secret = authenticationRequest.getSecret();
     if (config.member().equals(secret)) {
-      return AuthenticationResponse.success(identity, Arrays.asList("ROLE_MEMBER"));
+      return AuthenticationResponse.success(identity, List.of("ROLE_MEMBER"));
     }
     if (config.datascout().equals(secret)) {
       return AuthenticationResponse.success(
