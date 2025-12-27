@@ -34,7 +34,7 @@ public class ScheduleApiTest {
         new ScheduleRecord(0, tournId, TournamentLevel.Qualification, 1, 1310, 1, 2, 3, 4, 5);
 
     HttpRequest<ScheduleRecord> request =
-        HttpRequest.POST("/api/schedule", record).basicAuth("user", config.getMember());
+        HttpRequest.POST("/api/schedule", record).basicAuth("user", config.member());
 
     HttpResponse<Void> response = client.toBlocking().exchange(request);
 
@@ -53,7 +53,7 @@ public class ScheduleApiTest {
         new ScheduleRecord(0, null, TournamentLevel.Qualification, 2, 0, 0, 0, 0, 0, 0);
 
     HttpRequest<ScheduleRecord> request =
-        HttpRequest.POST("/api/schedule", record).basicAuth("user", config.getMember());
+        HttpRequest.POST("/api/schedule", record).basicAuth("user", config.member());
 
     // This should fail because of database constraints
     assertThrows(HttpClientResponseException.class, () -> client.toBlocking().exchange(request));
@@ -69,10 +69,10 @@ public class ScheduleApiTest {
     // Save via API so it's committed and visible to subsequent GET
     client
         .toBlocking()
-        .exchange(HttpRequest.POST("/api/schedule", record).basicAuth("user", config.getMember()));
+        .exchange(HttpRequest.POST("/api/schedule", record).basicAuth("user", config.member()));
 
     HttpRequest<?> request =
-        HttpRequest.GET("/api/schedule/" + tournId).basicAuth("user", config.getMember());
+        HttpRequest.GET("/api/schedule/" + tournId).basicAuth("user", config.member());
 
     List<ScheduleRecord> response =
         client.toBlocking().retrieve(request, Argument.listOf(ScheduleRecord.class));
@@ -91,12 +91,12 @@ public class ScheduleApiTest {
     // Save via API
     client
         .toBlocking()
-        .exchange(HttpRequest.POST("/api/schedule", record).basicAuth("user", config.getMember()));
+        .exchange(HttpRequest.POST("/api/schedule", record).basicAuth("user", config.member()));
 
     // Test with ROLE_EXPERTSCOUT
     HttpRequest<?> request =
         HttpRequest.GET("/api/schedule/teams-for-tournament/" + tournId)
-            .basicAuth("user", config.getExpertscout());
+            .basicAuth("user", config.expertscout());
 
     List<Integer> teams = client.toBlocking().retrieve(request, Argument.listOf(Integer.class));
 
@@ -108,7 +108,7 @@ public class ScheduleApiTest {
     // Test with ROLE_MEMBER (should be unauthorized for this specific endpoint)
     HttpRequest<?> memberRequest =
         HttpRequest.GET("/api/schedule/teams-for-tournament/" + tournId)
-            .basicAuth("user", config.getMember());
+            .basicAuth("user", config.member());
 
     assertThrows(
         HttpClientResponseException.class, () -> client.toBlocking().exchange(memberRequest));
@@ -123,7 +123,7 @@ public class ScheduleApiTest {
     // Since it requires ROLE_EXPERTSCOUT
     HttpRequest<?> request =
         HttpRequest.GET("/api/schedule/tournament/" + tournId + "/" + teamId)
-            .basicAuth("user", config.getExpertscout());
+            .basicAuth("user", config.expertscout());
 
     HttpResponse<Object> response = client.toBlocking().exchange(request, Object.class);
 

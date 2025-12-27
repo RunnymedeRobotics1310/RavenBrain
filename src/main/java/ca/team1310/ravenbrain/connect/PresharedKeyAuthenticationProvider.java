@@ -31,18 +31,18 @@ public class PresharedKeyAuthenticationProvider<B> implements HttpRequestAuthent
       @NonNull AuthenticationRequest<String, String> authenticationRequest) {
     String identity = authenticationRequest.getIdentity();
     String secret = authenticationRequest.getSecret();
-    if (config.getMember().equals(secret)) {
+    if (config.member().equals(secret)) {
       return AuthenticationResponse.success(identity, Arrays.asList("ROLE_MEMBER"));
     }
-    if (config.getDatascout().equals(secret)) {
+    if (config.datascout().equals(secret)) {
       return AuthenticationResponse.success(
           identity, Arrays.asList("ROLE_DATASCOUT", "ROLE_MEMBER"));
     }
-    if (config.getExpertscout().equals(secret)) {
+    if (config.expertscout().equals(secret)) {
       return AuthenticationResponse.success(
           identity, Arrays.asList("ROLE_EXPERTSCOUT", "ROLE_DATASCOUT", "ROLE_MEMBER"));
     }
-    if (config.getAdmin().equals(secret)) {
+    if (config.admin().equals(secret)) {
       return AuthenticationResponse.success(
           identity,
           Arrays.asList("ROLE_ADMIN", "ROLE_EXPERTSCOUT", "ROLE_DATASCOUT", "ROLE_MEMBER"));

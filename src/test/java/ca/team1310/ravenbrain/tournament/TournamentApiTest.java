@@ -39,7 +39,7 @@ public class TournamentApiTest {
             LocalDateTime.of(2025, 3, 26, 17, 0));
 
     HttpRequest<TournamentApi.TournamentDTO> request =
-        HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.getMember());
+        HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.member());
 
     HttpResponse<Void> response = client.toBlocking().exchange(request);
 
@@ -67,10 +67,10 @@ public class TournamentApiTest {
     // Save via API
     client
         .toBlocking()
-        .exchange(HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.getMember()));
+        .exchange(HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.member()));
 
     HttpRequest<?> request =
-        HttpRequest.GET("/api/tournament").basicAuth("user", config.getMember());
+        HttpRequest.GET("/api/tournament").basicAuth("user", config.member());
 
     List<TournamentRecord> response =
         client.toBlocking().retrieve(request, Argument.listOf(TournamentRecord.class));
@@ -97,7 +97,7 @@ public class TournamentApiTest {
             LocalDateTime.of(2025, 3, 26, 17, 0));
 
     HttpRequest<TournamentApi.TournamentDTO> request =
-        HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.getMember());
+        HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.member());
 
     assertThrows(Exception.class, () -> client.toBlocking().exchange(request));
   }
@@ -114,7 +114,7 @@ public class TournamentApiTest {
             LocalDateTime.of(2025, 3, 26, 17, 0));
 
     HttpRequest<TournamentApi.TournamentDTO> request =
-        HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.getMember());
+        HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.member());
 
     assertThrows(Exception.class, () -> client.toBlocking().exchange(request));
   }
@@ -132,7 +132,7 @@ public class TournamentApiTest {
             LocalDateTime.of(2025, 3, 26, 17, 0));
 
     HttpRequest<TournamentApi.TournamentDTO> request =
-        HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.getMember());
+        HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.member());
 
     // First time should work
     client.toBlocking().exchange(request);
@@ -148,7 +148,7 @@ public class TournamentApiTest {
             "INVALID_DATES", 2025, "TEST", "Test Tournament", null, null);
 
     HttpRequest<TournamentApi.TournamentDTO> request =
-        HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.getMember());
+        HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.member());
 
     assertThrows(Exception.class, () -> client.toBlocking().exchange(request));
   }
