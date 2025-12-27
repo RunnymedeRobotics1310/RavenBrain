@@ -26,6 +26,8 @@ public class EventLogRecord {
   @MappedProperty("tournamentid")
   private String tournamentId;
 
+  private String level;
+
   @MappedProperty("matchid")
   private int matchId;
 
