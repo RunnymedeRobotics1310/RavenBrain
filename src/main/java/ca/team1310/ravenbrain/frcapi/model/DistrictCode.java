@@ -1,4 +1,4 @@
-package ca.team1310.ravenbrain.frcapi;
+package ca.team1310.ravenbrain.frcapi.model;
 
 /**
  * @author Tony Field

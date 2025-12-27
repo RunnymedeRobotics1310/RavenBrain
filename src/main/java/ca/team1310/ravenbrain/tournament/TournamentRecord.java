@@ -5,7 +5,6 @@ import io.micronaut.data.annotation.MappedEntity;
 import io.micronaut.data.annotation.MappedProperty;
 import io.micronaut.serde.annotation.Serdeable;
 import java.time.Instant;
-import lombok.Data;
 
 /**
  * @author Tony Field
@@ -13,22 +12,10 @@ import lombok.Data;
  */
 @MappedEntity(value = "RB_TOURNAMENT")
 @Serdeable
-@Data
-public class TournamentRecord {
-  @Id private String id;
-
-  @MappedProperty("code")
-  private String code;
-
-  @MappedProperty("season")
-  private int season;
-
-  @MappedProperty("tournamentname")
-  private String name;
-
-  @MappedProperty("starttime")
-  private Instant startTime;
-
-  @MappedProperty("endtime")
-  private Instant endTime;
-}
+public record TournamentRecord(
+    @Id String id,
+    @MappedProperty("code") String code,
+    @MappedProperty("season") int season,
+    @MappedProperty("tournamentname") String name,
+    @MappedProperty("starttime") Instant startTime,
+    @MappedProperty("endtime") Instant endTime) {}

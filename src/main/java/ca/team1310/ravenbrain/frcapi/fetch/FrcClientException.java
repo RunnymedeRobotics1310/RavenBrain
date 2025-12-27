@@ -25,6 +25,6 @@ public class FrcClientException extends RuntimeException {
   }
 
   FrcClientException(FrcRawResponse res) {
-    super("Error returned: " + res.statuscode + " for " + res.url + ": " + res.body);
+    super("Error returned: " + res.statuscode() + " for " + res.url() + ": " + res.body());
   }
 }

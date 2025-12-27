@@ -3,11 +3,7 @@ package ca.team1310.ravenbrain.frcapi.fetch;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import ca.team1310.ravenbrain.frcapi.DistrictCode;
-import ca.team1310.ravenbrain.frcapi.TournamentLevel;
-import ca.team1310.ravenbrain.frcapi.model.EventResponse;
-import ca.team1310.ravenbrain.frcapi.model.FrcDistrictsResponse;
-import ca.team1310.ravenbrain.frcapi.model.SeasonSummaryResponse;
+import ca.team1310.ravenbrain.frcapi.model.*;
 import ca.team1310.ravenbrain.frcapi.model.year2025.MatchScores2025;
 import ca.team1310.ravenbrain.frcapi.model.year2025.ScoreData;
 import ca.team1310.ravenbrain.frcapi.service.FrcClientService;
@@ -28,8 +24,7 @@ public class FrcClientTests {
   private final FrcCachingClient frcCachingClient;
   private final FrcClientService service;
 
-  public FrcClientTests(
-      FrcCachingClient frcCachingClient, FrcClientService service) {
+  public FrcClientTests(FrcCachingClient frcCachingClient, FrcClientService service) {
     this.frcCachingClient = frcCachingClient;
     this.service = service;
   }
@@ -86,7 +81,7 @@ public class FrcClientTests {
     try {
       frcCachingClient.clearProcessed();
       ServiceResponse<EventResponse> events = service.getEventListingsForTeam(2025, 1310);
-      assertEquals(7, events.getResponse().getEvents().size());
+      assertEquals(7, events.getResponse().events().size());
       assertNotNull(events);
     } catch (Exception e) {
       log.error("testGetEventListingForTeam", e);
@@ -127,9 +122,9 @@ public class FrcClientTests {
       assertNotNull(sr);
       MatchScores2025 scores = sr.getResponse();
       assertNotNull(scores);
-      ScoreData data = scores.getScores().get(1);
+      ScoreData data = scores.scores().get(1);
 
-      assertEquals(1, data.getWinningAlliance(), "Winning alliance is 1");
+      assertEquals(1, data.winningAlliance(), "Winning alliance is 1");
     } catch (Exception e) {
       log.error("testGetSchedule", e);
       Assertions.fail(e);

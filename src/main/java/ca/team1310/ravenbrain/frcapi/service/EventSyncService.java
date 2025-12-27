@@ -1,8 +1,6 @@
-package ca.team1310.ravenbrain.frcapi;
+package ca.team1310.ravenbrain.frcapi.service;
 
 import ca.team1310.ravenbrain.frcapi.model.*;
-import ca.team1310.ravenbrain.frcapi.service.FrcClientService;
-import ca.team1310.ravenbrain.frcapi.service.ServiceResponse;
 import ca.team1310.ravenbrain.schedule.ScheduleRecord;
 import ca.team1310.ravenbrain.schedule.ScheduleService;
 import ca.team1310.ravenbrain.tournament.TournamentRecord;
@@ -12,7 +10,10 @@ import io.micronaut.data.exceptions.DataAccessException;
 import io.micronaut.scheduling.annotation.Scheduled;
 import jakarta.inject.Singleton;
 import java.sql.SQLIntegrityConstraintViolationException;
-import java.time.*;
+import java.time.Instant;
+import java.time.Year;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -64,16 +65,11 @@ class EventSyncService {
     ServiceResponse<EventResponse> resp =
         frcClientService.getEventListingsForTeam(year, teamNumber);
     if (resp == null) return;
-    for (Event event : resp.getResponse().getEvents()) {
-      Instant start = event.getDateStart().atZone(ZoneId.of("America/New_York")).toInstant();
-      Instant end = event.getDateEnd().atZone(ZoneId.of("America/New_York")).toInstant();
-      TournamentRecord tournamentRecord = new TournamentRecord();
-      tournamentRecord.setId(year + event.getCode());
-      tournamentRecord.setSeason(year);
-      tournamentRecord.setCode(event.getCode());
-      tournamentRecord.setName(event.getName());
-      tournamentRecord.setStartTime(start);
-      tournamentRecord.setEndTime(end);
+    for (Event event : resp.getResponse().events()) {
+      Instant start = event.dateStart().atZone(ZoneId.of("America/New_York")).toInstant();
+      Instant end = event.dateEnd().atZone(ZoneId.of("America/New_York")).toInstant();
+      TournamentRecord tournamentRecord =
+          new TournamentRecord(year + event.code(), event.code(), year, event.name(), start, end);
       log.trace("Saving tournament {}", tournamentRecord);
       try {
         tournamentService.save(tournamentRecord);
@@ -96,7 +92,7 @@ class EventSyncService {
     log.debug("Loading all tournament schedules for this year");
     int thisYear = Year.now(ZoneOffset.UTC).getValue();
     for (TournamentRecord tournamentRecord : tournamentService.findAll()) {
-      if (tournamentRecord.getSeason() == thisYear) {
+      if (tournamentRecord.season() == thisYear) {
         _populateScheduleForTournament(tournamentRecord);
       }
     }
@@ -116,32 +112,52 @@ class EventSyncService {
       if (level == TournamentLevel.None) continue;
       ServiceResponse<ScheduleResponse> scheduleResponse =
           frcClientService.getEventSchedule(
-              tournamentRecord.getSeason(), tournamentRecord.getCode(), level);
+              tournamentRecord.season(), tournamentRecord.code(), level);
 
       if (scheduleResponse == null) continue;
 
-      for (Schedule schedule : scheduleResponse.getResponse().getSchedule()) {
-        ScheduleRecord scheduleRecord = new ScheduleRecord();
-        scheduleRecord.setTournamentId(tournamentRecord.getId());
-        scheduleRecord.setLevel(level);
-        scheduleRecord.setMatch(schedule.getMatchNumber());
-        for (ScheduleTeam team : schedule.getTeams()) {
-          switch (team.getStation()) {
-            case "Red1" -> scheduleRecord.setRed1(team.getTeamNumber());
-            case "Red2" -> scheduleRecord.setRed2(team.getTeamNumber());
-            case "Red3" -> scheduleRecord.setRed3(team.getTeamNumber());
-            case "Blue1" -> scheduleRecord.setBlue1(team.getTeamNumber());
-            case "Blue2" -> scheduleRecord.setBlue2(team.getTeamNumber());
-            case "Blue3" -> scheduleRecord.setBlue3(team.getTeamNumber());
+      for (Schedule schedule : scheduleResponse.getResponse().schedule()) {
+        int red1 = 0, red2 = 0, red3 = 0, blue1 = 0, blue2 = 0, blue3 = 0;
+        for (ScheduleTeam team : schedule.teams()) {
+          switch (team.station()) {
+            case "Red1" -> red1 = team.teamNumber();
+            case "Red2" -> red2 = team.teamNumber();
+            case "Red3" -> red3 = team.teamNumber();
+            case "Blue1" -> blue1 = team.teamNumber();
+            case "Blue2" -> blue2 = team.teamNumber();
+            case "Blue3" -> blue3 = team.teamNumber();
           }
         }
         Optional<ScheduleRecord> existingRecord =
             scheduleService.findByTournamentIdAndLevelAndMatch(
-                tournamentRecord.getId(), level, schedule.getMatchNumber());
+                tournamentRecord.id(), level, schedule.matchNumber());
         if (existingRecord.isPresent()) {
-          scheduleRecord.setId(existingRecord.get().getId());
+          ScheduleRecord scheduleRecord =
+              new ScheduleRecord(
+                  existingRecord.get().id(),
+                  tournamentRecord.id(),
+                  level,
+                  schedule.matchNumber(),
+                  red1,
+                  red2,
+                  red3,
+                  blue1,
+                  blue2,
+                  blue3);
           scheduleService.update(scheduleRecord);
         } else {
+          ScheduleRecord scheduleRecord =
+              new ScheduleRecord(
+                  0,
+                  tournamentRecord.id(),
+                  level,
+                  schedule.matchNumber(),
+                  red1,
+                  red2,
+                  red3,
+                  blue1,
+                  blue2,
+                  blue3);
           scheduleService.save(scheduleRecord);
         }
       }

@@ -1,29 +1,27 @@
 package ca.team1310.ravenbrain.frcapi.model.year2025;
 
-import ca.team1310.ravenbrain.frcapi.TournamentLevel;
+import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import io.micronaut.serde.annotation.Serdeable;
+
 import java.util.List;
-import lombok.Data;
 
 /**
  * @author Tony Field
  * @since 2025-11-10 22:54
  */
 @Serdeable
-@Data
-public class ScoreData {
-  private TournamentLevel matchLevel;
-  private int matchNumber;
-  private int winningAlliance;
-  private boolean coopertitionBonusAchieved;
-  private int coralBonusLevelsThresholdCoop;
-  private int coralBonusLevelsThresholdNonCoop;
-  private int coralBonusLevelsThreshold;
-  private int bargeBonusThreshold;
-  private int autoBonusCoralThreshold;
-  private Tiebreaker tiebreaker;
-  private List<Alliance> alliances;
-}
+public record ScoreData(
+    TournamentLevel matchLevel,
+    int matchNumber,
+    int winningAlliance,
+    boolean coopertitionBonusAchieved,
+    int coralBonusLevelsThresholdCoop,
+    int coralBonusLevelsThresholdNonCoop,
+    int coralBonusLevelsThreshold,
+    int bargeBonusThreshold,
+    int autoBonusCoralThreshold,
+    Tiebreaker tiebreaker,
+    List<Alliance> alliances) {}
  /*
   "matchLevel": "Playoff",
   "matchNumber": 1,

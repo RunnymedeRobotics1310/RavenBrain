@@ -5,7 +5,6 @@ import io.micronaut.data.annotation.MappedEntity;
 import io.micronaut.data.annotation.MappedProperty;
 import io.micronaut.serde.annotation.Serdeable;
 import java.time.Instant;
-import lombok.Data;
 
 /**
  * @author Tony Field
@@ -13,30 +12,15 @@ import lombok.Data;
  */
 @MappedEntity(value = "RB_EVENT")
 @Serdeable
-@Data
-public class EventLogRecord {
-  @Id private long id;
-
-  @MappedProperty("eventtimestamp")
-  private Instant timestamp;
-
-  @MappedProperty("scoutname")
-  private String scoutName;
-
-  @MappedProperty("tournamentid")
-  private String tournamentId;
-
-  @MappedProperty("matchid")
-  private int matchId;
-
-  private String alliance;
-
-  @MappedProperty("teamnumber")
-  private int teamNumber;
-
-  @MappedProperty("eventtype")
-  private String eventType;
-
-  private double amount;
-  private String note;
-}
+public record EventLogRecord(
+    @Id long id,
+    @MappedProperty("eventtimestamp") Instant timestamp,
+    @MappedProperty("scoutname") String scoutName,
+    @MappedProperty("tournamentid") String tournamentId,
+    String level,
+    @MappedProperty("matchid") int matchId,
+    String alliance,
+    @MappedProperty("teamnumber") int teamNumber,
+    @MappedProperty("eventtype") String eventType,
+    double amount,
+    String note) {}

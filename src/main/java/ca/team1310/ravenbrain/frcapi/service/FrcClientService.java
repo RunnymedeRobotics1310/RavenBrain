@@ -1,13 +1,8 @@
 package ca.team1310.ravenbrain.frcapi.service;
 
-import ca.team1310.ravenbrain.frcapi.DistrictCode;
-import ca.team1310.ravenbrain.frcapi.TournamentLevel;
 import ca.team1310.ravenbrain.frcapi.fetch.FrcCachingClient;
 import ca.team1310.ravenbrain.frcapi.fetch.FrcRawResponse;
-import ca.team1310.ravenbrain.frcapi.model.EventResponse;
-import ca.team1310.ravenbrain.frcapi.model.FrcDistrictsResponse;
-import ca.team1310.ravenbrain.frcapi.model.ScheduleResponse;
-import ca.team1310.ravenbrain.frcapi.model.SeasonSummaryResponse;
+import ca.team1310.ravenbrain.frcapi.model.*;
 import ca.team1310.ravenbrain.frcapi.model.year2025.MatchScores2025;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.Nullable;
@@ -54,19 +49,19 @@ public class FrcClientService {
       log.error("Unexpected null response from FRC API for {}", uri);
       return null;
     }
-    if (response.isProcessed()) {
+    if (response.processed()) {
       log.debug("Work already processed {}", uri);
       return null;
     }
-    if (response.getStatuscode() == 404) {
+    if (response.statuscode() == 404) {
       log.debug("Not found {}", uri);
       return null;
     }
-    if (response.getBody() == null) {
+    if (response.body() == null) {
       log.debug("No body found for {}", uri);
       return null;
     }
-    if (response.getBody().isBlank()) {
+    if (response.body().isBlank()) {
       log.debug("Blank body found for {}", uri);
       return null;
     }
@@ -92,30 +87,30 @@ public class FrcClientService {
   public ServiceResponse<SeasonSummaryResponse> getSeasonSummary(int year) {
     FrcRawResponse response = fetchWork(Integer.toString(year));
     if (response == null) return null;
-    SeasonSummaryResponse parsedResponse = parse(response.getBody(), SeasonSummaryResponse.class);
-    return new ServiceResponse<>(response.getId(), parsedResponse);
+    SeasonSummaryResponse parsedResponse = parse(response.body(), SeasonSummaryResponse.class);
+    return new ServiceResponse<>(response.id(), parsedResponse);
   }
 
   public ServiceResponse<FrcDistrictsResponse> getDistrictListings(int season) {
     FrcRawResponse response = fetchWork(season + "/districts");
     if (response == null) return null;
-    FrcDistrictsResponse parsedResponse = parse(response.getBody(), FrcDistrictsResponse.class);
-    return new ServiceResponse<>(response.getId(), parsedResponse);
+    FrcDistrictsResponse parsedResponse = parse(response.body(), FrcDistrictsResponse.class);
+    return new ServiceResponse<>(response.id(), parsedResponse);
   }
 
   public ServiceResponse<EventResponse> getEventListingsForTeam(int season, int teamNumber) {
     FrcRawResponse response = fetchWork(season + "/events?teamNumber=" + teamNumber);
     if (response == null) return null;
-    EventResponse parsedResponse = parse(response.getBody(), EventResponse.class);
-    return new ServiceResponse<>(response.getId(), parsedResponse);
+    EventResponse parsedResponse = parse(response.body(), EventResponse.class);
+    return new ServiceResponse<>(response.id(), parsedResponse);
   }
 
   public ServiceResponse<EventResponse> getEventListingsForDistrict(
       int season, DistrictCode districtCode) {
     FrcRawResponse response = fetchWork(season + "/events?districtCode=" + districtCode.name());
     if (response == null) return null;
-    EventResponse parsedResponse = parse(response.getBody(), EventResponse.class);
-    return new ServiceResponse<>(response.getId(), parsedResponse);
+    EventResponse parsedResponse = parse(response.body(), EventResponse.class);
+    return new ServiceResponse<>(response.id(), parsedResponse);
   }
 
   public ServiceResponse<ScheduleResponse> getEventSchedule(
@@ -123,16 +118,16 @@ public class FrcClientService {
     String path = season + "/schedule/" + eventCode + "?tournamentLevel=" + tournamentLevel.name();
     FrcRawResponse response = fetchWork(path);
     if (response == null) return null;
-    ScheduleResponse parsedResponse = parse(response.getBody(), ScheduleResponse.class);
-    return new ServiceResponse<>(response.getId(), parsedResponse);
+    ScheduleResponse parsedResponse = parse(response.body(), ScheduleResponse.class);
+    return new ServiceResponse<>(response.id(), parsedResponse);
   }
 
   public ServiceResponse<ScheduleResponse> getEventSchedule(
       int season, String eventCode, int team) {
     FrcRawResponse response = fetchWork(season + "/schedule/" + eventCode + "?teamNumber=" + team);
     if (response == null) return null;
-    ScheduleResponse parsedResponse = parse(response.getBody(), ScheduleResponse.class);
-    return new ServiceResponse<>(response.getId(), parsedResponse);
+    ScheduleResponse parsedResponse = parse(response.body(), ScheduleResponse.class);
+    return new ServiceResponse<>(response.id(), parsedResponse);
   }
 
   /**
@@ -147,7 +142,7 @@ public class FrcClientService {
   public ServiceResponse<MatchScores2025> get2025Scores(String eventCode, TournamentLevel level) {
     FrcRawResponse response = getScoreDetails(2025, eventCode, level);
     if (response == null) return null;
-    MatchScores2025 parsedResponse = parse(response.getBody(), MatchScores2025.class);
-    return new ServiceResponse<>(response.getId(), parsedResponse);
+    MatchScores2025 parsedResponse = parse(response.body(), MatchScores2025.class);
+    return new ServiceResponse<>(response.id(), parsedResponse);
   }
 }

@@ -72,7 +72,7 @@ public class TournamentReportService {
         eventService.findAllByTournamentIdAndTeamNumberOrderByMatchId(tournamentId, teamId);
     Map<Integer, List<EventLogRecord>> recordsByMatch = new LinkedHashMap<>();
     for (EventLogRecord record : data) {
-      var match = record.getMatchId();
+      var match = record.matchId();
       List<EventLogRecord> records = recordsByMatch.computeIfAbsent(match, k -> new ArrayList<>());
       records.add(record);
     }
@@ -234,11 +234,11 @@ public class TournamentReportService {
   private String getComments(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("comment")) {
-        val.add(record.getNote());
+      if (record.eventType().equals("comment")) {
+        val.add(record.note());
       }
-      if (record.getEventType().equals("COMMENTS-comment")) {
-        val.add(record.getNote());
+      if (record.eventType().equals("COMMENTS-comment")) {
+        val.add(record.note());
       }
     }
     return String.join(", ", val);
@@ -247,8 +247,8 @@ public class TournamentReportService {
   private String getMistakes(List<EventLogRecord> data) {
     var mistakes = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("COMMENTS-mistake")) {
-        mistakes.add(record.getNote());
+      if (record.eventType().equals("COMMENTS-mistake")) {
+        mistakes.add(record.note());
       }
     }
     return Integer.toString(mistakes.size());
@@ -257,22 +257,22 @@ public class TournamentReportService {
   private String getAutoStart(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-auto-start-center")) {
+      if (record.eventType().equals("AUTO-auto-start-center")) {
         val.add("Center");
       }
-      if (record.getEventType().equals("auto-start-center")) {
+      if (record.eventType().equals("auto-start-center")) {
         val.add("Center");
       }
-      if (record.getEventType().equals("AUTO-auto-start-left")) {
+      if (record.eventType().equals("AUTO-auto-start-left")) {
         val.add("Left");
       }
-      if (record.getEventType().equals("auto-start-left")) {
+      if (record.eventType().equals("auto-start-left")) {
         val.add("Left");
       }
-      if (record.getEventType().equals("AUTO-auto-start-right")) {
+      if (record.eventType().equals("AUTO-auto-start-right")) {
         val.add("Right");
       }
-      if (record.getEventType().equals("auto-start-right")) {
+      if (record.eventType().equals("auto-start-right")) {
         val.add("Right");
       }
     }
@@ -282,19 +282,19 @@ public class TournamentReportService {
   private String getPreloaded(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-preloaded-coral")) {
+      if (record.eventType().equals("AUTO-preloaded-coral")) {
         val.add("Coral");
       }
-      if (record.getEventType().equals("preloaded-coral")) {
+      if (record.eventType().equals("preloaded-coral")) {
         val.add("Coral");
       }
-      if (record.getEventType().equals("AUTO-preloaded-algae")) {
+      if (record.eventType().equals("AUTO-preloaded-algae")) {
         val.add("Algae");
       }
-      if (record.getEventType().equals("AUTO-preloaded-nothing")) {
+      if (record.eventType().equals("AUTO-preloaded-nothing")) {
         val.add("--");
       }
-      if (record.getEventType().equals("preloaded-nothing")) {
+      if (record.eventType().equals("preloaded-nothing")) {
         val.add("--");
       }
     }
@@ -304,7 +304,7 @@ public class TournamentReportService {
   private String getAutoLeave(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-leave-starting-line")) {
+      if (record.eventType().equals("AUTO-leave-starting-line")) {
         val.add("Y");
       }
     }
@@ -314,7 +314,7 @@ public class TournamentReportService {
   private String getAutoAlgaeRemove(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-remove-algae")) {
+      if (record.eventType().equals("AUTO-remove-algae")) {
         val.add("Y");
       }
     }
@@ -324,7 +324,7 @@ public class TournamentReportService {
   private String getAutoAlgaePluck(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-pickup-algae-reef")) {
+      if (record.eventType().equals("AUTO-pickup-algae-reef")) {
         val.add("Y");
       }
     }
@@ -334,19 +334,19 @@ public class TournamentReportService {
   private String getAutoAlgaePickup(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-pickup-algae-auto-center")) {
+      if (record.eventType().equals("AUTO-pickup-algae-auto-center")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("pickup-algae-auto-left")) {
+      if (record.eventType().equals("pickup-algae-auto-left")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("pickup-algae-auto-center")) {
+      if (record.eventType().equals("pickup-algae-auto-center")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("pickup-algae-auto-right")) {
+      if (record.eventType().equals("pickup-algae-auto-right")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("AUTO-pickup-algae-reef")) {
+      if (record.eventType().equals("AUTO-pickup-algae-reef")) {
         val.add("Y");
       }
     }
@@ -356,10 +356,10 @@ public class TournamentReportService {
   private String getAutoAlgaeDrop(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("drop-algae")) {
+      if (record.eventType().equals("drop-algae")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("AUTO-drop-algae")) {
+      if (record.eventType().equals("AUTO-drop-algae")) {
         val.add("Y");
       }
     }
@@ -369,7 +369,7 @@ public class TournamentReportService {
   private String getAutoAlgaeNet(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-score-algae-net")) {
+      if (record.eventType().equals("AUTO-score-algae-net")) {
         val.add("Y");
       }
     }
@@ -379,7 +379,7 @@ public class TournamentReportService {
   private String getAutoAlgaeProcessor(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-score-algae-processor")) {
+      if (record.eventType().equals("AUTO-score-algae-processor")) {
         val.add("Y");
       }
     }
@@ -389,19 +389,19 @@ public class TournamentReportService {
   private String getAutoCoralPickupFloor(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-pickup-coral-floor")) {
+      if (record.eventType().equals("AUTO-pickup-coral-floor")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("AUTO-pickup-coral-auto-center")) {
+      if (record.eventType().equals("AUTO-pickup-coral-auto-center")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("pickup-coral-auto-left")) {
+      if (record.eventType().equals("pickup-coral-auto-left")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("pickup-coral-auto-center")) {
+      if (record.eventType().equals("pickup-coral-auto-center")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("pickup-coral-auto-right")) {
+      if (record.eventType().equals("pickup-coral-auto-right")) {
         val.add("Y");
       }
     }
@@ -411,7 +411,7 @@ public class TournamentReportService {
   private String getAutoCoralPickupLeft(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-pickup-coral-station-left")) {
+      if (record.eventType().equals("AUTO-pickup-coral-station-left")) {
         val.add("Y");
       }
     }
@@ -421,7 +421,7 @@ public class TournamentReportService {
   private String getAutoCoralPickupRight(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-pickup-coral-station-right")) {
+      if (record.eventType().equals("AUTO-pickup-coral-station-right")) {
         val.add("Y");
       }
     }
@@ -431,7 +431,7 @@ public class TournamentReportService {
   private String getAutoCoralPickupDrop(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-drop-coral")) {
+      if (record.eventType().equals("AUTO-drop-coral")) {
         val.add("Y");
       }
     }
@@ -441,7 +441,7 @@ public class TournamentReportService {
   private String getAutoCoralScoreL1(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-score-reef-l1")) {
+      if (record.eventType().equals("AUTO-score-reef-l1")) {
         val.add("Y");
       }
     }
@@ -451,7 +451,7 @@ public class TournamentReportService {
   private String getAutoCoralScoreL2(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-score-reef-l2")) {
+      if (record.eventType().equals("AUTO-score-reef-l2")) {
         val.add("Y");
       }
     }
@@ -461,7 +461,7 @@ public class TournamentReportService {
   private String getAutoCoralScoreL3(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-score-reef-l3")) {
+      if (record.eventType().equals("AUTO-score-reef-l3")) {
         val.add("Y");
       }
     }
@@ -471,7 +471,7 @@ public class TournamentReportService {
   private String getAutoCoralScoreL4(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-score-reef-l4")) {
+      if (record.eventType().equals("AUTO-score-reef-l4")) {
         val.add("Y");
       }
     }
@@ -481,7 +481,7 @@ public class TournamentReportService {
   private String getAutoCoralMiss(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-score-reef-miss")) {
+      if (record.eventType().equals("AUTO-score-reef-miss")) {
         val.add("Y");
       }
     }
@@ -491,10 +491,10 @@ public class TournamentReportService {
   private String getTeleopAlgaeRemove(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("TELEOP-remove-algae")) {
+      if (record.eventType().equals("TELEOP-remove-algae")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("remove-algae")) {
+      if (record.eventType().equals("remove-algae")) {
         val.add("Y");
       }
     }
@@ -504,10 +504,10 @@ public class TournamentReportService {
   private String getTeleopAlgaePluck(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("pickup-algae-reef")) {
+      if (record.eventType().equals("pickup-algae-reef")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-pickup-algae-reef")) {
+      if (record.eventType().equals("TELEOP-pickup-algae-reef")) {
         val.add("Y");
       }
     }
@@ -517,10 +517,10 @@ public class TournamentReportService {
   private String getTeleopAlgaePickup(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("pickup-algae-floor")) {
+      if (record.eventType().equals("pickup-algae-floor")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-pickup-algae-floor")) {
+      if (record.eventType().equals("TELEOP-pickup-algae-floor")) {
         val.add("Y");
       }
     }
@@ -530,7 +530,7 @@ public class TournamentReportService {
   private String getTeleopAlgaeDrop(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("TELEOP-drop-algae")) {
+      if (record.eventType().equals("TELEOP-drop-algae")) {
         val.add("Y");
       }
     }
@@ -540,10 +540,10 @@ public class TournamentReportService {
   private String getTeleopAlgaeNet(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("TELEOP-score-algae-net")) {
+      if (record.eventType().equals("TELEOP-score-algae-net")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("score-algae-net")) {
+      if (record.eventType().equals("score-algae-net")) {
         val.add("Y");
       }
     }
@@ -553,10 +553,10 @@ public class TournamentReportService {
   private String getTeleopAlgaeProcewssor(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("TELEOP-score-algae-processor")) {
+      if (record.eventType().equals("TELEOP-score-algae-processor")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("score-algae-processor")) {
+      if (record.eventType().equals("score-algae-processor")) {
         val.add("Y");
       }
     }
@@ -566,10 +566,10 @@ public class TournamentReportService {
   private String getTeleopCoralPickupFloor(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("TELEOP-pickup-coral-floor")) {
+      if (record.eventType().equals("TELEOP-pickup-coral-floor")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("pickup-coral-floor")) {
+      if (record.eventType().equals("pickup-coral-floor")) {
         val.add("Y");
       }
     }
@@ -579,10 +579,10 @@ public class TournamentReportService {
   private String getTeleopCoralPickupLeft(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("TELEOP-pickup-coral-station-left")) {
+      if (record.eventType().equals("TELEOP-pickup-coral-station-left")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("pickup-coral-station-left")) {
+      if (record.eventType().equals("pickup-coral-station-left")) {
         val.add("Y");
       }
     }
@@ -592,10 +592,10 @@ public class TournamentReportService {
   private String getTeleopCoralPickupRight(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("TELEOP-pickup-coral-station-right")) {
+      if (record.eventType().equals("TELEOP-pickup-coral-station-right")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("pickup-coral-station-right")) {
+      if (record.eventType().equals("pickup-coral-station-right")) {
         val.add("Y");
       }
     }
@@ -605,10 +605,10 @@ public class TournamentReportService {
   private String getTeleopCoralPickupDrop(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("TELEOP-drop-coral")) {
+      if (record.eventType().equals("TELEOP-drop-coral")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("drop-coral")) {
+      if (record.eventType().equals("drop-coral")) {
         val.add("Y");
       }
     }
@@ -618,10 +618,10 @@ public class TournamentReportService {
   private String getTeleopCoralScoreL1(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("score-reef-l1")) {
+      if (record.eventType().equals("score-reef-l1")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-score-reef-l1")) {
+      if (record.eventType().equals("TELEOP-score-reef-l1")) {
         val.add("Y");
       }
     }
@@ -631,10 +631,10 @@ public class TournamentReportService {
   private String getTeleopCoralScoreL2(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("score-reef-l2")) {
+      if (record.eventType().equals("score-reef-l2")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-score-reef-l2")) {
+      if (record.eventType().equals("TELEOP-score-reef-l2")) {
         val.add("Y");
       }
     }
@@ -644,10 +644,10 @@ public class TournamentReportService {
   private String getTeleopCoralScoreL3(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("score-reef-l3")) {
+      if (record.eventType().equals("score-reef-l3")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-score-reef-l3")) {
+      if (record.eventType().equals("TELEOP-score-reef-l3")) {
         val.add("Y");
       }
     }
@@ -657,10 +657,10 @@ public class TournamentReportService {
   private String getTeleopCoralScoreL4(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("score-reef-l4")) {
+      if (record.eventType().equals("score-reef-l4")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-score-reef-l4")) {
+      if (record.eventType().equals("TELEOP-score-reef-l4")) {
         val.add("Y");
       }
     }
@@ -670,10 +670,10 @@ public class TournamentReportService {
   private String getTeleopCoralScoreMiss(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("score-reef-miss")) {
+      if (record.eventType().equals("score-reef-miss")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-score-reef-miss")) {
+      if (record.eventType().equals("TELEOP-score-reef-miss")) {
         val.add("Y");
       }
     }
@@ -683,19 +683,19 @@ public class TournamentReportService {
   private String getTeleopCoralScoreCycles(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("TELEOP-score-reef-l1")) {
+      if (record.eventType().equals("TELEOP-score-reef-l1")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-score-reef-l2")) {
+      if (record.eventType().equals("TELEOP-score-reef-l2")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-score-reef-l3")) {
+      if (record.eventType().equals("TELEOP-score-reef-l3")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-score-reef-l4")) {
+      if (record.eventType().equals("TELEOP-score-reef-l4")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-score-reef-miss")) {
+      if (record.eventType().equals("TELEOP-score-reef-miss")) {
         val.add("Y");
       }
     }
@@ -705,16 +705,16 @@ public class TournamentReportService {
   private String getTeleopCoralScoreScores(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("TELEOP-score-reef-l1")) {
+      if (record.eventType().equals("TELEOP-score-reef-l1")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-score-reef-l2")) {
+      if (record.eventType().equals("TELEOP-score-reef-l2")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-score-reef-l3")) {
+      if (record.eventType().equals("TELEOP-score-reef-l3")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-score-reef-l4")) {
+      if (record.eventType().equals("TELEOP-score-reef-l4")) {
         val.add("Y");
       }
     }
@@ -724,37 +724,37 @@ public class TournamentReportService {
   private String getEndgame(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("climb-park")) {
+      if (record.eventType().equals("climb-park")) {
         val.add("Park");
       }
-      if (record.getEventType().equals("COMMENTS-climb-park")) {
+      if (record.eventType().equals("COMMENTS-climb-park")) {
         val.add("Park");
       }
-      if (record.getEventType().equals("ENDGAME-climb-deep")) {
+      if (record.eventType().equals("ENDGAME-climb-deep")) {
         val.add("Deep");
       }
-      if (record.getEventType().equals("climb-deep")) {
+      if (record.eventType().equals("climb-deep")) {
         val.add("Deep");
       }
-      if (record.getEventType().equals("climb-none")) {
+      if (record.eventType().equals("climb-none")) {
         val.add("None");
       }
-      if (record.getEventType().equals("ENDGAME-climb-none")) {
+      if (record.eventType().equals("ENDGAME-climb-none")) {
         val.add("None");
       }
-      if (record.getEventType().equals("ENDGAME-climb-park")) {
+      if (record.eventType().equals("ENDGAME-climb-park")) {
         val.add("Park");
       }
-      if (record.getEventType().equals("ENDGAME-climb-shallow")) {
+      if (record.eventType().equals("ENDGAME-climb-shallow")) {
         val.add("Shallow");
       }
-      if (record.getEventType().equals("climb-shallow")) {
+      if (record.eventType().equals("climb-shallow")) {
         val.add("Shallow");
       }
-      if (record.getEventType().equals("attempted-climb")) {
+      if (record.eventType().equals("attempted-climb")) {
         val.add("Attempted");
       }
-      if (record.getEventType().equals("ENDGAME-attempted-climb")) {
+      if (record.eventType().equals("ENDGAME-attempted-climb")) {
         val.add("Attempted");
       }
     }
@@ -764,10 +764,10 @@ public class TournamentReportService {
   private String getPenaltyPin(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("TELEOP-penalty-pin")) {
+      if (record.eventType().equals("TELEOP-penalty-pin")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("AUTO-penalty-pin")) {
+      if (record.eventType().equals("AUTO-penalty-pin")) {
         val.add("Y");
       }
     }
@@ -777,10 +777,10 @@ public class TournamentReportService {
   private String getPenaltyZone(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("TELEOP-penalty-zone-violation")) {
+      if (record.eventType().equals("TELEOP-penalty-zone-violation")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("AUTO-penalty-zone-violation")) {
+      if (record.eventType().equals("AUTO-penalty-zone-violation")) {
         val.add("Y");
       }
     }
@@ -790,10 +790,10 @@ public class TournamentReportService {
   private String getPenaltyContact(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-penalty-off-limit-contact")) {
+      if (record.eventType().equals("AUTO-penalty-off-limit-contact")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-penalty-off-limit-contact")) {
+      if (record.eventType().equals("TELEOP-penalty-off-limit-contact")) {
         val.add("Y");
       }
     }
@@ -803,10 +803,10 @@ public class TournamentReportService {
   private String getPenaltyFieldDamage(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-penalty-field-damage")) {
+      if (record.eventType().equals("AUTO-penalty-field-damage")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-penalty-field-damage")) {
+      if (record.eventType().equals("TELEOP-penalty-field-damage")) {
         val.add("Y");
       }
     }
@@ -816,10 +816,10 @@ public class TournamentReportService {
   private String getPenaltyTooManyPieces(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-penalty-too-many-game-pieces")) {
+      if (record.eventType().equals("AUTO-penalty-too-many-game-pieces")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-penalty-too-many-game-pieces")) {
+      if (record.eventType().equals("TELEOP-penalty-too-many-game-pieces")) {
         val.add("Y");
       }
     }
@@ -829,22 +829,22 @@ public class TournamentReportService {
   private String getPenaltyOther(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("AUTO-penalty-other")) {
+      if (record.eventType().equals("AUTO-penalty-other")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-penalty-other")) {
+      if (record.eventType().equals("TELEOP-penalty-other")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("AUTO-penalty-throwing-algae")) {
+      if (record.eventType().equals("AUTO-penalty-throwing-algae")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-penalty-throwing-algae")) {
+      if (record.eventType().equals("TELEOP-penalty-throwing-algae")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-penalty-opponent-contact")) {
+      if (record.eventType().equals("TELEOP-penalty-opponent-contact")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("AUTO-penalty-opponent-contact")) {
+      if (record.eventType().equals("AUTO-penalty-opponent-contact")) {
         val.add("Y");
       }
     }
@@ -854,10 +854,10 @@ public class TournamentReportService {
   private String getInfoRpAuto(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("auto-rp")) {
+      if (record.eventType().equals("auto-rp")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("COMMENTS-auto-rp")) {
+      if (record.eventType().equals("COMMENTS-auto-rp")) {
         val.add("Y");
       }
     }
@@ -867,10 +867,10 @@ public class TournamentReportService {
   private String getInfoRpBarge(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("barge-rp")) {
+      if (record.eventType().equals("barge-rp")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("COMMENTS-barge-rp")) {
+      if (record.eventType().equals("COMMENTS-barge-rp")) {
         val.add("Y");
       }
     }
@@ -880,10 +880,10 @@ public class TournamentReportService {
   private String getInfoRpCoral(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("coral-rp")) {
+      if (record.eventType().equals("coral-rp")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("COMMENTS-coral-rp")) {
+      if (record.eventType().equals("COMMENTS-coral-rp")) {
         val.add("Y");
       }
     }
@@ -892,35 +892,37 @@ public class TournamentReportService {
 
   private String getCommentStars(List<EventLogRecord> data) {
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("COMMENTS-star-rating-1")) {
-        return "1";
-      }
-      if (record.getEventType().equals("COMMENTS-star-rating-2")) {
-        return "2";
-      }
-      if (record.getEventType().equals("COMMENTS-star-rating-3")) {
-        return "3";
-      }
-      if (record.getEventType().equals("COMMENTS-star-rating-4")) {
-        return "4";
-      }
-      if (record.getEventType().equals("COMMENTS-star-rating-5")) {
-        return "5";
-      }
-      if (record.getEventType().equals("star-rating-1")) {
-        return "1";
-      }
-      if (record.getEventType().equals("star-rating-2")) {
-        return "2";
-      }
-      if (record.getEventType().equals("star-rating-3")) {
-        return "3";
-      }
-      if (record.getEventType().equals("star-rating-4")) {
-        return "4";
-      }
-      if (record.getEventType().equals("star-rating-5")) {
-        return "5";
+      switch (record.eventType()) {
+        case "COMMENTS-star-rating-1" -> {
+          return "1";
+        }
+        case "COMMENTS-star-rating-2" -> {
+          return "2";
+        }
+        case "COMMENTS-star-rating-3" -> {
+          return "3";
+        }
+        case "COMMENTS-star-rating-4" -> {
+          return "4";
+        }
+        case "COMMENTS-star-rating-5" -> {
+          return "5";
+        }
+        case "star-rating-1" -> {
+          return "1";
+        }
+        case "star-rating-2" -> {
+          return "2";
+        }
+        case "star-rating-3" -> {
+          return "3";
+        }
+        case "star-rating-4" -> {
+          return "4";
+        }
+        case "star-rating-5" -> {
+          return "5";
+        }
       }
     }
     return "";
@@ -929,10 +931,10 @@ public class TournamentReportService {
   private String getDefenceStarted(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("defence-started")) {
+      if (record.eventType().equals("defence-started")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("TELEOP-defence-started")) {
+      if (record.eventType().equals("TELEOP-defence-started")) {
         val.add("Y");
       }
     }
@@ -942,11 +944,11 @@ public class TournamentReportService {
   private String getDefenceTime(List<EventLogRecord> data) {
     double secs = 0;
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("TELEOP-defence-stopped")) {
-        secs += record.getAmount();
+      if (record.eventType().equals("TELEOP-defence-stopped")) {
+        secs += record.amount();
       }
-      if (record.getEventType().equals("defence-stopped")) {
-        secs += record.getAmount();
+      if (record.eventType().equals("defence-stopped")) {
+        secs += record.amount();
       }
     }
     return String.format("%.1f", secs);
@@ -955,10 +957,10 @@ public class TournamentReportService {
   private String getDefencePlayed(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("feedback-play-defence")) {
+      if (record.eventType().equals("feedback-play-defence")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("COMMENTS-feedback-play-defence")) {
+      if (record.eventType().equals("COMMENTS-feedback-play-defence")) {
         val.add("Y");
       }
     }
@@ -968,10 +970,10 @@ public class TournamentReportService {
   private String getDefenceEffective(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("COMMENTS-feedback-effective-defence")) {
+      if (record.eventType().equals("COMMENTS-feedback-effective-defence")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("feedback-effective-defence")) {
+      if (record.eventType().equals("feedback-effective-defence")) {
         val.add("Y");
       }
     }
@@ -981,10 +983,10 @@ public class TournamentReportService {
   private String getInfoFast(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("COMMENTS-feedback-drove-fast")) {
+      if (record.eventType().equals("COMMENTS-feedback-drove-fast")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("feedback-drove-fast")) {
+      if (record.eventType().equals("feedback-drove-fast")) {
         val.add("Y");
       }
     }
@@ -994,7 +996,7 @@ public class TournamentReportService {
   private String getInfoBeached(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("COMMENTS-feedback-beached")) {
+      if (record.eventType().equals("COMMENTS-feedback-beached")) {
         val.add("Y");
       }
     }
@@ -1004,10 +1006,10 @@ public class TournamentReportService {
   private String getInfoConsistent(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("feedback-score-consistently")) {
+      if (record.eventType().equals("feedback-score-consistently")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("COMMENTS-feedback-score-consistently")) {
+      if (record.eventType().equals("COMMENTS-feedback-score-consistently")) {
         val.add("Y");
       }
     }
@@ -1017,10 +1019,10 @@ public class TournamentReportService {
   private String getInfoShutDown(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("feedback-shut-down")) {
+      if (record.eventType().equals("feedback-shut-down")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("COMMENTS-feedback-shut-down")) {
+      if (record.eventType().equals("COMMENTS-feedback-shut-down")) {
         val.add("Y");
       }
     }
@@ -1030,10 +1032,10 @@ public class TournamentReportService {
   private String getInfoFalldowngoboom(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("feedback-fell-over")) {
+      if (record.eventType().equals("feedback-fell-over")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("COMMENTS-feedback-fell-over")) {
+      if (record.eventType().equals("COMMENTS-feedback-fell-over")) {
         val.add("Y");
       }
     }
@@ -1043,10 +1045,10 @@ public class TournamentReportService {
   private String getInfoRecovered(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("feedback-recover")) {
+      if (record.eventType().equals("feedback-recover")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("COMMENTS-feedback-recover")) {
+      if (record.eventType().equals("COMMENTS-feedback-recover")) {
         val.add("Y");
       }
     }
@@ -1056,10 +1058,10 @@ public class TournamentReportService {
   private String getInfoMeanOrIncompetent(List<EventLogRecord> data) {
     var val = new ArrayList<String>();
     for (EventLogRecord record : data) {
-      if (record.getEventType().equals("feedback-foul-often")) {
+      if (record.eventType().equals("feedback-foul-often")) {
         val.add("Y");
       }
-      if (record.getEventType().equals("COMMENTS-feedback-foul-often")) {
+      if (record.eventType().equals("COMMENTS-feedback-foul-often")) {
         val.add("Y");
       }
     }
@@ -1137,19 +1139,19 @@ public class TournamentReportService {
     int score = 0;
     for (EventLogRecord record : data) {
 
-      if (record.getEventType().equals("AUTO-score-reef-l1")) {
+      if (record.eventType().equals("AUTO-score-reef-l1")) {
         score++;
       }
-      if (record.getEventType().equals("AUTO-score-reef-l2")) {
+      if (record.eventType().equals("AUTO-score-reef-l2")) {
         score++;
       }
-      if (record.getEventType().equals("AUTO-score-reef-l3")) {
+      if (record.eventType().equals("AUTO-score-reef-l3")) {
         score++;
       }
-      if (record.getEventType().equals("AUTO-score-reef-l4")) {
+      if (record.eventType().equals("AUTO-score-reef-l4")) {
         score++;
       }
-      if (record.getEventType().equals("AUTO-score-reef-miss")) {
+      if (record.eventType().equals("AUTO-score-reef-miss")) {
         miss++;
       }
     }
@@ -1161,19 +1163,19 @@ public class TournamentReportService {
     int score = 0;
     for (EventLogRecord record : data) {
 
-      if (record.getEventType().equals("TELEOP-score-reef-l1")) {
+      if (record.eventType().equals("TELEOP-score-reef-l1")) {
         score++;
       }
-      if (record.getEventType().equals("TELEOP-score-reef-l2")) {
+      if (record.eventType().equals("TELEOP-score-reef-l2")) {
         score++;
       }
-      if (record.getEventType().equals("TELEOP-score-reef-l3")) {
+      if (record.eventType().equals("TELEOP-score-reef-l3")) {
         score++;
       }
-      if (record.getEventType().equals("TELEOP-score-reef-l4")) {
+      if (record.eventType().equals("TELEOP-score-reef-l4")) {
         score++;
       }
-      if (record.getEventType().equals("TELEOP-score-reef-miss")) {
+      if (record.eventType().equals("TELEOP-score-reef-miss")) {
         miss++;
       }
     }

@@ -40,13 +40,14 @@ public class TournamentApi {
   @Consumes(APPLICATION_JSON)
   public void createTournament(@Body TournamentDTO tournamentRecord) {
     log.debug("Saving tournament record: {}", tournamentRecord);
-    var t = new TournamentRecord();
-    t.setId(tournamentRecord.id());
-    t.setCode(tournamentRecord.code());
-    t.setSeason(tournamentRecord.season());
-    t.setName(tournamentRecord.name());
-    t.setStartTime(tournamentRecord.startTime().toInstant(ZoneOffset.UTC));
-    t.setEndTime(tournamentRecord.endTime().toInstant(ZoneOffset.UTC));
+    var t =
+        new TournamentRecord(
+            tournamentRecord.id(),
+            tournamentRecord.code(),
+            tournamentRecord.season(),
+            tournamentRecord.name(),
+            tournamentRecord.startTime().toInstant(ZoneOffset.UTC),
+            tournamentRecord.endTime().toInstant(ZoneOffset.UTC));
     tournamentService.save(t);
   }
 
