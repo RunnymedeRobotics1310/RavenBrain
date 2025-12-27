@@ -5,7 +5,6 @@ import io.micronaut.data.annotation.MappedEntity;
 import io.micronaut.data.annotation.MappedProperty;
 import io.micronaut.serde.annotation.Serdeable;
 import java.time.Instant;
-import lombok.Data;
 
 /**
  * @author Tony Field
@@ -13,22 +12,10 @@ import lombok.Data;
  */
 @MappedEntity(value = "RB_COMMENT")
 @Serdeable
-@Data
-public class QuickComment {
-  @Id long id;
-
-  @MappedProperty("scoutname")
-  String name;
-
-  @MappedProperty("scoutrole")
-  String role;
-
-  @MappedProperty("teamnumber")
-  int team;
-
-  @MappedProperty("commenttimestamp")
-  Instant timestamp;
-
-  @MappedProperty("comment")
-  String quickComment;
-}
+public record QuickComment(
+    @Id Long id,
+    @MappedProperty("scoutname") String name,
+    @MappedProperty("scoutrole") String role,
+    @MappedProperty("teamnumber") int team,
+    @MappedProperty("commenttimestamp") Instant timestamp,
+    @MappedProperty("comment") String quickComment) {}

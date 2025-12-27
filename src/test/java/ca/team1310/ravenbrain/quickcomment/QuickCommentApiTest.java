@@ -27,12 +27,9 @@ public class QuickCommentApiTest {
 
   @Test
   void testPostComments() {
-    QuickComment comment = new QuickComment();
-    comment.setName("Test Scout");
-    comment.setRole("ROLE_MEMBER");
-    comment.setTeam(9999);
-    comment.setQuickComment("Basic valid comment");
-    comment.setTimestamp(Instant.now());
+    QuickComment comment =
+        new QuickComment(
+            null, "Test Scout", "ROLE_MEMBER", 9999, Instant.now(), "Basic valid comment");
 
     List<QuickComment> comments = Collections.singletonList(comment);
     HttpRequest<List<QuickComment>> request =
@@ -53,17 +50,19 @@ public class QuickCommentApiTest {
     // Verify it was actually saved
     List<QuickComment> saved = quickCommentService.findAllByTeamOrderByTimestamp(9999);
     assertFalse(saved.isEmpty());
-    assertEquals("Basic valid comment", saved.get(0).getQuickComment());
+    assertEquals("Basic valid comment", saved.get(0).quickComment());
   }
 
   @Test
   void testPostDuplicateComment() {
-    QuickComment comment = new QuickComment();
-    comment.setName("Duplicate Scout");
-    comment.setRole("ROLE_MEMBER");
-    comment.setTeam(9998);
-    comment.setQuickComment("Duplicate comment");
-    comment.setTimestamp(Instant.parse("2025-01-01T12:00:00Z"));
+    QuickComment comment =
+        new QuickComment(
+            null,
+            "Duplicate Scout",
+            "ROLE_MEMBER",
+            9998,
+            Instant.parse("2025-01-01T12:00:00Z"),
+            "Duplicate comment");
 
     // Save it once using the API
     List<QuickComment> comments = Collections.singletonList(comment);
@@ -92,7 +91,7 @@ public class QuickCommentApiTest {
 
   @Test
   void testPostInvalidData() {
-    QuickComment invalidComment = new QuickComment();
+    QuickComment invalidComment = new QuickComment(null, null, null, 0, null, null);
     // Missing required fields (e.g., name, comment, timestamp are NOT NULL in DB)
     // This should cause an exception in quickCommentService.save() which the API catches.
 
