@@ -123,9 +123,9 @@ message indicating the success or failure of the recording of each event.
 
 This package includes all of the functionality related to pulling data from the *FRC API*.
 
-The packahge is organized into four sections
+The package is organized into three sections
 
-- `fetch` package - this tool is responsible for fetching data from *FRC*. It has a
+- `fetch` package - this tool is responsible for fetching data from the *FRC API*. It has a
   `FrcClient` class that wraps the https calls, and a `FrcCachingClient` that uses
   the `FrcClient` to retrieve data and stores the raw responses directly into a
   database table called `RB_FRC_RESPONSES`. This enables smart communication with
@@ -143,7 +143,13 @@ The packahge is organized into four sections
 
 ### Quick Comment `ca.team1310.ravenbrain.quickcomment` package
 
-MHL
+This package contains the API endpoint for submitting and reading quick comments by
+team members. It allows members to add a comment about a team, and allows expert
+scouts to read them.
+
+#### `/api/quickcomment'
+
+Two endpoints - one to `POST` new quick comments, and one to `GET` all of them.
 
 ### Report `ca.team1310.ravenbrain.report` package
 
@@ -163,3 +169,4 @@ MHL
 - define user management packages
 - look at requirements around eventlog - changes needed?
 - finish the doc and fill in all of the MHL ("more here later" (i.e. coming soon)) sections
+- note use of java records for dto and json and java objects for core business logic
