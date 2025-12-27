@@ -45,8 +45,8 @@ public class TournamentApiTest {
     // Verify it was saved
     TournamentRecord saved = tournamentService.findById(tournId).orElse(null);
     assertNotNull(saved);
-    assertEquals("TEST", saved.getCode());
-    assertEquals("Test Tournament", saved.getName());
+    assertEquals("TEST", saved.code());
+    assertEquals("Test Tournament", saved.name());
   }
 
   @Test
@@ -73,7 +73,7 @@ public class TournamentApiTest {
         client.toBlocking().retrieve(request, Argument.listOf(TournamentRecord.class));
 
     assertNotNull(response);
-    assertTrue(response.stream().anyMatch(t -> t.getId().equals(tournId)));
+    assertTrue(response.stream().anyMatch(t -> t.id().equals(tournId)));
   }
 
   @Test

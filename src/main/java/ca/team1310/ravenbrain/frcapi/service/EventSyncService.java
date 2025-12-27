@@ -68,13 +68,8 @@ class EventSyncService {
     for (Event event : resp.getResponse().events()) {
       Instant start = event.dateStart().atZone(ZoneId.of("America/New_York")).toInstant();
       Instant end = event.dateEnd().atZone(ZoneId.of("America/New_York")).toInstant();
-      TournamentRecord tournamentRecord = new TournamentRecord();
-      tournamentRecord.setId(year + event.code());
-      tournamentRecord.setSeason(year);
-      tournamentRecord.setCode(event.code());
-      tournamentRecord.setName(event.name());
-      tournamentRecord.setStartTime(start);
-      tournamentRecord.setEndTime(end);
+      TournamentRecord tournamentRecord =
+          new TournamentRecord(year + event.code(), event.code(), year, event.name(), start, end);
       log.trace("Saving tournament {}", tournamentRecord);
       try {
         tournamentService.save(tournamentRecord);
@@ -97,7 +92,7 @@ class EventSyncService {
     log.debug("Loading all tournament schedules for this year");
     int thisYear = Year.now(ZoneOffset.UTC).getValue();
     for (TournamentRecord tournamentRecord : tournamentService.findAll()) {
-      if (tournamentRecord.getSeason() == thisYear) {
+      if (tournamentRecord.season() == thisYear) {
         _populateScheduleForTournament(tournamentRecord);
       }
     }
@@ -117,7 +112,7 @@ class EventSyncService {
       if (level == TournamentLevel.None) continue;
       ServiceResponse<ScheduleResponse> scheduleResponse =
           frcClientService.getEventSchedule(
-              tournamentRecord.getSeason(), tournamentRecord.getCode(), level);
+              tournamentRecord.season(), tournamentRecord.code(), level);
 
       if (scheduleResponse == null) continue;
 
@@ -135,12 +130,12 @@ class EventSyncService {
         }
         Optional<ScheduleRecord> existingRecord =
             scheduleService.findByTournamentIdAndLevelAndMatch(
-                tournamentRecord.getId(), level, schedule.matchNumber());
+                tournamentRecord.id(), level, schedule.matchNumber());
         if (existingRecord.isPresent()) {
           ScheduleRecord scheduleRecord =
               new ScheduleRecord(
                   existingRecord.get().id(),
-                  tournamentRecord.getId(),
+                  tournamentRecord.id(),
                   level,
                   schedule.matchNumber(),
                   red1,
@@ -154,7 +149,7 @@ class EventSyncService {
           ScheduleRecord scheduleRecord =
               new ScheduleRecord(
                   0,
-                  tournamentRecord.getId(),
+                  tournamentRecord.id(),
                   level,
                   schedule.matchNumber(),
                   red1,

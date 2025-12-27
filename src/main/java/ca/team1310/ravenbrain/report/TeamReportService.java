@@ -36,7 +36,7 @@ public class TeamReportService {
     List<QuickComment> comments = quickCommentService.findAllByTeamOrderByTimestamp(team);
     var tournamentReports = new ArrayList<TournamentReportService.TournamentReportTable>();
     for (var tournament : tournamentService.findAllSortByStartTime()) {
-      var tournamentReport = tournamentReportService.getTournamentReport(tournament.getId(), team);
+      var tournamentReport = tournamentReportService.getTournamentReport(tournament.id(), team);
       if (tournamentReport != null && tournamentReport.success()) {
         tournamentReports.add(tournamentReport.report());
       }
