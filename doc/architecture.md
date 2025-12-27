@@ -78,6 +78,26 @@ suitable for reporting.
 Some time in the future, integration with the *StatBotics API* will be added to return even
 more in-depth game data.
 
+## Core Principles
+
+### Records and Classes
+
+#### DAOs
+
+This app uses Java `record` classes as the primary objects returned from the database. This ensures immutability and
+simplifies usage.
+
+#### Business Objects
+
+Generally, any object that will be manipulated using core business logic in this system can be written as a POJO (plain
+old Java object) as they favour mutability and can have business logic directly encoded within them. They can make use
+of whatever technology makes teh most sense fort them.
+
+#### JSON marshalling and unmarshalling
+
+Java records are preferred for marshalling and unmarshalling from json, as they enforce very straightforward schemas
+that are unlikely to cause problems with automatic serialization an deserialization.
+
 ## Component Architecture
 
 ### Connection `ca.team1310.ravenbrain.connect` package
@@ -86,11 +106,11 @@ This package establishes a handshake with the front-end application. It reads
 configuration properties (the `Config` class) and has only one main
 REST service (`EstablishConnection`).
 
-#### `/api/ping`
+#### `GET /api/ping`
 
 This service simply responds with a 200 status code when the server is alive.
 
-#### `/api/validate`
+#### `GET /api/validate`
 
 This service looks for basic auth credentials, vaidates them, looks up their
 authorization roles, and creates a `JWT` (JSON Web Token - a small bundle of information
@@ -113,7 +133,7 @@ forth.
 This package contains the API that allows scouts to post events to the back-end.
 It is a trivially simple API.
 
-#### `/api/event`
+#### `POST /api/event`
 
 Event data `POST`ed to this endpoint are stored in the event log table `RB_EVENT`.
 The post endpoint expects an array of records. The response will provide a
@@ -147,26 +167,61 @@ This package contains the API endpoint for submitting and reading quick comments
 team members. It allows members to add a comment about a team, and allows expert
 scouts to read them.
 
-#### `/api/quickcomment'
+#### `GET /api/quickcomment`
 
-Two endpoints - one to `POST` new quick comments, and one to `GET` all of them.
+Get all comments
+
+#### `POST /api/quickcomment`
+
+Add multiple comments
 
 ### Report `ca.team1310.ravenbrain.report` package
 
-MHL
+The report package is designed to provide nearly read-only access to a series of reports.
+The reports are all pre-defined, in order to keep the programming model simple.
+
+There is currently no database table directly associated with this package, though as
+reporting gets more complicated, some reports may warrant being pre-generated and saved in the database.
+
+#### `GET /api/report/team/{teamid}`
+
+This report provides a deep dive look at a single team. The specifics of this report
+are expected to change from season to season.
 
 ### Schedule `ca.team1310.ravenbrain.schedule` package
 
-MHL
+The schedule package provides a series of services related to creating and reading schedules. While RavenBrain does
+support automatic schedule syncing with the *FRC API*, individual matches can be added using this system. In addition,
+this provides reports that allow the client to retrieve the upcoming matches for a team.
+
+#### `POST /api/schedule`
+
+Add a new schedule record to the database
+
+#### `GET /api/schedule/{tournamentId}`
+
+Retrieve the entire schedule for a tournament
+
+#### `GET /api/schedule/teams-for-tournament/{tournamentId}`
+
+Retrieve team details for a specific tournament
+
+#### `GET /api/schedule/tournament/{tournamentId}/{teamId}`
+
+Get a team's schedule for a specific tournament
 
 ### Tournament `ca.team1310.ravenbrain.tournament` package
 
-MHL
+#### `GET /api/tournament`
+
+List all tournaments
+
+#### `POST /api/tournament`
+
+Add a new tournament
 
 # TO DO ITEMS
 
 - force RavenBrain to be an SSL endpoint
 - define user management packages
-- look at requirements around eventlog - changes needed?
-- finish the doc and fill in all of the MHL ("more here later" (i.e. coming soon)) sections
-- note use of java records for dto and json and java objects for core business logic
+- look at new requirements around eventlog - changes needed?
