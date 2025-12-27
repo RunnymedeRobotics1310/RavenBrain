@@ -2,22 +2,14 @@ package ca.team1310.ravenbrain.frcapi.model;
 
 import io.micronaut.serde.annotation.Serdeable;
 import java.time.LocalDateTime;
-import lombok.Data;
 
 /**
  * @author Tony Field
  * @since 2025-11-10 21:39
  */
 @Serdeable
-@Data
-public class SeasonSummaryResponse {
-
-  private int eventCount;
-  private String gameName;
-  private LocalDateTime kickoff;
-  private int rookieStart;
-  private int teamCount;
-}
+public record SeasonSummaryResponse(
+    int eventCount, String gameName, LocalDateTime kickoff, int rookieStart, int teamCount) {}
 /*
 {
   "gameName": "REEFSCAPE℠ presented by Haas",

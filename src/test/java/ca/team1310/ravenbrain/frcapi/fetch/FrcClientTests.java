@@ -82,7 +82,7 @@ public class FrcClientTests {
         try {
             frcCachingClient.clearProcessed();
             ServiceResponse<EventResponse> events = service.getEventListingsForTeam(2025, 1310);
-            assertEquals(7, events.getResponse().getEvents().size());
+            assertEquals(7, events.getResponse().events().size());
             assertNotNull(events);
         } catch (Exception e) {
             log.error("testGetEventListingForTeam", e);
@@ -123,9 +123,9 @@ public class FrcClientTests {
             assertNotNull(sr);
             MatchScores2025 scores = sr.getResponse();
             assertNotNull(scores);
-            ScoreData data = scores.getScores().get(1);
+            ScoreData data = scores.scores().get(1);
 
-            assertEquals(1, data.getWinningAlliance(), "Winning alliance is 1");
+            assertEquals(1, data.winningAlliance(), "Winning alliance is 1");
         } catch (Exception e) {
             log.error("testGetSchedule", e);
             Assertions.fail(e);
