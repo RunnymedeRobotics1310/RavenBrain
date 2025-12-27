@@ -1,13 +1,14 @@
 package ca.team1310.ravenbrain.schedule;
 
-import ca.team1310.ravenbrain.frcapi.TournamentLevel;
+import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
 import jakarta.inject.Singleton;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.List;
 import java.util.Optional;
-import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author Tony Field
@@ -18,8 +19,8 @@ import lombok.extern.slf4j.Slf4j;
 @JdbcRepository(dialect = Dialect.MYSQL)
 public abstract class ScheduleService implements CrudRepository<ScheduleRecord, Long> {
 
-  public abstract List<ScheduleRecord> findAllByTournamentIdOrderByMatch(String tournamentId);
+    public abstract List<ScheduleRecord> findAllByTournamentIdOrderByMatch(String tournamentId);
 
-  public abstract Optional<ScheduleRecord> findByTournamentIdAndLevelAndMatch(
-      String tournamentId, TournamentLevel level, int match);
+    public abstract Optional<ScheduleRecord> findByTournamentIdAndLevelAndMatch(
+            String tournamentId, TournamentLevel level, int match);
 }

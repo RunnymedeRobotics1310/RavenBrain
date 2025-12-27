@@ -1,6 +1,6 @@
 package ca.team1310.ravenbrain.schedule;
 
-import ca.team1310.ravenbrain.frcapi.TournamentLevel;
+import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import io.micronaut.data.annotation.Id;
 import io.micronaut.data.annotation.MappedEntity;
 import io.micronaut.data.annotation.MappedProperty;
@@ -15,20 +15,21 @@ import lombok.Data;
 @Serdeable
 @Data
 public class ScheduleRecord {
-  @Id long id;
+    @Id
+    long id;
 
-  @MappedProperty("tournamentid")
-  String tournamentId;
+    @MappedProperty("tournamentid")
+    String tournamentId;
 
-  TournamentLevel level;
+    TournamentLevel level;
 
-  @MappedProperty("matchnum")
-  int match;
+    @MappedProperty("matchnum")
+    int match;
 
-  int red1;
-  int red2;
-  int red3;
-  int blue1;
-  int blue2;
-  int blue3;
+    int red1;
+    int red2;
+    int red3;
+    int blue1;
+    int blue2;
+    int blue3;
 }

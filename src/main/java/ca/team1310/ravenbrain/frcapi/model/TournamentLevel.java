@@ -1,4 +1,4 @@
-package ca.team1310.ravenbrain.frcapi;
+package ca.team1310.ravenbrain.frcapi.model;
 
 /**
  * Exact tournament levels used by the FRC API - do not modify these.
@@ -7,8 +7,8 @@ package ca.team1310.ravenbrain.frcapi;
  * @since 2025-09-21 15:36
  */
 public enum TournamentLevel {
-  None,
-  Practice,
-  Qualification,
-  Playoff
+    None,
+    Practice,
+    Qualification,
+    Playoff
 }
