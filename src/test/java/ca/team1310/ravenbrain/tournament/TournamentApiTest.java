@@ -2,6 +2,7 @@ package ca.team1310.ravenbrain.tournament;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ca.team1310.ravenbrain.connect.Config;
 import io.micronaut.core.type.Argument;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
@@ -23,6 +24,8 @@ public class TournamentApiTest {
 
   @Inject TournamentService tournamentService;
 
+  @Inject Config config;
+
   @Test
   void testCreateTournament() {
     String tournId = "TEST_TOURN_" + System.currentTimeMillis();
@@ -36,7 +39,7 @@ public class TournamentApiTest {
             LocalDateTime.of(2025, 3, 26, 17, 0));
 
     HttpRequest<TournamentApi.TournamentDTO> request =
-        HttpRequest.POST("/api/tournament", dto).basicAuth("user", "team1310IsTheBest");
+        HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.getMember());
 
     HttpResponse<Void> response = client.toBlocking().exchange(request);
 
@@ -64,10 +67,10 @@ public class TournamentApiTest {
     // Save via API
     client
         .toBlocking()
-        .exchange(HttpRequest.POST("/api/tournament", dto).basicAuth("user", "team1310IsTheBest"));
+        .exchange(HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.getMember()));
 
     HttpRequest<?> request =
-        HttpRequest.GET("/api/tournament").basicAuth("user", "team1310IsTheBest");
+        HttpRequest.GET("/api/tournament").basicAuth("user", config.getMember());
 
     List<TournamentRecord> response =
         client.toBlocking().retrieve(request, Argument.listOf(TournamentRecord.class));
@@ -98,7 +101,7 @@ public class TournamentApiTest {
             LocalDateTime.of(2025, 3, 26, 17, 0));
 
     HttpRequest<TournamentApi.TournamentDTO> request =
-        HttpRequest.POST("/api/tournament", dto).basicAuth("user", "team1310IsTheBest");
+        HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.getMember());
 
     assertThrows(
         Exception.class,
@@ -119,7 +122,7 @@ public class TournamentApiTest {
             LocalDateTime.of(2025, 3, 26, 17, 0));
 
     HttpRequest<TournamentApi.TournamentDTO> request =
-        HttpRequest.POST("/api/tournament", dto).basicAuth("user", "team1310IsTheBest");
+        HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.getMember());
 
     assertThrows(
         Exception.class,
@@ -141,7 +144,7 @@ public class TournamentApiTest {
             LocalDateTime.of(2025, 3, 26, 17, 0));
 
     HttpRequest<TournamentApi.TournamentDTO> request =
-        HttpRequest.POST("/api/tournament", dto).basicAuth("user", "team1310IsTheBest");
+        HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.getMember());
 
     // First time should work
     client.toBlocking().exchange(request);
@@ -161,7 +164,7 @@ public class TournamentApiTest {
             "INVALID_DATES", 2025, "TEST", "Test Tournament", null, null);
 
     HttpRequest<TournamentApi.TournamentDTO> request =
-        HttpRequest.POST("/api/tournament", dto).basicAuth("user", "team1310IsTheBest");
+        HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.getMember());
 
     assertThrows(
         Exception.class,

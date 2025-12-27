@@ -2,6 +2,7 @@ package ca.team1310.ravenbrain.schedule;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ca.team1310.ravenbrain.connect.Config;
 import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import io.micronaut.core.type.Argument;
 import io.micronaut.http.HttpRequest;
@@ -24,6 +25,8 @@ public class ScheduleApiTest {
 
   @Inject ScheduleService scheduleService;
 
+  @Inject Config config;
+
   @Test
   void testCreateScheduleItem() {
     String tournId = "TEST_TOURN_1_" + System.currentTimeMillis();
@@ -31,7 +34,7 @@ public class ScheduleApiTest {
         new ScheduleRecord(0, tournId, TournamentLevel.Qualification, 1, 1310, 1, 2, 3, 4, 5);
 
     HttpRequest<ScheduleRecord> request =
-        HttpRequest.POST("/api/schedule", record).basicAuth("user", "team1310IsTheBest");
+        HttpRequest.POST("/api/schedule", record).basicAuth("user", config.getMember());
 
     HttpResponse<Void> response = client.toBlocking().exchange(request);
 
@@ -50,7 +53,7 @@ public class ScheduleApiTest {
         new ScheduleRecord(0, null, TournamentLevel.Qualification, 2, 0, 0, 0, 0, 0, 0);
 
     HttpRequest<ScheduleRecord> request =
-        HttpRequest.POST("/api/schedule", record).basicAuth("user", "team1310IsTheBest");
+        HttpRequest.POST("/api/schedule", record).basicAuth("user", config.getMember());
 
     // This should fail because of database constraints
     assertThrows(
@@ -70,10 +73,10 @@ public class ScheduleApiTest {
     // Save via API so it's committed and visible to subsequent GET
     client
         .toBlocking()
-        .exchange(HttpRequest.POST("/api/schedule", record).basicAuth("user", "team1310IsTheBest"));
+        .exchange(HttpRequest.POST("/api/schedule", record).basicAuth("user", config.getMember()));
 
     HttpRequest<?> request =
-        HttpRequest.GET("/api/schedule/" + tournId).basicAuth("user", "team1310IsTheBest");
+        HttpRequest.GET("/api/schedule/" + tournId).basicAuth("user", config.getMember());
 
     List<ScheduleRecord> response =
         client.toBlocking().retrieve(request, Argument.listOf(ScheduleRecord.class));
@@ -92,12 +95,12 @@ public class ScheduleApiTest {
     // Save via API
     client
         .toBlocking()
-        .exchange(HttpRequest.POST("/api/schedule", record).basicAuth("user", "team1310IsTheBest"));
+        .exchange(HttpRequest.POST("/api/schedule", record).basicAuth("user", config.getMember()));
 
     // Test with ROLE_EXPERTSCOUT
     HttpRequest<?> request =
         HttpRequest.GET("/api/schedule/teams-for-tournament/" + tournId)
-            .basicAuth("user", "default_expert_scout_password_876");
+            .basicAuth("user", config.getExpertscout());
 
     List<Integer> teams = client.toBlocking().retrieve(request, Argument.listOf(Integer.class));
 
@@ -109,7 +112,7 @@ public class ScheduleApiTest {
     // Test with ROLE_MEMBER (should be unauthorized for this specific endpoint)
     HttpRequest<?> memberRequest =
         HttpRequest.GET("/api/schedule/teams-for-tournament/" + tournId)
-            .basicAuth("user", "team1310IsTheBest");
+            .basicAuth("user", config.getMember());
 
     assertThrows(
         HttpClientResponseException.class,
@@ -127,7 +130,7 @@ public class ScheduleApiTest {
     // Since it requires ROLE_EXPERTSCOUT
     HttpRequest<?> request =
         HttpRequest.GET("/api/schedule/tournament/" + tournId + "/" + teamId)
-            .basicAuth("user", "default_expert_scout_password_876");
+            .basicAuth("user", config.getExpertscout());
 
     HttpResponse<Object> response = client.toBlocking().exchange(request, Object.class);
 

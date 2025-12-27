@@ -2,6 +2,7 @@ package ca.team1310.ravenbrain.eventlog;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ca.team1310.ravenbrain.connect.Config;
 import io.micronaut.core.type.Argument;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
@@ -23,8 +24,9 @@ public class EventApiTest {
 
   @Inject EventLogService eventLogService;
 
+  @Inject Config config;
+
   private static final String AUTH_USER = "user";
-  private static final String AUTH_PASS = "default_data_scout_password__1";
 
   @Test
   void testPostEventLogsSuccess() {
@@ -44,7 +46,7 @@ public class EventApiTest {
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
-            .basicAuth(AUTH_USER, AUTH_PASS);
+            .basicAuth(AUTH_USER, config.getDatascout());
 
     HttpResponse<List<EventApi.EventLogPostResult>> response =
         client.toBlocking().exchange(request, Argument.listOf(EventApi.EventLogPostResult.class));
@@ -94,7 +96,7 @@ public class EventApiTest {
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
-            .basicAuth(AUTH_USER, AUTH_PASS);
+            .basicAuth(AUTH_USER, config.getDatascout());
 
     // First time
     client.toBlocking().exchange(request, Argument.listOf(EventApi.EventLogPostResult.class));
@@ -128,7 +130,7 @@ public class EventApiTest {
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
-            .basicAuth(AUTH_USER, AUTH_PASS);
+            .basicAuth(AUTH_USER, config.getDatascout());
 
     HttpResponse<List<EventApi.EventLogPostResult>> response =
         client.toBlocking().exchange(request, Argument.listOf(EventApi.EventLogPostResult.class));
@@ -158,7 +160,7 @@ public class EventApiTest {
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
-            .basicAuth(AUTH_USER, AUTH_PASS);
+            .basicAuth(AUTH_USER, config.getDatascout());
 
     HttpResponse<List<EventApi.EventLogPostResult>> response =
         client.toBlocking().exchange(request, Argument.listOf(EventApi.EventLogPostResult.class));
@@ -178,7 +180,7 @@ public class EventApiTest {
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
-            .basicAuth(AUTH_USER, AUTH_PASS);
+            .basicAuth(AUTH_USER, config.getDatascout());
 
     HttpResponse<List<EventApi.EventLogPostResult>> response =
         client.toBlocking().exchange(request, Argument.listOf(EventApi.EventLogPostResult.class));
@@ -208,7 +210,7 @@ public class EventApiTest {
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
-            .basicAuth(AUTH_USER, AUTH_PASS);
+            .basicAuth(AUTH_USER, config.getDatascout());
 
     HttpResponse<List<EventApi.EventLogPostResult>> response =
         client.toBlocking().exchange(request, Argument.listOf(EventApi.EventLogPostResult.class));
@@ -238,7 +240,7 @@ public class EventApiTest {
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
-            .basicAuth(AUTH_USER, AUTH_PASS);
+            .basicAuth(AUTH_USER, config.getDatascout());
 
     HttpResponse<List<EventApi.EventLogPostResult>> response =
         client.toBlocking().exchange(request, Argument.listOf(EventApi.EventLogPostResult.class));
@@ -268,7 +270,7 @@ public class EventApiTest {
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
-            .basicAuth(AUTH_USER, AUTH_PASS);
+            .basicAuth(AUTH_USER, config.getDatascout());
 
     HttpResponse<List<EventApi.EventLogPostResult>> response =
         client.toBlocking().exchange(request, Argument.listOf(EventApi.EventLogPostResult.class));
@@ -298,7 +300,7 @@ public class EventApiTest {
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
-            .basicAuth(AUTH_USER, AUTH_PASS);
+            .basicAuth(AUTH_USER, config.getDatascout());
 
     HttpResponse<List<EventApi.EventLogPostResult>> response =
         client.toBlocking().exchange(request, Argument.listOf(EventApi.EventLogPostResult.class));
