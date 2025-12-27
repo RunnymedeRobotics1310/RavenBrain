@@ -48,12 +48,12 @@ public class QuickCommentApiTest {
     List<QuickCommentApi.QuickCommentPostResult> body = response.body();
     assertNotNull(body);
     assertEquals(1, body.size());
-    assertTrue(body.get(0).success());
+    assertTrue(body.getFirst().success());
 
     // Verify it was actually saved
     List<QuickComment> saved = quickCommentService.findAllByTeamOrderByTimestamp(9999);
     assertFalse(saved.isEmpty());
-    assertEquals("Basic valid comment", saved.get(0).quickComment());
+    assertEquals("Basic valid comment", saved.getFirst().quickComment());
   }
 
   @Test
@@ -89,7 +89,7 @@ public class QuickCommentApiTest {
     assertNotNull(body);
     assertEquals(1, body.size());
     // Api handles duplicate by returning success: true as per implementation
-    assertTrue(body.get(0).success());
+    assertTrue(body.getFirst().success());
   }
 
   @Test
@@ -112,8 +112,8 @@ public class QuickCommentApiTest {
     assertNotNull(body);
     assertEquals(1, body.size());
     // Since it's missing fields, it should fail
-    assertFalse(body.get(0).success());
-    assertNotNull(body.get(0).reason());
+    assertFalse(body.getFirst().success());
+    assertNotNull(body.getFirst().reason());
   }
 
   @Test

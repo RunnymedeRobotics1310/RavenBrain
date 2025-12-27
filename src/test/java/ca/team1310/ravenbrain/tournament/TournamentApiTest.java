@@ -82,11 +82,7 @@ public class TournamentApiTest {
   @Test
   void testUnauthorized() {
     HttpRequest<?> request = HttpRequest.GET("/api/tournament");
-    assertThrows(
-        Exception.class,
-        () -> {
-          client.toBlocking().exchange(request);
-        });
+    assertThrows(Exception.class, () -> client.toBlocking().exchange(request));
   }
 
   @Test
@@ -103,11 +99,7 @@ public class TournamentApiTest {
     HttpRequest<TournamentApi.TournamentDTO> request =
         HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.getMember());
 
-    assertThrows(
-        Exception.class,
-        () -> {
-          client.toBlocking().exchange(request);
-        });
+    assertThrows(Exception.class, () -> client.toBlocking().exchange(request));
   }
 
   @Test
@@ -124,11 +116,7 @@ public class TournamentApiTest {
     HttpRequest<TournamentApi.TournamentDTO> request =
         HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.getMember());
 
-    assertThrows(
-        Exception.class,
-        () -> {
-          client.toBlocking().exchange(request);
-        });
+    assertThrows(Exception.class, () -> client.toBlocking().exchange(request));
   }
 
   @Test
@@ -150,11 +138,7 @@ public class TournamentApiTest {
     client.toBlocking().exchange(request);
 
     // Second time with same ID should fail
-    assertThrows(
-        Exception.class,
-        () -> {
-          client.toBlocking().exchange(request);
-        });
+    assertThrows(Exception.class, () -> client.toBlocking().exchange(request));
   }
 
   @Test
@@ -166,10 +150,6 @@ public class TournamentApiTest {
     HttpRequest<TournamentApi.TournamentDTO> request =
         HttpRequest.POST("/api/tournament", dto).basicAuth("user", config.getMember());
 
-    assertThrows(
-        Exception.class,
-        () -> {
-          client.toBlocking().exchange(request);
-        });
+    assertThrows(Exception.class, () -> client.toBlocking().exchange(request));
   }
 }

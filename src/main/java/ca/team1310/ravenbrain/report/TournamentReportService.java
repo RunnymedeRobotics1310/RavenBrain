@@ -892,35 +892,37 @@ public class TournamentReportService {
 
   private String getCommentStars(List<EventLogRecord> data) {
     for (EventLogRecord record : data) {
-      if (record.eventType().equals("COMMENTS-star-rating-1")) {
-        return "1";
-      }
-      if (record.eventType().equals("COMMENTS-star-rating-2")) {
-        return "2";
-      }
-      if (record.eventType().equals("COMMENTS-star-rating-3")) {
-        return "3";
-      }
-      if (record.eventType().equals("COMMENTS-star-rating-4")) {
-        return "4";
-      }
-      if (record.eventType().equals("COMMENTS-star-rating-5")) {
-        return "5";
-      }
-      if (record.eventType().equals("star-rating-1")) {
-        return "1";
-      }
-      if (record.eventType().equals("star-rating-2")) {
-        return "2";
-      }
-      if (record.eventType().equals("star-rating-3")) {
-        return "3";
-      }
-      if (record.eventType().equals("star-rating-4")) {
-        return "4";
-      }
-      if (record.eventType().equals("star-rating-5")) {
-        return "5";
+      switch (record.eventType()) {
+        case "COMMENTS-star-rating-1" -> {
+          return "1";
+        }
+        case "COMMENTS-star-rating-2" -> {
+          return "2";
+        }
+        case "COMMENTS-star-rating-3" -> {
+          return "3";
+        }
+        case "COMMENTS-star-rating-4" -> {
+          return "4";
+        }
+        case "COMMENTS-star-rating-5" -> {
+          return "5";
+        }
+        case "star-rating-1" -> {
+          return "1";
+        }
+        case "star-rating-2" -> {
+          return "2";
+        }
+        case "star-rating-3" -> {
+          return "3";
+        }
+        case "star-rating-4" -> {
+          return "4";
+        }
+        case "star-rating-5" -> {
+          return "5";
+        }
       }
     }
     return "";

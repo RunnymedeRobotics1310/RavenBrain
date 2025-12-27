@@ -55,8 +55,8 @@ public class EventApiTest {
     List<EventApi.EventLogPostResult> results = response.body();
     assertNotNull(results);
     assertEquals(1, results.size());
-    assertTrue(results.get(0).success());
-    assertNull(results.get(0).reason());
+    assertTrue(results.getFirst().success());
+    assertNull(results.getFirst().reason());
 
     // Verify it was saved
     List<EventLogRecord> saved =
@@ -109,7 +109,7 @@ public class EventApiTest {
     List<EventApi.EventLogPostResult> results = response.body();
     assertNotNull(results);
     assertEquals(1, results.size());
-    assertTrue(results.get(0).success());
+    assertTrue(results.getFirst().success());
   }
 
   @Test
@@ -138,8 +138,8 @@ public class EventApiTest {
     assertEquals(HttpStatus.OK, response.getStatus());
     List<EventApi.EventLogPostResult> results = response.body();
     assertNotNull(results);
-    assertFalse(results.get(0).success());
-    assertNotNull(results.get(0).reason());
+    assertFalse(results.getFirst().success());
+    assertNotNull(results.getFirst().reason());
   }
 
   @Test
@@ -168,8 +168,8 @@ public class EventApiTest {
     assertEquals(HttpStatus.OK, response.getStatus());
     List<EventApi.EventLogPostResult> results = response.body();
     assertNotNull(results);
-    assertFalse(results.get(0).success());
-    assertNotNull(results.get(0).reason());
+    assertFalse(results.getFirst().success());
+    assertNotNull(results.getFirst().reason());
   }
 
   @Test
@@ -188,8 +188,8 @@ public class EventApiTest {
     assertEquals(HttpStatus.OK, response.getStatus());
     List<EventApi.EventLogPostResult> results = response.body();
     assertNotNull(results);
-    assertFalse(results.get(0).success());
-    assertNotNull(results.get(0).reason());
+    assertFalse(results.getFirst().success());
+    assertNotNull(results.getFirst().reason());
   }
 
   @Test
@@ -218,8 +218,8 @@ public class EventApiTest {
     assertEquals(HttpStatus.OK, response.getStatus());
     List<EventApi.EventLogPostResult> results = response.body();
     assertNotNull(results);
-    assertFalse(results.get(0).success());
-    assertNotNull(results.get(0).reason());
+    assertFalse(results.getFirst().success());
+    assertNotNull(results.getFirst().reason());
   }
 
   @Test
@@ -248,8 +248,8 @@ public class EventApiTest {
     assertEquals(HttpStatus.OK, response.getStatus());
     List<EventApi.EventLogPostResult> results = response.body();
     assertNotNull(results);
-    assertFalse(results.get(0).success());
-    assertNotNull(results.get(0).reason());
+    assertFalse(results.getFirst().success());
+    assertNotNull(results.getFirst().reason());
   }
 
   @Test
@@ -278,8 +278,8 @@ public class EventApiTest {
     assertEquals(HttpStatus.OK, response.getStatus());
     List<EventApi.EventLogPostResult> results = response.body();
     assertNotNull(results);
-    assertFalse(results.get(0).success());
-    assertNotNull(results.get(0).reason());
+    assertFalse(results.getFirst().success());
+    assertNotNull(results.getFirst().reason());
   }
 
   @Test
@@ -308,7 +308,7 @@ public class EventApiTest {
     assertEquals(HttpStatus.OK, response.getStatus());
     List<EventApi.EventLogPostResult> results = response.body();
     assertNotNull(results);
-    assertFalse(results.get(0).success());
-    assertNotNull(results.get(0).reason());
+    assertFalse(results.getFirst().success());
+    assertNotNull(results.getFirst().reason());
   }
 }

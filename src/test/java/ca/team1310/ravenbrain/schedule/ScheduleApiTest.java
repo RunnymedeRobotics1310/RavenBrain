@@ -43,8 +43,8 @@ public class ScheduleApiTest {
     // Verify it was saved
     List<ScheduleRecord> saved = scheduleService.findAllByTournamentIdOrderByMatch(tournId);
     assertFalse(saved.isEmpty());
-    assertEquals(1, saved.get(0).match());
-    assertEquals(1310, saved.get(0).red1());
+    assertEquals(1, saved.getFirst().match());
+    assertEquals(1310, saved.getFirst().red1());
   }
 
   @Test
@@ -56,11 +56,7 @@ public class ScheduleApiTest {
         HttpRequest.POST("/api/schedule", record).basicAuth("user", config.getMember());
 
     // This should fail because of database constraints
-    assertThrows(
-        HttpClientResponseException.class,
-        () -> {
-          client.toBlocking().exchange(request);
-        });
+    assertThrows(HttpClientResponseException.class, () -> client.toBlocking().exchange(request));
   }
 
   @Test
@@ -83,7 +79,7 @@ public class ScheduleApiTest {
 
     assertNotNull(response);
     assertEquals(1, response.size());
-    assertEquals(tournId, response.get(0).tournamentId());
+    assertEquals(tournId, response.getFirst().tournamentId());
   }
 
   @Test
@@ -115,10 +111,7 @@ public class ScheduleApiTest {
             .basicAuth("user", config.getMember());
 
     assertThrows(
-        HttpClientResponseException.class,
-        () -> {
-          client.toBlocking().exchange(memberRequest);
-        });
+        HttpClientResponseException.class, () -> client.toBlocking().exchange(memberRequest));
   }
 
   @Test
@@ -141,10 +134,6 @@ public class ScheduleApiTest {
   @Test
   void testUnauthorized() {
     HttpRequest<?> request = HttpRequest.GET("/api/schedule/ANY");
-    assertThrows(
-        HttpClientResponseException.class,
-        () -> {
-          client.toBlocking().exchange(request);
-        });
+    assertThrows(HttpClientResponseException.class, () -> client.toBlocking().exchange(request));
   }
 }
