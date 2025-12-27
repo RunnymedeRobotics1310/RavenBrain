@@ -28,17 +28,19 @@ public class EventApiTest {
 
   @Test
   void testPostEventLogsSuccess() {
-    EventLogRecord record = new EventLogRecord();
-    record.setTimestamp(Instant.now());
-    record.setScoutName("Test Scout");
-    record.setTournamentId("TEST_TOURN");
-    record.setLevel("Qualification");
-    record.setMatchId(1);
-    record.setAlliance("Red");
-    record.setTeamNumber(1310);
-    record.setEventType("SCORE");
-    record.setAmount(1.0);
-    record.setNote("Good job");
+    EventLogRecord record =
+        new EventLogRecord(
+            0,
+            Instant.now(),
+            "Test Scout",
+            "TEST_TOURN",
+            "Qualification",
+            1,
+            "Red",
+            1310,
+            "SCORE",
+            1.0,
+            "Good job");
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
@@ -61,32 +63,34 @@ public class EventApiTest {
         saved.stream()
             .anyMatch(
                 r ->
-                    r.getScoutName().equals("Test Scout")
-                        && r.getEventType().equals("SCORE")
-                        && r.getTournamentId().equals("TEST_TOURN")
-                        && r.getLevel().equals("Qualification")
-                        && r.getMatchId() == 1
-                        && r.getAlliance().equals("Red")
-                        && r.getTeamNumber() == 1310
-                        && r.getAmount() == 1.0
-                        && r.getNote().equals("Good job")
-                        && r.getTimestamp() != null));
+                    r.scoutName().equals("Test Scout")
+                        && r.eventType().equals("SCORE")
+                        && r.tournamentId().equals("TEST_TOURN")
+                        && r.level().equals("Qualification")
+                        && r.matchId() == 1
+                        && r.alliance().equals("Red")
+                        && r.teamNumber() == 1310
+                        && r.amount() == 1.0
+                        && r.note().equals("Good job")
+                        && r.timestamp() != null));
   }
 
   @Test
   void testPostEventLogsDuplicate() {
     Instant now = Instant.now();
-    EventLogRecord record = new EventLogRecord();
-    record.setTimestamp(now);
-    record.setScoutName("Duplicate Scout");
-    record.setTournamentId("TEST_TOURN");
-    record.setLevel("Qualification");
-    record.setMatchId(1);
-    record.setAlliance("Blue");
-    record.setTeamNumber(1310);
-    record.setEventType("CLIMB");
-    record.setAmount(1.0);
-    record.setNote("Testing duplicate");
+    EventLogRecord record =
+        new EventLogRecord(
+            0,
+            now,
+            "Duplicate Scout",
+            "TEST_TOURN",
+            "Qualification",
+            1,
+            "Blue",
+            1310,
+            "CLIMB",
+            1.0,
+            "Testing duplicate");
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
@@ -108,16 +112,19 @@ public class EventApiTest {
 
   @Test
   void testPostEventLogsInvalidEventTypeLength() {
-    EventLogRecord record = new EventLogRecord();
-    record.setTimestamp(Instant.now());
-    record.setScoutName("Test Scout");
-    record.setTournamentId("TEST_TOURN");
-    record.setMatchId(1);
-    record.setAlliance("Red");
-    record.setTeamNumber(1310);
-    record.setEventType("A".repeat(256)); // Max is 255
-    record.setAmount(1.0);
-    record.setNote("Long event type");
+    EventLogRecord record =
+        new EventLogRecord(
+            0,
+            Instant.now(),
+            "Test Scout",
+            "TEST_TOURN",
+            null,
+            1,
+            "Red",
+            1310,
+            "A".repeat(256), // Max is 255
+            1.0,
+            "Long event type");
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
@@ -135,16 +142,19 @@ public class EventApiTest {
 
   @Test
   void testPostEventLogsInvalidNoteLength() {
-    EventLogRecord record = new EventLogRecord();
-    record.setTimestamp(Instant.now());
-    record.setScoutName("Test Scout");
-    record.setTournamentId("TEST_TOURN");
-    record.setMatchId(1);
-    record.setAlliance("Red");
-    record.setTeamNumber(1310);
-    record.setEventType("SCORE");
-    record.setAmount(1.0);
-    record.setNote("N".repeat(1025)); // Max is 1024
+    EventLogRecord record =
+        new EventLogRecord(
+            0,
+            Instant.now(),
+            "Test Scout",
+            "TEST_TOURN",
+            null,
+            1,
+            "Red",
+            1310,
+            "SCORE",
+            1.0,
+            "N".repeat(1025)); // Max is 1024
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
@@ -162,7 +172,8 @@ public class EventApiTest {
 
   @Test
   void testPostEventLogsMissingRequiredFields() {
-    EventLogRecord record = new EventLogRecord();
+    EventLogRecord record =
+        new EventLogRecord(0, null, null, null, null, 0, null, 0, null, 0, null);
     // Missing timestamp, scoutName, etc. which are NOT NULL in DB
 
     HttpRequest<EventLogRecord[]> request =
@@ -181,16 +192,19 @@ public class EventApiTest {
 
   @Test
   void testPostEventLogsInvalidAllianceLength() {
-    EventLogRecord record = new EventLogRecord();
-    record.setTimestamp(Instant.now());
-    record.setScoutName("Test Scout");
-    record.setTournamentId("TEST_TOURN");
-    record.setMatchId(1);
-    record.setAlliance("A".repeat(65)); // Max is 64
-    record.setTeamNumber(1310);
-    record.setEventType("SCORE");
-    record.setAmount(1.0);
-    record.setNote("Long alliance");
+    EventLogRecord record =
+        new EventLogRecord(
+            0,
+            Instant.now(),
+            "Test Scout",
+            "TEST_TOURN",
+            null,
+            1,
+            "A".repeat(65), // Max is 64
+            1310,
+            "SCORE",
+            1.0,
+            "Long alliance");
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
@@ -208,16 +222,19 @@ public class EventApiTest {
 
   @Test
   void testPostEventLogsInvalidScoutNameLength() {
-    EventLogRecord record = new EventLogRecord();
-    record.setTimestamp(Instant.now());
-    record.setScoutName("S".repeat(256)); // Max is 255
-    record.setTournamentId("TEST_TOURN");
-    record.setMatchId(1);
-    record.setAlliance("Red");
-    record.setTeamNumber(1310);
-    record.setEventType("SCORE");
-    record.setAmount(1.0);
-    record.setNote("Long scout name");
+    EventLogRecord record =
+        new EventLogRecord(
+            0,
+            Instant.now(),
+            "S".repeat(256), // Max is 255
+            "TEST_TOURN",
+            null,
+            1,
+            "Red",
+            1310,
+            "SCORE",
+            1.0,
+            "Long scout name");
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
@@ -235,17 +252,19 @@ public class EventApiTest {
 
   @Test
   void testPostEventLogsInvalidTournamentIdLength() {
-    EventLogRecord record = new EventLogRecord();
-    record.setTimestamp(Instant.now());
-    record.setScoutName("Test Scout");
-    record.setTournamentId("T".repeat(128)); // Max is 127
-    record.setLevel("Qualification");
-    record.setMatchId(1);
-    record.setAlliance("Red");
-    record.setTeamNumber(1310);
-    record.setEventType("SCORE");
-    record.setAmount(1.0);
-    record.setNote("Long tournament ID");
+    EventLogRecord record =
+        new EventLogRecord(
+            0,
+            Instant.now(),
+            "Test Scout",
+            "T".repeat(128), // Max is 127
+            "Qualification",
+            1,
+            "Red",
+            1310,
+            "SCORE",
+            1.0,
+            "Long tournament ID");
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
@@ -263,17 +282,19 @@ public class EventApiTest {
 
   @Test
   void testPostEventLogsInvalidLevelLength() {
-    EventLogRecord record = new EventLogRecord();
-    record.setTimestamp(Instant.now());
-    record.setScoutName("Test Scout");
-    record.setTournamentId("TEST_TOURN");
-    record.setLevel("L".repeat(128)); // Max is 127
-    record.setMatchId(1);
-    record.setAlliance("Red");
-    record.setTeamNumber(1310);
-    record.setEventType("SCORE");
-    record.setAmount(1.0);
-    record.setNote("Long level");
+    EventLogRecord record =
+        new EventLogRecord(
+            0,
+            Instant.now(),
+            "Test Scout",
+            "TEST_TOURN",
+            "L".repeat(128), // Max is 127
+            1,
+            "Red",
+            1310,
+            "SCORE",
+            1.0,
+            "Long level");
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
