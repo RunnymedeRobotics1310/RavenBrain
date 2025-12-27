@@ -1,17 +1,13 @@
 package ca.team1310.ravenbrain.connect;
 
 import io.micronaut.context.annotation.ConfigurationProperties;
-import lombok.Data;
+import io.micronaut.core.annotation.Introspected;
 
 /**
  * @author Tony Field
  * @since 2025-03-29 23:58
  */
+@Introspected
 @ConfigurationProperties("raven-eye.role-passwords")
-@Data
-public class Config {
-  private String admin;
-  private String expertscout;
-  private String datascout;
-  private String member;
-}
+public record Config(
+    String superuser, String admin, String expertscout, String datascout, String member) {}
