@@ -10,8 +10,10 @@ import lombok.Data;
 @ConfigurationProperties("raven-eye.role-passwords")
 @Data
 public class Config {
-  private String admin;
-  private String expertscout;
-  private String datascout;
-  private String member;
+
+    private String superuser;
+    private String admin;
+    private String expertscout;
+    private String datascout;
+    private String member;
 }
