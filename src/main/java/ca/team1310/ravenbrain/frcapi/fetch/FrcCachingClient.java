@@ -30,15 +30,23 @@ public class FrcCachingClient {
 
   public boolean ping() {
     FrcRawResponse response = frcClient.get(null, null);
-    return response.statuscode == 200;
+    return response.statuscode() == 200;
   }
 
   public void markProcessed(long requestId) {
     Optional<FrcRawResponse> or = repo.findById(requestId);
     if (or.isPresent()) {
       FrcRawResponse response = or.get();
-      response.setProcessed(true);
-      repo.update(response);
+      FrcRawResponse updated =
+          new FrcRawResponse(
+              response.id(),
+              response.lastcheck(),
+              response.lastmodified(),
+              true,
+              response.statuscode(),
+              response.url(),
+              response.body());
+      repo.update(updated);
     }
   }
 
@@ -58,34 +66,56 @@ public class FrcCachingClient {
       db = repo.find(uri);
       return db;
     } else {
-      if (Instant.now().minus(maxAgeSeconds, ChronoUnit.SECONDS).isAfter(db.lastcheck)) {
+      if (Instant.now().minus(maxAgeSeconds, ChronoUnit.SECONDS).isAfter(db.lastcheck())) {
         // check again
-        FrcRawResponse api = frcClient.get(uri, db.lastmodified);
-        if (api.statuscode == 304) /* i.e. NOT MODIFIED since db.lastmodified */ {
+        FrcRawResponse api = frcClient.get(uri, db.lastmodified());
+        if (api.statuscode() == 304) /* i.e. NOT MODIFIED since db.lastmodified */ {
           // update cache
-          db.lastcheck = Instant.now();
           log.debug("Not modified for: {}", uri);
-          return repo.update(db);
-        } else if ((db.statuscode >= 200 && db.statuscode <= 299)
-            || db.statuscode == 404) /* PROCESSABLE CODES */ {
+          return repo.update(
+              new FrcRawResponse(
+                  db.id(),
+                  Instant.now(),
+                  db.lastmodified(),
+                  db.processed(),
+                  db.statuscode(),
+                  db.url(),
+                  db.body()));
+        } else if ((db.statuscode() >= 200 && db.statuscode() <= 299)
+            || db.statuscode() == 404) /* PROCESSABLE CODES */ {
           // new data - update it
-          db.lastcheck = Instant.now();
           boolean same =
-              db.lastmodified.equals(api.lastmodified)
-                  && (db.statuscode == api.statuscode)
-                  && (db.body.equals(api.body));
+              db.lastmodified().equals(api.lastmodified())
+                  && (db.statuscode() == api.statuscode())
+                  && (db.body().equals(api.body()));
+
+          FrcRawResponse updated;
           if (same) {
             // not sure why we didn't get a 304 for this - we should have
             log.debug("Did not get a 304 but data has not changed for {}", uri);
+            updated =
+                new FrcRawResponse(
+                    db.id(),
+                    Instant.now(),
+                    db.lastmodified(),
+                    db.processed(),
+                    db.statuscode(),
+                    db.url(),
+                    db.body());
           } else {
             // changed data needs reprocessing
-            db.processed = false;
-            db.lastmodified = api.lastmodified;
-            db.statuscode = api.statuscode;
-            db.body = api.body;
             log.debug("Updated cached response for: {}", uri);
+            updated =
+                new FrcRawResponse(
+                    db.id(),
+                    Instant.now(),
+                    api.lastmodified(),
+                    false,
+                    api.statuscode(),
+                    db.url(),
+                    api.body());
           }
-          return repo.update(db);
+          return repo.update(updated);
         } else {
           log.debug("Unexpected response code for {}", uri);
           throw new FrcClientException(db);
@@ -101,8 +131,15 @@ public class FrcCachingClient {
   /** Clear the processed flag for all items. For test use only. */
   void clearProcessed() {
     for (FrcRawResponse response : repo.findAll()) {
-      response.setProcessed(false);
-      repo.update(response);
+      repo.update(
+          new FrcRawResponse(
+              response.id(),
+              response.lastcheck(),
+              response.lastmodified(),
+              false,
+              response.statuscode(),
+              response.url(),
+              response.body()));
     }
   }
 }
