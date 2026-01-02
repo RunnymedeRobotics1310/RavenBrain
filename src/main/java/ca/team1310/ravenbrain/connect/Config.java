@@ -10,4 +10,9 @@ import io.micronaut.core.annotation.Introspected;
 @Introspected
 @ConfigurationProperties("raven-eye.role-passwords")
 public record Config(
-    String superuser, String admin, String expertscout, String datascout, String member) {}
+    String superuser, String admin, String expertscout, String datascout, String member) {
+
+  public String toString() {
+    return "raven-eye.role-passwords";
+  }
+}
