@@ -48,6 +48,12 @@ public class PresharedKeyAuthenticationProvider<B> implements HttpRequestAuthent
           identity,
           Arrays.asList("ROLE_ADMIN", "ROLE_EXPERTSCOUT", "ROLE_DATASCOUT", "ROLE_MEMBER"));
     }
+    if (config.superuser().equals(secret)) {
+      return AuthenticationResponse.success(
+          identity,
+          Arrays.asList(
+              "ROLE_SUPERUSER", "ROLE_ADMIN", "ROLE_EXPERTSCOUT", "ROLE_DATASCOUT", "ROLE_MEMBER"));
+    }
     return AuthenticationResponse.failure(AuthenticationFailureReason.CREDENTIALS_DO_NOT_MATCH);
   }
 }
