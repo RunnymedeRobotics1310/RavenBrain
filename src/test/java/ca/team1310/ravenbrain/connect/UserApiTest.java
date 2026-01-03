@@ -63,6 +63,13 @@ public class UserApiTest {
     assertEquals(testUserLogin, fetchedUser.login());
 
     // 5. Update user as superuser
+    // First, set forgot password flag so password can be changed
+    client
+        .toBlocking()
+        .exchange(
+            HttpRequest.POST("/api/users/forgot-password", null)
+                .basicAuth(testUserLogin, "password123"));
+
     User updatedUserRequest =
         new User(
             id,
@@ -70,7 +77,7 @@ public class UserApiTest {
             "Updated Name",
             "newPassword",
             true,
-            false,
+            true,
             List.of("ROLE_MEMBER", "ROLE_ADMIN"));
     HttpRequest<User> updateRequest =
         HttpRequest.PUT("/api/users/" + id, updatedUserRequest)
@@ -87,7 +94,7 @@ public class UserApiTest {
             "Updated Name 2",
             "newPassword",
             true,
-            false,
+            true,
             List.of("ROLE_MEMBER", "ROLE_ADMIN"));
     HttpRequest<User> updateRequest2 =
         HttpRequest.PUT("/api/users/" + id, updatedUserRequest2).basicAuth(adminLogin, "adminPass");

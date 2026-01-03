@@ -69,6 +69,13 @@ public class UserApi {
             io.micronaut.http.HttpStatus.FORBIDDEN, "Only superuser can modify a superuser");
       }
 
+      if (user.enabled()
+          && !existingUser.enabled()
+          && existingUser.roles().contains("ROLE_ADMIN")) {
+        throw new io.micronaut.http.exceptions.HttpStatusException(
+            io.micronaut.http.HttpStatus.FORBIDDEN, "Only superuser can enable a disabled admin");
+      }
+
       if (user.roles().contains("ROLE_SUPERUSER")
           && !existingUser.roles().contains("ROLE_SUPERUSER")) {
         throw new io.micronaut.http.exceptions.HttpStatusException(
@@ -77,6 +84,25 @@ public class UserApi {
       if (user.roles().contains("ROLE_ADMIN") && !existingUser.roles().contains("ROLE_ADMIN")) {
         throw new io.micronaut.http.exceptions.HttpStatusException(
             io.micronaut.http.HttpStatus.FORBIDDEN, "Only superuser can add ROLE_ADMIN");
+      }
+    }
+
+    if (!existingUser.forgotPassword()) {
+      if (user.passwordHash() != null
+          && !user.passwordHash().isEmpty()
+          && !user.passwordHash().equals("REDACTED")
+          && !user.passwordHash().equals(existingUser.passwordHash())) {
+        throw new io.micronaut.http.exceptions.HttpStatusException(
+            io.micronaut.http.HttpStatus.FORBIDDEN,
+            "Cannot change password unless forgot password flag is set");
+      }
+    }
+
+    if (user.forgotPassword() && !existingUser.forgotPassword()) {
+      if (!authentication.getName().equals(existingUser.login())) {
+        throw new io.micronaut.http.exceptions.HttpStatusException(
+            io.micronaut.http.HttpStatus.FORBIDDEN,
+            "Cannot set forgot password flag for other users");
       }
     }
     return userService.redactPassword(userService.updateUser(id, user));
