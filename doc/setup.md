@@ -23,7 +23,7 @@ Java 21 is required
 e.g.
 
 ```bash
-sdk install java 21.0.8-zulu 
+sdk install java 21.0.8-zulu
 ```
 
 #### Windows Users
@@ -42,6 +42,10 @@ and then download IntelliJ IDEA Ultimate for your computer.
 ## Install MySQL Database
 
 - Install MySQL Community Server 8.4 LTS from https://dev.mysql.com/downloads/mysql/
+- Save your `root` username and password in a safe place. You will need it throughout these installation instructions.
+- Throughout the setup instructions, you will need to specify a username and password. Very frequently, `-u <username>`
+  will allow you to specify the username, and `-p` will tell the system to prompt you for your password (it's not a good
+  idea to specify the password on the command line, so you are prompted for it instead.)
 
 #### Mac Users
 
@@ -58,14 +62,12 @@ mysql -uroot -p -e "SET GLOBAL time_zone = UTC;"
 
 - COMING SOON...
 - ...but basically, as long as you have THE CORRECT VERSION and follow the default instructions, you should be fine.
-- be sure to define the `root` user password. The `-p` prompt in the code snippets below will trigger the app to prompt
-  you for a password - and it's the `root` user password that you will have to provide. DO NOT lose that password!
 
-### Create the database
+### Create the main user and the database, and load the initial DB data
 
 ```bash
-mysqladmin -u root -p create ravenbrain 
-mysql -uroot -p mysql -e  "CREATE USER 'rb'@'localhost' IDENTIFIED BY 'rb'" 
+mysqladmin -u root -p create ravenbrain
+mysql -uroot -p mysql -e  "CREATE USER 'rb'@'localhost' IDENTIFIED BY 'rb'"
 mysql -uroot -p mysql -e  "GRANT ALL ON ravenbrain.* TO 'rb'@'localhost'"
 mysql --database=ravenbrain --user=root -p --host=127.0.0.1 --port=3306 < "ravenbrain-dumps/ravenbrain-2025-04-05-dump.sql"
 ```
@@ -79,10 +81,10 @@ Use this if the DB becomes corrupted or a new DB dump is available.
 - drop the database
 - re-create it
 - re-import
-- re-start RaveBrain (Flyway will update tables again)
+- re-start RaveBrain (Flyway (the database schema upgrade manager) will update tables again)
 
 ```bash
-mysqladmin -u root -p drop ravenbrain 
+mysqladmin -u root -p drop ravenbrain
 mysqladmin -u root -p create ravenbrain
 mysql --database=ravenbrain --user=root -p --host=127.0.0.1 --port=3306 < "ravenbrain-dumps/ravenbrain-2025-04-05-dump.sql"
 ```
@@ -101,23 +103,27 @@ Define a file called `application-local.properties` and place it in your `src/ma
 following properties:
 
 ```properties
-# SMTP Settings
 datasources.default.username=rb
 datasources.default.password=rb
 raven-eye.frc-api.user=frc_api_user_id
 raven-eye.frc-api.key=frc_api_user_key
-raven-eye.role-passwords.admin=actual_admin_password_123
-raven-eye.role-passwords.expertscout=actual_expert_scout_password_876
-raven-eye.role-passwords.datascout=actual_data_scout_password__1
-raven-eye.role-passwords.member=actual_team_shared_secret_team1310IsTheBest
+raven-eye.role-passwords.superuser=actual_superuser_password_1310
 ```
 
-You will need to substitute the placeholder keys and secrets with the appropriate values. Speak with the mentor to learn
-how to get these details.
+You will need to substitute the placeholder keys and secrets with the appropriate values.
+
+| **Parameter**                      | **Description**                                                                                                                                                                                   |
+|------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| datasources.default.username       | The username used when creating the database. This was probably `rb`                                                                                                                              |
+| datasources.default.password       | The password used when creating the database. Probagbly `rb` for developer systems, but different for the production system.                                                                      |
+| raven-eye.frc-api.user             | The userid you used when you created a FRC API key on the FRC API website. You have to do this yourself - the key is not shared                                                                   |
+| raven-eye.frc-api.key              | The key given you to you by the FRC API site when you registered. This is not shared - you need to sign up yourself.                                                                              |
+| raven-eye.role-passwords.superuser | This is where you DEFINE the superuser password for the system. A superuser has the ability to create admins (and other roles). Never share this password. If blank, no superuser will be active. |
 
 Next, create a second file, this time called `application-test.properties` (i.e. with `-test` instead of `-local`), and
 place it in your
-`src/test/resources` folder, and include the same contents. These configuration overrides are overlaid on top of the
+`src/test/resources` folder (**NOT** the `src/main/resources` folder), and include the same contents. These
+configuration overrides are overlaid on top of the
 properties in `application.yml`.
 
 If you want to change any of the logging levels, add the appropriate logger property to the above file. Valid levels are
