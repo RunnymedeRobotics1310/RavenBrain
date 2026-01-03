@@ -33,8 +33,7 @@ datasources:
 raven-eye:
   team: 1310
   security:
-    encryption:
-      seed: ${ENCRYPTION_SEED:raven-brain-default-seed-change-me-in-production}
+    encryption-seed: ${ENCRYPTION_SEED:raven-brain-default-seed-change-me-in-production}
     superuser-password: ${SUPERUSER_PASSWORD:default_superuser_password_999}
     registration-secret: ${REGISTRATION_SECRET:default_registration_secret_123}
   frc-api:
