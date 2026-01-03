@@ -1,0 +1,53 @@
+package ca.team1310.ravenbrain.connect;
+
+import io.micronaut.http.annotation.*;
+import io.micronaut.security.annotation.Secured;
+import io.micronaut.security.rules.SecurityRule;
+import java.util.List;
+
+@Controller("/api/users")
+@Secured(SecurityRule.IS_AUTHENTICATED)
+public class UserApi {
+
+  private final UserService userService;
+
+  public UserApi(UserService userService) {
+    this.userService = userService;
+  }
+
+  @Get
+  @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public List<User> list() {
+    return userService.listUsers().stream().map(userService::redactPassword).toList();
+  }
+
+  @Get("/{id}")
+  @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public User get(long id) {
+    return userService
+        .getUser(id)
+        .map(userService::redactPassword)
+        .orElseThrow(
+            () ->
+                new io.micronaut.http.exceptions.HttpStatusException(
+                    io.micronaut.http.HttpStatus.NOT_FOUND, "User not found"));
+  }
+
+  @Post
+  @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public User create(@Body User user) {
+    return userService.redactPassword(userService.createUser(user));
+  }
+
+  @Put("/{id}")
+  @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public User update(long id, @Body User user) {
+    return userService.redactPassword(userService.updateUser(id, user));
+  }
+
+  @Delete("/{id}")
+  @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public void delete(long id) {
+    userService.deleteUser(id);
+  }
+}
