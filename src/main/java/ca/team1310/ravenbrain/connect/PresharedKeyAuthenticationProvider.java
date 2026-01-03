@@ -9,7 +9,9 @@ import io.micronaut.security.authentication.AuthenticationResponse;
 import io.micronaut.security.authentication.provider.HttpRequestAuthenticationProvider;
 import jakarta.inject.Singleton;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -33,26 +35,38 @@ public class PresharedKeyAuthenticationProvider<B> implements HttpRequestAuthent
     String identity = authenticationRequest.getIdentity();
     String secret = authenticationRequest.getSecret();
     if (config.member().equals(secret)) {
-      return AuthenticationResponse.success(identity, List.of("ROLE_MEMBER"));
+      Map<String, Object> map = new LinkedHashMap<>();
+      map.put("fullName", "Joe Member");
+      return AuthenticationResponse.success(identity, List.of("ROLE_MEMBER"), map);
     }
     if (config.datascout().equals(secret)) {
+      Map<String, Object> map = new LinkedHashMap<>();
+      map.put("fullName", "Mary Scout");
       return AuthenticationResponse.success(
-          identity, Arrays.asList("ROLE_DATASCOUT", "ROLE_MEMBER"));
+          identity, Arrays.asList("ROLE_DATASCOUT", "ROLE_MEMBER"), map);
     }
     if (config.expertscout().equals(secret)) {
+      Map<String, Object> map = new LinkedHashMap<>();
+      map.put("fullName", "Frank Expert");
       return AuthenticationResponse.success(
-          identity, Arrays.asList("ROLE_EXPERTSCOUT", "ROLE_DATASCOUT", "ROLE_MEMBER"));
+          identity, Arrays.asList("ROLE_EXPERTSCOUT", "ROLE_DATASCOUT", "ROLE_MEMBER"), map);
     }
     if (config.admin().equals(secret)) {
+      Map<String, Object> map = new LinkedHashMap<>();
+      map.put("fullName", "Adam Admin");
       return AuthenticationResponse.success(
           identity,
-          Arrays.asList("ROLE_ADMIN", "ROLE_EXPERTSCOUT", "ROLE_DATASCOUT", "ROLE_MEMBER"));
+          Arrays.asList("ROLE_ADMIN", "ROLE_EXPERTSCOUT", "ROLE_DATASCOUT", "ROLE_MEMBER"),
+          map);
     }
     if (config.superuser().equals(secret)) {
+      Map<String, Object> map = new LinkedHashMap<>();
+      map.put("fullName", "Steve Superuser");
       return AuthenticationResponse.success(
           identity,
           Arrays.asList(
-              "ROLE_SUPERUSER", "ROLE_ADMIN", "ROLE_EXPERTSCOUT", "ROLE_DATASCOUT", "ROLE_MEMBER"));
+              "ROLE_SUPERUSER", "ROLE_ADMIN", "ROLE_EXPERTSCOUT", "ROLE_DATASCOUT", "ROLE_MEMBER"),
+          map);
     }
     return AuthenticationResponse.failure(AuthenticationFailureReason.CREDENTIALS_DO_NOT_MATCH);
   }
