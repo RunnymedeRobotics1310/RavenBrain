@@ -140,6 +140,10 @@ public class UserService {
     userRepository.deleteById(id);
   }
 
+  public List<User> listUsersWithForgotPassword() {
+    return userRepository.findByForgotPasswordTrue();
+  }
+
   String hashPassword(String password) {
     try {
       MessageDigest digest = MessageDigest.getInstance("SHA-256");

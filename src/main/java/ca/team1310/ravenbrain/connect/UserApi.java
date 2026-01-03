@@ -57,4 +57,12 @@ public class UserApi {
   public void forgotPassword(Authentication authentication) {
     userService.notePasswordForgotten(authentication.getName());
   }
+
+  @Get("/forgot-password")
+  @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public List<User> listForgotPassword() {
+    return userService.listUsersWithForgotPassword().stream()
+        .map(userService::redactPassword)
+        .toList();
+  }
 }

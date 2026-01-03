@@ -158,5 +158,16 @@ public class UserApiTest {
                     .basicAuth("superuser", config.superuser()),
                 User.class);
     assertTrue(updatedUser.forgotPassword());
+
+    // 4. List users with forgotPassword flag as admin
+    HttpRequest<?> listForgotRequest =
+        HttpRequest.GET("/api/users/forgot-password").basicAuth("superuser", config.superuser());
+    List<User> forgotUsers =
+        client.toBlocking().retrieve(listForgotRequest, Argument.listOf(User.class));
+    assertTrue(forgotUsers.stream().anyMatch(u -> u.id() == createdMember.id()));
+    assertTrue(
+        forgotUsers.stream()
+            .filter(u -> u.id() == createdMember.id())
+            .allMatch(u -> "REDACTED".equals(u.passwordHash())));
   }
 }
