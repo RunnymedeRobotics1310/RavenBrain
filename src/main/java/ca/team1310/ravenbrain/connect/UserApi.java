@@ -54,7 +54,26 @@ public class UserApi {
 
   @Put("/{id}")
   @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
-  public User update(long id, @Body User user) {
+  public User update(long id, @Body User user, Authentication authentication) {
+    if (!authentication.getRoles().contains("ROLE_SUPERUSER")) {
+      User existingUser =
+          userService
+              .getUser(id)
+              .orElseThrow(
+                  () ->
+                      new io.micronaut.http.exceptions.HttpStatusException(
+                          io.micronaut.http.HttpStatus.NOT_FOUND, "User not found"));
+
+      if (user.roles().contains("ROLE_SUPERUSER")
+          && !existingUser.roles().contains("ROLE_SUPERUSER")) {
+        throw new io.micronaut.http.exceptions.HttpStatusException(
+            io.micronaut.http.HttpStatus.FORBIDDEN, "Only superuser can add ROLE_SUPERUSER");
+      }
+      if (user.roles().contains("ROLE_ADMIN") && !existingUser.roles().contains("ROLE_ADMIN")) {
+        throw new io.micronaut.http.exceptions.HttpStatusException(
+            io.micronaut.http.HttpStatus.FORBIDDEN, "Only superuser can add ROLE_ADMIN");
+      }
+    }
     return userService.redactPassword(userService.updateUser(id, user));
   }
 

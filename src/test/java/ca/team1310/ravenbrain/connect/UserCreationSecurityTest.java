@@ -164,4 +164,152 @@ public class UserCreationSecurityTest {
             });
     assertEquals(HttpStatus.FORBIDDEN, e.getStatus());
   }
+
+  @Test
+  void onlyAdminAndSuperuserCanChangeRoles() {
+    String testUserLogin = "test-user-" + System.currentTimeMillis();
+    String testUserPassword = "password";
+    User testUser =
+        new User(
+            0, testUserLogin, "Test User", testUserPassword, true, false, List.of("ROLE_MEMBER"));
+    User createdUser =
+        client
+            .toBlocking()
+            .retrieve(
+                HttpRequest.POST("/api/users", testUser).basicAuth(SUPERUSER, config.superuser()),
+                User.class);
+
+    // 1. Member cannot update their own roles (actually UserApi.update is secured with
+    // ROLE_ADMIN/SUPERUSER)
+    User updateRolesAttempt =
+        new User(
+            createdUser.id(),
+            testUserLogin,
+            "Updated",
+            testUserPassword,
+            true,
+            false,
+            List.of("ROLE_ADMIN"));
+    HttpClientResponseException e =
+        assertThrows(
+            HttpClientResponseException.class,
+            () -> {
+              client
+                  .toBlocking()
+                  .exchange(
+                      HttpRequest.PUT("/api/users/" + createdUser.id(), updateRolesAttempt)
+                          .basicAuth(testUserLogin, testUserPassword));
+            });
+    assertEquals(HttpStatus.FORBIDDEN, e.getStatus());
+  }
+
+  @Test
+  void adminCannotAddAdminOrSuperuserRoleToExistingUser() {
+    String targetUserLogin = "target-user-" + System.currentTimeMillis();
+    User targetUser =
+        new User(0, targetUserLogin, "Target User", "pass", true, false, List.of("ROLE_MEMBER"));
+    User createdTarget =
+        client
+            .toBlocking()
+            .retrieve(
+                HttpRequest.POST("/api/users", targetUser).basicAuth(SUPERUSER, config.superuser()),
+                User.class);
+
+    // 1. Admin trying to add ROLE_ADMIN to existing user
+    User addAdminRole =
+        new User(
+            createdTarget.id(),
+            targetUserLogin,
+            "Target User",
+            "pass",
+            true,
+            false,
+            List.of("ROLE_MEMBER", "ROLE_ADMIN"));
+    HttpClientResponseException e =
+        assertThrows(
+            HttpClientResponseException.class,
+            () -> {
+              client
+                  .toBlocking()
+                  .exchange(
+                      HttpRequest.PUT("/api/users/" + createdTarget.id(), addAdminRole)
+                          .basicAuth(adminLogin, adminPassword));
+            });
+    // This is expected to FAIL (currently returns 200)
+    assertEquals(HttpStatus.FORBIDDEN, e.getStatus());
+
+    // 2. Admin trying to add ROLE_SUPERUSER to existing user
+    User addSuperuserRole =
+        new User(
+            createdTarget.id(),
+            targetUserLogin,
+            "Target User",
+            "pass",
+            true,
+            false,
+            List.of("ROLE_MEMBER", "ROLE_SUPERUSER"));
+    HttpClientResponseException e2 =
+        assertThrows(
+            HttpClientResponseException.class,
+            () -> {
+              client
+                  .toBlocking()
+                  .exchange(
+                      HttpRequest.PUT("/api/users/" + createdTarget.id(), addSuperuserRole)
+                          .basicAuth(adminLogin, adminPassword));
+            });
+    // This is expected to FAIL (currently returns 200)
+    assertEquals(HttpStatus.FORBIDDEN, e2.getStatus());
+  }
+
+  @Test
+  void superuserCanAddAdminOrSuperuserRoleToExistingUser() {
+    String targetUserLogin = "target-user-2-" + System.currentTimeMillis();
+    User targetUser =
+        new User(0, targetUserLogin, "Target User 2", "pass", true, false, List.of("ROLE_MEMBER"));
+    User createdTarget =
+        client
+            .toBlocking()
+            .retrieve(
+                HttpRequest.POST("/api/users", targetUser).basicAuth(SUPERUSER, config.superuser()),
+                User.class);
+
+    // Superuser adding ROLE_ADMIN
+    User addAdminRole =
+        new User(
+            createdTarget.id(),
+            targetUserLogin,
+            "Target User 2",
+            "pass",
+            true,
+            false,
+            List.of("ROLE_MEMBER", "ROLE_ADMIN"));
+    User updatedBySuper =
+        client
+            .toBlocking()
+            .retrieve(
+                HttpRequest.PUT("/api/users/" + createdTarget.id(), addAdminRole)
+                    .basicAuth(SUPERUSER, config.superuser()),
+                User.class);
+    assertTrue(updatedBySuper.roles().contains("ROLE_ADMIN"));
+
+    // Superuser adding ROLE_SUPERUSER
+    User addSuperuserRole =
+        new User(
+            createdTarget.id(),
+            targetUserLogin,
+            "Target User 2",
+            "pass",
+            true,
+            false,
+            List.of("ROLE_MEMBER", "ROLE_ADMIN", "ROLE_SUPERUSER"));
+    updatedBySuper =
+        client
+            .toBlocking()
+            .retrieve(
+                HttpRequest.PUT("/api/users/" + createdTarget.id(), addSuperuserRole)
+                    .basicAuth(SUPERUSER, config.superuser()),
+                User.class);
+    assertTrue(updatedBySuper.roles().contains("ROLE_SUPERUSER"));
+  }
 }
