@@ -2,7 +2,6 @@ package ca.team1310.ravenbrain.connect;
 
 import io.micronaut.context.event.StartupEvent;
 import io.micronaut.runtime.event.annotation.EventListener;
-import io.micronaut.security.annotation.Secured;
 import jakarta.inject.Singleton;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -100,28 +99,6 @@ public class UserService {
             user.enabled(),
             user.forgotPassword(),
             user.roles());
-
-    if (userToSave.roles().contains("ROLE_ADMIN")) {
-      return createAdmin(userToSave);
-    } else if (userToSave.roles().contains("ROLE_SUPERUSER")) {
-      return createSuperuser(userToSave);
-    } else {
-      return createNormalUser(userToSave);
-    }
-  }
-
-  @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
-  private User createNormalUser(User userToSave) {
-    return userRepository.save(userToSave);
-  }
-
-  @Secured({"ROLE_SUPERUSER"})
-  private User createAdmin(User userToSave) {
-    return userRepository.save(userToSave);
-  }
-
-  @Secured({"ROLE_SUPERUSER"})
-  private User createSuperuser(User userToSave) {
     return userRepository.save(userToSave);
   }
 

@@ -36,7 +36,19 @@ public class UserApi {
 
   @Post
   @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
-  public User create(@Body User user) {
+  public User create(@Body User user, Authentication authentication) {
+    if (user.roles().contains("ROLE_SUPERUSER")) {
+      if (!authentication.getRoles().contains("ROLE_SUPERUSER")) {
+        throw new io.micronaut.http.exceptions.HttpStatusException(
+            io.micronaut.http.HttpStatus.FORBIDDEN, "Only superuser can create superuser");
+      }
+    }
+    if (user.roles().contains("ROLE_ADMIN")) {
+      if (!authentication.getRoles().contains("ROLE_SUPERUSER")) {
+        throw new io.micronaut.http.exceptions.HttpStatusException(
+            io.micronaut.http.HttpStatus.FORBIDDEN, "Only admin or superuser can create admin");
+      }
+    }
     return userService.redactPassword(userService.createUser(user));
   }
 
