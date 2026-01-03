@@ -2,6 +2,7 @@ package ca.team1310.ravenbrain.connect;
 
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
+import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.rules.SecurityRule;
 import java.util.List;
 
@@ -49,5 +50,11 @@ public class UserApi {
   @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
   public void delete(long id) {
     userService.deleteUser(id);
+  }
+
+  @Post("/forgot-password")
+  @Secured(SecurityRule.IS_AUTHENTICATED)
+  public void forgotPassword(Authentication authentication) {
+    userService.notePasswordForgotten(authentication.getName());
   }
 }

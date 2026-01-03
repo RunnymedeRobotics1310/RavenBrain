@@ -123,4 +123,40 @@ public class UserApiTest {
             HttpClientResponseException.class, () -> client.toBlocking().exchange(createRequest));
     assertEquals(HttpStatus.FORBIDDEN, e.getStatus());
   }
+
+  @Test
+  void testForgotPassword() {
+    String memberLogin = "member-forgot-testuser-" + System.currentTimeMillis();
+    String password = "memberPass";
+    // 1. Create a member user
+    User memberUser =
+        new User(0, memberLogin, "Member User", password, true, false, List.of("ROLE_MEMBER"));
+    User createdMember =
+        client
+            .toBlocking()
+            .retrieve(
+                HttpRequest.POST("/api/users", memberUser)
+                    .basicAuth("superuser", config.superuser()),
+                User.class);
+    assertFalse(createdMember.forgotPassword());
+
+    // 2. Call forgot-password as the member
+    HttpResponse<Void> response =
+        client
+            .toBlocking()
+            .exchange(
+                HttpRequest.POST("/api/users/forgot-password", null)
+                    .basicAuth(memberLogin, password));
+    assertEquals(HttpStatus.OK, response.getStatus());
+
+    // 3. Verify flag is updated
+    User updatedUser =
+        client
+            .toBlocking()
+            .retrieve(
+                HttpRequest.GET("/api/users/" + createdMember.id())
+                    .basicAuth("superuser", config.superuser()),
+                User.class);
+    assertTrue(updatedUser.forgotPassword());
+  }
 }
