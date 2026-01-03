@@ -126,7 +126,6 @@ public class UserService {
             user.forgotPassword(),
             user.roles());
 
-    // todo: fixme around updating users
     return userRepository.update(userToUpdate);
   }
 
