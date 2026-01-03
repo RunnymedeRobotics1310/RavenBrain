@@ -79,6 +79,21 @@ public class UserApiTest {
     assertEquals("Updated Name", updatedUser.displayName());
     assertTrue(updatedUser.roles().contains("ROLE_ADMIN"));
 
+    // 5.1 Update user as admin (non-superuser target)
+    User updatedUserRequest2 =
+        new User(
+            id,
+            testUserLogin,
+            "Updated Name 2",
+            "newPassword",
+            true,
+            false,
+            List.of("ROLE_MEMBER", "ROLE_ADMIN"));
+    HttpRequest<User> updateRequest2 =
+        HttpRequest.PUT("/api/users/" + id, updatedUserRequest2).basicAuth(adminLogin, "adminPass");
+    User updatedUser2 = client.toBlocking().retrieve(updateRequest2, User.class);
+    assertEquals("Updated Name 2", updatedUser2.displayName());
+
     // 6. List users as admin
     HttpRequest<?> listRequest = HttpRequest.GET("/api/users").basicAuth(adminLogin, "adminPass");
     List<User> users = client.toBlocking().retrieve(listRequest, Argument.listOf(User.class));
@@ -169,5 +184,49 @@ public class UserApiTest {
         forgotUsers.stream()
             .filter(u -> u.id() == createdMember.id())
             .allMatch(u -> "REDACTED".equals(u.passwordHash())));
+  }
+
+  @Test
+  void testAdminCannotModifySuperuser() {
+    String adminLogin = "admin-security-test-" + System.currentTimeMillis();
+    String adminPass = "adminPass";
+
+    // 1. Create an admin user
+    User adminUser =
+        new User(0, adminLogin, "Admin User", adminPass, true, false, List.of("ROLE_ADMIN"));
+    client
+        .toBlocking()
+        .exchange(
+            HttpRequest.POST("/api/users", adminUser).basicAuth("superuser", config.superuser()));
+
+    // 2. Find the superuser's ID
+    HttpRequest<?> listRequest =
+        HttpRequest.GET("/api/users").basicAuth("superuser", config.superuser());
+    List<User> users = client.toBlocking().retrieve(listRequest, Argument.listOf(User.class));
+    User superuser =
+        users.stream()
+            .filter(u -> u.roles().contains("ROLE_SUPERUSER"))
+            .findFirst()
+            .orElseThrow(() -> new RuntimeException("Superuser not found"));
+
+    // 3. Try to modify the superuser as the admin
+    User superuserUpdate =
+        new User(
+            superuser.id(),
+            superuser.login(),
+            "Hacked Name",
+            "hackedPass",
+            true,
+            false,
+            superuser.roles());
+
+    HttpRequest<User> updateRequest =
+        HttpRequest.PUT("/api/users/" + superuser.id(), superuserUpdate)
+            .basicAuth(adminLogin, adminPass);
+
+    HttpClientResponseException e =
+        assertThrows(
+            HttpClientResponseException.class, () -> client.toBlocking().exchange(updateRequest));
+    assertEquals(HttpStatus.FORBIDDEN, e.getStatus());
   }
 }

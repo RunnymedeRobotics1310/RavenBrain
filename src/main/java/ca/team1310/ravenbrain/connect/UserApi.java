@@ -55,14 +55,19 @@ public class UserApi {
   @Put("/{id}")
   @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
   public User update(long id, @Body User user, Authentication authentication) {
+    User existingUser =
+        userService
+            .getUser(id)
+            .orElseThrow(
+                () ->
+                    new io.micronaut.http.exceptions.HttpStatusException(
+                        io.micronaut.http.HttpStatus.NOT_FOUND, "User not found"));
+
     if (!authentication.getRoles().contains("ROLE_SUPERUSER")) {
-      User existingUser =
-          userService
-              .getUser(id)
-              .orElseThrow(
-                  () ->
-                      new io.micronaut.http.exceptions.HttpStatusException(
-                          io.micronaut.http.HttpStatus.NOT_FOUND, "User not found"));
+      if (existingUser.roles().contains("ROLE_SUPERUSER")) {
+        throw new io.micronaut.http.exceptions.HttpStatusException(
+            io.micronaut.http.HttpStatus.FORBIDDEN, "Only superuser can modify a superuser");
+      }
 
       if (user.roles().contains("ROLE_SUPERUSER")
           && !existingUser.roles().contains("ROLE_SUPERUSER")) {
@@ -79,7 +84,21 @@ public class UserApi {
 
   @Delete("/{id}")
   @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
-  public void delete(long id) {
+  public void delete(long id, Authentication authentication) {
+    if (!authentication.getRoles().contains("ROLE_SUPERUSER")) {
+      User existingUser =
+          userService
+              .getUser(id)
+              .orElseThrow(
+                  () ->
+                      new io.micronaut.http.exceptions.HttpStatusException(
+                          io.micronaut.http.HttpStatus.NOT_FOUND, "User not found"));
+
+      if (existingUser.roles().contains("ROLE_SUPERUSER")) {
+        throw new io.micronaut.http.exceptions.HttpStatusException(
+            io.micronaut.http.HttpStatus.FORBIDDEN, "Only superuser can delete a superuser");
+      }
+    }
     userService.deleteUser(id);
   }
 
