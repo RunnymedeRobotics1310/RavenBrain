@@ -8,8 +8,7 @@ import io.micronaut.security.authentication.AuthenticationRequest;
 import io.micronaut.security.authentication.AuthenticationResponse;
 import io.micronaut.security.authentication.provider.HttpRequestAuthenticationProvider;
 import jakarta.inject.Singleton;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -20,34 +19,35 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PresharedKeyAuthenticationProvider<B> implements HttpRequestAuthenticationProvider<B> {
 
-  private final Config config;
+  private final UserService userService;
 
-  public PresharedKeyAuthenticationProvider(Config config) {
-    this.config = config;
+  public PresharedKeyAuthenticationProvider(UserService userService) {
+    this.userService = userService;
   }
 
   @Override
   public AuthenticationResponse authenticate(
       @Nullable HttpRequest<B> httpRequest,
       @NonNull AuthenticationRequest<String, String> authenticationRequest) {
+
     String identity = authenticationRequest.getIdentity();
     String secret = authenticationRequest.getSecret();
-    if (config.member().equals(secret)) {
-      return AuthenticationResponse.success(identity, List.of("ROLE_MEMBER"));
+
+    Optional<User> ou = userService.findByLogin(identity);
+    if (ou.isEmpty()) {
+      return AuthenticationResponse.failure(AuthenticationFailureReason.USER_NOT_FOUND);
     }
-    if (config.datascout().equals(secret)) {
-      return AuthenticationResponse.success(
-          identity, Arrays.asList("ROLE_DATASCOUT", "ROLE_MEMBER"));
+
+    if (!ou.get().passwordHash().equals(userService.hashPassword(secret))) {
+      return AuthenticationResponse.failure(AuthenticationFailureReason.CREDENTIALS_DO_NOT_MATCH);
     }
-    if (config.expertscout().equals(secret)) {
-      return AuthenticationResponse.success(
-          identity, Arrays.asList("ROLE_EXPERTSCOUT", "ROLE_DATASCOUT", "ROLE_MEMBER"));
+
+    if (!ou.get().enabled()) {
+      return AuthenticationResponse.failure(AuthenticationFailureReason.USER_DISABLED);
     }
-    if (config.admin().equals(secret)) {
-      return AuthenticationResponse.success(
-          identity,
-          Arrays.asList("ROLE_ADMIN", "ROLE_EXPERTSCOUT", "ROLE_DATASCOUT", "ROLE_MEMBER"));
-    }
-    return AuthenticationResponse.failure(AuthenticationFailureReason.CREDENTIALS_DO_NOT_MATCH);
+
+    Map<String, Object> map = new LinkedHashMap<>();
+    map.put("fullName", ou.get().displayName());
+    return AuthenticationResponse.success(identity, ou.get().roles(), map);
   }
 }

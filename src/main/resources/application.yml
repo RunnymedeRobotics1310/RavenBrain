@@ -1,3 +1,4 @@
+#Sun Mar 23 02:53:58 UTC 2025
 micronaut:
   application:
     name: raven-brain
@@ -31,12 +32,10 @@ datasources:
     password: ${MYSQL_PASSWORD:bar}
 raven-eye:
   team: 1310
-  role-passwords:
-    superuser: ${SUPERUSER_PASSWORD:default_superuser_password_1310}
-    admin: ${ADMIN_PASSWORD:default_admin_password_123}
-    expertscout: ${EXPERTSCOUT_PASSWORD:default_expert_scout_password_876}
-    datascout: ${DATASCOUT_PASSWORD:default_data_scout_password__1}
-    member: ${MEMBER_PASSWORD:team1310IsTheBest}
+  security:
+    encryption-seed: ${ENCRYPTION_SEED:raven-brain-default-seed-change-me-in-production}
+    superuser-password: ${SUPERUSER_PASSWORD:default_superuser_password_999}
+    registration-secret: ${REGISTRATION_SECRET:default_registration_secret_123}
   frc-api:
     user: ${FRC_USER:frc_api_user_id}
     key: ${FRC_KEY:frc_api_user_key}

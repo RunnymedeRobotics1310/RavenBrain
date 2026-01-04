@@ -2,7 +2,7 @@ package ca.team1310.ravenbrain.quickcomment;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import ca.team1310.ravenbrain.connect.Config;
+import ca.team1310.ravenbrain.connect.TestUserHelper;
 import io.micronaut.core.type.Argument;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
@@ -20,13 +20,27 @@ import org.junit.jupiter.api.Test;
 @MicronautTest
 public class QuickCommentApiTest {
 
+  private static final String USER_MEMBER = "comment-member-testuser";
+  private static final String USER_EXPERT = "comment-expert-testuser";
+
   @Inject
   @Client("/")
   HttpClient client;
 
   @Inject QuickCommentService quickCommentService;
 
-  @Inject Config config;
+  @Inject TestUserHelper testUserHelper;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setup() {
+    testUserHelper.createTestUser(USER_MEMBER, "password", "ROLE_MEMBER");
+    testUserHelper.createTestUser(USER_EXPERT, "password", "ROLE_EXPERTSCOUT");
+  }
+
+  @org.junit.jupiter.api.AfterEach
+  void tearDown() {
+    testUserHelper.deleteTestUsers();
+  }
 
   @Test
   void testPostComments() {
@@ -37,7 +51,7 @@ public class QuickCommentApiTest {
     List<QuickComment> comments = Collections.singletonList(comment);
     HttpRequest<List<QuickComment>> request =
         HttpRequest.POST("/api/quickcomment", comments)
-            .basicAuth("user", config.member()); // ROLE_MEMBER
+            .basicAuth(USER_MEMBER, "password"); // ROLE_MEMBER
 
     HttpResponse<List<QuickCommentApi.QuickCommentPostResult>> response =
         client
@@ -70,14 +84,14 @@ public class QuickCommentApiTest {
     // Save it once using the API
     List<QuickComment> comments = Collections.singletonList(comment);
     HttpRequest<List<QuickComment>> request1 =
-        HttpRequest.POST("/api/quickcomment", comments).basicAuth("user", config.member());
+        HttpRequest.POST("/api/quickcomment", comments).basicAuth(USER_MEMBER, "password");
     client
         .toBlocking()
         .exchange(request1, Argument.listOf(QuickCommentApi.QuickCommentPostResult.class));
 
     // Try to post it again
     HttpRequest<List<QuickComment>> request2 =
-        HttpRequest.POST("/api/quickcomment", comments).basicAuth("user", config.member());
+        HttpRequest.POST("/api/quickcomment", comments).basicAuth(USER_MEMBER, "password");
 
     HttpResponse<List<QuickCommentApi.QuickCommentPostResult>> response =
         client
@@ -100,7 +114,7 @@ public class QuickCommentApiTest {
 
     List<QuickComment> comments = Collections.singletonList(invalidComment);
     HttpRequest<List<QuickComment>> request =
-        HttpRequest.POST("/api/quickcomment", comments).basicAuth("user", config.member());
+        HttpRequest.POST("/api/quickcomment", comments).basicAuth(USER_MEMBER, "password");
 
     HttpResponse<List<QuickCommentApi.QuickCommentPostResult>> response =
         client
@@ -119,8 +133,7 @@ public class QuickCommentApiTest {
   @Test
   void testGetAll() {
     HttpRequest<?> request =
-        HttpRequest.GET("/api/quickcomment")
-            .basicAuth("user", config.expertscout()); // ROLE_EXPERTSCOUT
+        HttpRequest.GET("/api/quickcomment").basicAuth(USER_EXPERT, "password"); // ROLE_EXPERTSCOUT
 
     HttpResponse<List<QuickComment>> response =
         client.toBlocking().exchange(request, Argument.listOf(QuickComment.class));
