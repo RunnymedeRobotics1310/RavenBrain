@@ -134,7 +134,14 @@ public class UserApiTest {
             HttpRequest.POST("/api/users", memberUser).basicAuth("superuser", config.superuser()));
 
     User newUser =
-        new User(0, "unauthorized", "Unauthorized", "pass", true, false, List.of("ROLE_MEMBER"));
+        new User(
+            0,
+            "unauthorized-testuser",
+            "Unauthorized",
+            "pass",
+            true,
+            false,
+            List.of("ROLE_MEMBER"));
 
     // Try creating as member
     HttpRequest<User> createRequest =
@@ -195,7 +202,7 @@ public class UserApiTest {
 
   @Test
   void testAdminCannotModifySuperuser() {
-    String adminLogin = "admin-security-test-" + System.currentTimeMillis();
+    String adminLogin = "admin-security-testuser-" + System.currentTimeMillis();
     String adminPass = "adminPass";
 
     // 1. Create an admin user

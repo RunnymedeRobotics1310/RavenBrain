@@ -30,9 +30,9 @@ public class UserCreationSecurityTest {
 
   @BeforeEach
   void setup() {
-    adminLogin = "admin-" + System.currentTimeMillis();
+    adminLogin = "admin-testuser-" + System.currentTimeMillis();
     adminPassword = "adminPassword";
-    memberLogin = "member-" + System.currentTimeMillis();
+    memberLogin = "member-testuser-" + System.currentTimeMillis();
     memberPassword = "memberPassword";
 
     // Create an admin
@@ -56,7 +56,7 @@ public class UserCreationSecurityTest {
 
   @Test
   void onlySuperuserCanCreateSuperuser() {
-    String newSuperuserLogin = "new-superuser-" + System.currentTimeMillis();
+    String newSuperuserLogin = "new-superuser-testuser-" + System.currentTimeMillis();
     User newSuperuser =
         new User(
             0, newSuperuserLogin, "New Superuser", "pass", true, false, List.of("ROLE_SUPERUSER"));
@@ -73,7 +73,7 @@ public class UserCreationSecurityTest {
     assertTrue(createdBySuper.roles().contains("ROLE_SUPERUSER"));
 
     // 2. Admin cannot create superuser
-    String anotherSuperuserLogin = "another-superuser-" + System.currentTimeMillis();
+    String anotherSuperuserLogin = "another-superuser-testuser-" + System.currentTimeMillis();
     User anotherSuperuser =
         new User(
             0,
@@ -112,7 +112,7 @@ public class UserCreationSecurityTest {
 
   @Test
   void onlySuperuserCanCreateAdmin() {
-    String adminBySuperLogin = "admin-by-super-" + System.currentTimeMillis();
+    String adminBySuperLogin = "admin-by-super-testuser-" + System.currentTimeMillis();
     User adminBySuper =
         new User(
             0, adminBySuperLogin, "Admin By Super", "pass", true, false, List.of("ROLE_ADMIN"));
@@ -129,7 +129,7 @@ public class UserCreationSecurityTest {
     assertTrue(createdBySuper.roles().contains("ROLE_ADMIN"));
 
     // 2. Admin can create admin
-    String adminByAdminLogin = "admin-by-admin-" + System.currentTimeMillis();
+    String adminByAdminLogin = "admin-by-admin-testuser-" + System.currentTimeMillis();
     User adminByAdmin =
         new User(
             0, adminByAdminLogin, "Admin By Admin", "pass", true, false, List.of("ROLE_ADMIN"));
@@ -147,7 +147,7 @@ public class UserCreationSecurityTest {
     assertEquals(HttpStatus.FORBIDDEN, e2.getStatus());
 
     // 3. Member cannot create admin
-    String adminByMemberLogin = "admin-by-member-" + System.currentTimeMillis();
+    String adminByMemberLogin = "admin-by-member-testuser-" + System.currentTimeMillis();
     User adminByMember =
         new User(
             0, adminByMemberLogin, "Admin By Member", "pass", true, false, List.of("ROLE_ADMIN"));
@@ -167,7 +167,7 @@ public class UserCreationSecurityTest {
 
   @Test
   void onlyAdminAndSuperuserCanChangeRoles() {
-    String testUserLogin = "test-user-" + System.currentTimeMillis();
+    String testUserLogin = "testuser-" + System.currentTimeMillis();
     String testUserPassword = "password";
     User testUser =
         new User(
@@ -205,7 +205,7 @@ public class UserCreationSecurityTest {
 
   @Test
   void adminCannotAddAdminOrSuperuserRoleToExistingUser() {
-    String targetUserLogin = "target-user-" + System.currentTimeMillis();
+    String targetUserLogin = "target-testuser-" + System.currentTimeMillis();
     User targetUser =
         new User(0, targetUserLogin, "Target User", "pass", true, false, List.of("ROLE_MEMBER"));
     User createdTarget =
@@ -264,7 +264,7 @@ public class UserCreationSecurityTest {
 
   @Test
   void superuserCanAddAdminOrSuperuserRoleToExistingUser() {
-    String targetUserLogin = "target-user-2-" + System.currentTimeMillis();
+    String targetUserLogin = "target-testuser-2-" + System.currentTimeMillis();
     User targetUser =
         new User(0, targetUserLogin, "Target User 2", "pass", true, false, List.of("ROLE_MEMBER"));
     User createdTarget =
