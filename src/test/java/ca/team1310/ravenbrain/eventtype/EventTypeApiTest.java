@@ -193,4 +193,34 @@ public class EventTypeApiTest {
 
     assertTrue(listEmpty.isEmpty());
   }
+
+  @Test
+  void testFindById() {
+    String memberLogin = "member-testuser-" + System.currentTimeMillis();
+    String memberPass = "memberPass";
+    testUserHelper.createTestUser(memberLogin, memberPass, "ROLE_MEMBER");
+
+    // Fetch an existing one (seeded)
+    HttpRequest<?> getRequest =
+        HttpRequest.GET("/api/event-types/auto-start-left").basicAuth(memberLogin, memberPass);
+    EventType et = client.toBlocking().retrieve(getRequest, EventType.class);
+
+    assertNotNull(et);
+    assertEquals("auto-start-left", et.eventtype());
+
+    // Fetch non-existing one
+    HttpRequest<?> getNoneRequest =
+        HttpRequest.GET("/api/event-types/does-not-exist").basicAuth(memberLogin, memberPass);
+
+    // If I return null in Controller and it's not wrapped in Optional/HttpResponse, Micronaut might
+    // return 404 or 204.
+    // Actually, returning null in Micronaut @Get usually results in 404 Not Found if no body, or
+    // 204 if it's void.
+    // Let's check what happens.
+    HttpClientResponseException e =
+        assertThrows(
+            HttpClientResponseException.class,
+            () -> client.toBlocking().retrieve(getNoneRequest, EventType.class));
+    assertEquals(HttpStatus.NOT_FOUND, e.getStatus());
+  }
 }

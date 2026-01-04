@@ -32,6 +32,11 @@ public class EventTypeApi {
     return eventTypeService.findByFrcyear(year);
   }
 
+  @Get("/{eventtype}")
+  public EventType findById(String eventtype) {
+    return eventTypeService.findById(eventtype).orElse(null);
+  }
+
   @Post
   @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
   public EventType create(@Body EventType eventType) {
