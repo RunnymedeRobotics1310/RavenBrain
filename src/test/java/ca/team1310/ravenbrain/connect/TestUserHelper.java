@@ -19,6 +19,9 @@ public class TestUserHelper {
   }
 
   public User createTestUser(String login, String password, String role) {
+    if (!login.contains("testuser")) {
+      throw new IllegalArgumentException("Test user login must contain 'testuser'");
+    }
     User user = new User(0, login, login, password, true, false, List.of(role));
     HttpRequest<User> request =
         HttpRequest.POST("/api/users", user).basicAuth("superuser", config.superuser());
