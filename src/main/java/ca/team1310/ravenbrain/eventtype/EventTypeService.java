@@ -24,6 +24,10 @@ public class EventTypeService {
     return eventTypeRepository.findAll();
   }
 
+  public List<EventType> findByFrcyear(int frcyear) {
+    return eventTypeRepository.findByFrcyear(frcyear);
+  }
+
   public Optional<EventType> findById(String eventtype) {
     return eventTypeRepository.findById(eventtype);
   }

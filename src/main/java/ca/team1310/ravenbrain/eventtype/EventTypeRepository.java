@@ -6,7 +6,6 @@ package ca.team1310.ravenbrain.eventtype;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
-
 import java.util.List;
 
 /**
@@ -17,4 +16,6 @@ import java.util.List;
 public interface EventTypeRepository extends CrudRepository<EventType, String> {
   @Override
   List<EventType> findAll();
+
+  List<EventType> findByFrcyear(int frcyear);
 }

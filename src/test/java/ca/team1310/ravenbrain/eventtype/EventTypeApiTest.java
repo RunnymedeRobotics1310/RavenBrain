@@ -169,4 +169,28 @@ public class EventTypeApiTest {
     // Total number of initial items is around 160.
     assertTrue(list.size() >= 160);
   }
+
+  @Test
+  void testFindByFrcyear() {
+    String memberLogin = "member-testuser-" + System.currentTimeMillis();
+    String memberPass = "memberPass";
+    testUserHelper.createTestUser(memberLogin, memberPass, "ROLE_MEMBER");
+
+    // All initial data is 2025
+    HttpRequest<?> getRequest =
+        HttpRequest.GET("/api/event-types/year/2025").basicAuth(memberLogin, memberPass);
+    List<EventType> list2025 =
+        client.toBlocking().retrieve(getRequest, Argument.listOf(EventType.class));
+
+    assertFalse(list2025.isEmpty());
+    assertTrue(list2025.stream().allMatch(e -> e.frcyear() == 2025));
+
+    // Check for a year that doesn't exist
+    HttpRequest<?> getEmptyRequest =
+        HttpRequest.GET("/api/event-types/year/1999").basicAuth(memberLogin, memberPass);
+    List<EventType> listEmpty =
+        client.toBlocking().retrieve(getEmptyRequest, Argument.listOf(EventType.class));
+
+    assertTrue(listEmpty.isEmpty());
+  }
 }
