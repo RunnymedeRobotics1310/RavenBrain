@@ -91,7 +91,7 @@ public class UserApi {
       if (user.passwordHash() != null
           && !user.passwordHash().isEmpty()
           && !user.passwordHash().equals("REDACTED")
-          && !user.passwordHash().equals(existingUser.passwordHash())) {
+          && !userService.hashPassword(user.passwordHash()).equals(existingUser.passwordHash())) {
         throw new io.micronaut.http.exceptions.HttpStatusException(
             io.micronaut.http.HttpStatus.FORBIDDEN,
             "Cannot change password unless forgot password flag is set");
