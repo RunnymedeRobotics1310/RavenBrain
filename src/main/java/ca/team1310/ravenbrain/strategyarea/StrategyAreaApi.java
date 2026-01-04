@@ -37,7 +37,9 @@ public class StrategyAreaApi {
   @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
   public StrategyArea update(long id, @Body StrategyArea strategyArea) {
     // Ensure id matches
-    StrategyArea toUpdate = new StrategyArea(id, strategyArea.name(), strategyArea.description());
+    StrategyArea toUpdate =
+        new StrategyArea(
+            id, strategyArea.frcyear(), strategyArea.name(), strategyArea.description());
     return strategyAreaService.update(toUpdate);
   }
 }

@@ -14,4 +14,5 @@ import io.micronaut.serde.annotation.Serdeable;
  */
 @MappedEntity("RB_STRATEGYAREA")
 @Serdeable
-public record StrategyArea(@Id @GeneratedValue long id, String name, String description) {}
+public record StrategyArea(
+    @Id @GeneratedValue long id, int frcyear, String name, String description) {}
