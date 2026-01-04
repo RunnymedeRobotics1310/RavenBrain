@@ -1,6 +1,3 @@
-/*
- * Copyright 2026 The Kingsway Digital Company Limited. All rights reserved.
- */
 package ca.team1310.ravenbrain.strategyarea;
 
 import static org.junit.jupiter.api.Assertions.*;
