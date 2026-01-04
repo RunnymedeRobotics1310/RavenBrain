@@ -1,8 +1,6 @@
 package ca.team1310.ravenbrain.eventlog;
 
-import io.micronaut.data.jdbc.annotation.JdbcRepository;
-import io.micronaut.data.model.query.builder.sql.Dialect;
-import io.micronaut.data.repository.CrudRepository;
+import ca.team1310.ravenbrain.eventtype.EventTypeRepository;
 import jakarta.inject.Singleton;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -13,9 +11,35 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Singleton
-@JdbcRepository(dialect = Dialect.MYSQL)
-public abstract class EventLogService implements CrudRepository<EventLogRecord, Long> {
+public class EventLogService {
 
-  public abstract List<EventLogRecord> findAllByTournamentIdAndTeamNumberOrderByMatchId(
-      String tournamentId, int teamNumber);
+  private final EventLogRepository eventLogRepository;
+  private final EventTypeRepository eventTypeRepository;
+
+  public EventLogService(
+      EventLogRepository eventLogRepository, EventTypeRepository eventTypeRepository) {
+    this.eventLogRepository = eventLogRepository;
+    this.eventTypeRepository = eventTypeRepository;
+  }
+
+  public List<EventLogRecord> findAll() {
+    return eventLogRepository.findAll();
+  }
+
+  public void delete(EventLogRecord record) {
+    eventLogRepository.delete(record);
+  }
+
+  public List<EventLogRecord> findAllByTournamentIdAndTeamNumberOrderByMatchId(
+      String tournamentId, int teamNumber) {
+    return eventLogRepository.findAllByTournamentIdAndTeamNumberOrderByMatchId(
+        tournamentId, teamNumber);
+  }
+
+  public EventLogRecord save(EventLogRecord record) {
+    if (!eventTypeRepository.existsById(record.eventType())) {
+      throw new IllegalArgumentException("Invalid event type: " + record.eventType());
+    }
+    return eventLogRepository.save(record);
+  }
 }

@@ -59,7 +59,7 @@ public class EventApiTest {
             1,
             "Red",
             1310,
-            "SCORE",
+            "comment",
             1.0,
             "Good job");
 
@@ -85,7 +85,7 @@ public class EventApiTest {
             .anyMatch(
                 r ->
                     r.scoutName().equals("Test Scout")
-                        && r.eventType().equals("SCORE")
+                        && r.eventType().equals("comment")
                         && r.tournamentId().equals("TEST_TOURN")
                         && r.level().equals("Qualification")
                         && r.matchId() == 1
@@ -109,7 +109,7 @@ public class EventApiTest {
             1,
             "Blue",
             1310,
-            "CLIMB",
+            "comment",
             1.0,
             "Testing duplicate");
 
@@ -173,7 +173,7 @@ public class EventApiTest {
             1,
             "Red",
             1310,
-            "SCORE",
+            "comment",
             1.0,
             "N".repeat(1025)); // Max is 1024
 
@@ -223,7 +223,7 @@ public class EventApiTest {
             1,
             "A".repeat(65), // Max is 64
             1310,
-            "SCORE",
+            "comment",
             1.0,
             "Long alliance");
 
@@ -253,7 +253,7 @@ public class EventApiTest {
             1,
             "Red",
             1310,
-            "SCORE",
+            "comment",
             1.0,
             "Long scout name");
 
@@ -283,7 +283,7 @@ public class EventApiTest {
             1,
             "Red",
             1310,
-            "SCORE",
+            "comment",
             1.0,
             "Long tournament ID");
 
@@ -313,7 +313,7 @@ public class EventApiTest {
             1,
             "Red",
             1310,
-            "SCORE",
+            "comment",
             1.0,
             "Long level");
 
@@ -329,5 +329,35 @@ public class EventApiTest {
     assertNotNull(results);
     assertFalse(results.getFirst().success());
     assertNotNull(results.getFirst().reason());
+  }
+
+  @Test
+  void testPostEventLogsInvalidEventTypeNotFound() {
+    EventLogRecord record =
+        new EventLogRecord(
+            0,
+            Instant.now(),
+            "Test Scout",
+            "TEST_TOURN",
+            "Qualification",
+            1,
+            "Red",
+            1310,
+            "NON_EXISTENT_TYPE",
+            1.0,
+            "Unknown event type");
+
+    HttpRequest<EventLogRecord[]> request =
+        HttpRequest.POST("/api/event", new EventLogRecord[] {record})
+            .basicAuth(AUTH_USER, "password");
+
+    HttpResponse<List<EventApi.EventLogPostResult>> response =
+        client.toBlocking().exchange(request, Argument.listOf(EventApi.EventLogPostResult.class));
+
+    assertEquals(HttpStatus.OK, response.getStatus());
+    List<EventApi.EventLogPostResult> results = response.body();
+    assertNotNull(results);
+    assertFalse(results.getFirst().success());
+    assertTrue(results.getFirst().reason().contains("Invalid event type"));
   }
 }
