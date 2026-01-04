@@ -39,6 +39,15 @@ public class ScheduleApiTest {
   @org.junit.jupiter.api.AfterEach
   void tearDown() {
     testUserHelper.deleteTestUsers();
+    // Cleanup schedule records created in tests
+    scheduleService
+        .findAll()
+        .forEach(
+            record -> {
+              if (record.tournamentId().startsWith("TEST_TOURN_")) {
+                scheduleService.delete(record);
+              }
+            });
   }
 
   @Test

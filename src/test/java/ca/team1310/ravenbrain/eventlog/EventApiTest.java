@@ -36,6 +36,15 @@ public class EventApiTest {
   @org.junit.jupiter.api.AfterEach
   void tearDown() {
     testUserHelper.deleteTestUsers();
+    // Cleanup event logs created in tests
+    eventLogService
+        .findAll()
+        .forEach(
+            record -> {
+              if (record.tournamentId().equals("TEST_TOURN")) {
+                eventLogService.delete(record);
+              }
+            });
   }
 
   @Test
