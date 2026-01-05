@@ -20,6 +20,10 @@ public class StrategyAreaService {
     return strategyAreaRepository.findAll();
   }
 
+  public StrategyArea findById(long id) {
+    return strategyAreaRepository.findById(id).orElse(null);
+  }
+
   public StrategyArea create(StrategyArea strategyArea) {
     return strategyAreaRepository.save(strategyArea);
   }

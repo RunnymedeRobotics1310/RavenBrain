@@ -71,6 +71,13 @@ public class StrategyAreaApiTest {
         client.toBlocking().retrieve(listRequest, Argument.listOf(StrategyArea.class));
     assertTrue(list.stream().anyMatch(a -> a.id() == id));
 
+    // 2.5 Get by ID
+    HttpRequest<?> getRequest =
+        HttpRequest.GET("/api/strategy-areas/" + id).basicAuth(adminLogin, adminPass);
+    StrategyArea fetchedById = client.toBlocking().retrieve(getRequest, StrategyArea.class);
+    assertEquals(id, fetchedById.id());
+    assertEquals("Autonomous", fetchedById.name());
+
     // 3. Update as superuser
     StrategyArea updateArea =
         new StrategyArea(id, 2026, "Autonomous Updated", "Updated description");

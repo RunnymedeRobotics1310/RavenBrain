@@ -24,6 +24,11 @@ public class StrategyAreaApi {
     return strategyAreaService.list();
   }
 
+  @Get("/{id}")
+  public StrategyArea get(long id) {
+    return strategyAreaService.findById(id);
+  }
+
   @Post
   @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
   public StrategyArea create(@Body StrategyArea strategyArea) {
