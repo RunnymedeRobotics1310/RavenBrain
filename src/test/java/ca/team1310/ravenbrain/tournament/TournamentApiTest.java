@@ -36,6 +36,17 @@ public class TournamentApiTest {
   @org.junit.jupiter.api.AfterEach
   void tearDown() {
     testUserHelper.deleteTestUsers();
+    // Cleanup tournaments created in tests
+    tournamentService
+        .findAll()
+        .forEach(
+            tournament -> {
+              if (tournament.id().contains("TEST_TOURN")
+                  || tournament.id().contains("GET_TOURN_TEST")
+                  || tournament.id().contains("DUPLICATE_ID")) {
+                tournamentService.delete(tournament);
+              }
+            });
   }
 
   @Test

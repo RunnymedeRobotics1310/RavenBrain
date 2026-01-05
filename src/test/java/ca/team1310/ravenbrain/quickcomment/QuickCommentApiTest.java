@@ -40,13 +40,22 @@ public class QuickCommentApiTest {
   @org.junit.jupiter.api.AfterEach
   void tearDown() {
     testUserHelper.deleteTestUsers();
+    // Delete all quick comments created during tests
+    quickCommentService
+        .findAllOrderByTeamAndTimestamp()
+        .forEach(
+            comment -> {
+              if (comment.team() >= 100_000) {
+                quickCommentService.delete(comment);
+              }
+            });
   }
 
   @Test
   void testPostComments() {
     QuickComment comment =
         new QuickComment(
-            null, "Test Scout", "ROLE_MEMBER", 9999, Instant.now(), "Basic valid comment");
+            null, "Test Scout", "ROLE_MEMBER", 999_999, Instant.now(), "Basic valid comment");
 
     List<QuickComment> comments = Collections.singletonList(comment);
     HttpRequest<List<QuickComment>> request =
@@ -65,7 +74,7 @@ public class QuickCommentApiTest {
     assertTrue(body.getFirst().success());
 
     // Verify it was actually saved
-    List<QuickComment> saved = quickCommentService.findAllByTeamOrderByTimestamp(9999);
+    List<QuickComment> saved = quickCommentService.findAllByTeamOrderByTimestamp(999_999);
     assertFalse(saved.isEmpty());
     assertEquals("Basic valid comment", saved.getFirst().quickComment());
   }

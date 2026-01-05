@@ -13,6 +13,7 @@ aws.xml
 compiler.xml
 data_source_mapping.xml
 dataSources.xml
+db-forest-config.xml
 gradle.xml
 misc.xml
 sqldialects.xml

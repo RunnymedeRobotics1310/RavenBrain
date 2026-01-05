@@ -10,6 +10,7 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -21,6 +22,13 @@ public class UserCreationSecurityTest {
   HttpClient client;
 
   @Inject Config config;
+
+  @Inject TestUserHelper testUserHelper;
+
+  @AfterEach
+  void tearDown() {
+    testUserHelper.deleteTestUsers();
+  }
 
   private static final String SUPERUSER = "superuser";
   private String adminLogin;

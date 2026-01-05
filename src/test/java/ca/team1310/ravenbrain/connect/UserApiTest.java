@@ -12,6 +12,7 @@ import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import java.util.List;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 @MicronautTest
@@ -22,6 +23,13 @@ public class UserApiTest {
   HttpClient client;
 
   @Inject Config config;
+
+  @Inject TestUserHelper testUserHelper;
+
+  @AfterEach
+  void cleanup() {
+    testUserHelper.deleteTestUsers();
+  }
 
   @Test
   void testUserCrud() {
