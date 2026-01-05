@@ -114,3 +114,19 @@ tasks.register('createElasticbeanstalkDist', Copy) {
         fileName.replace("-$project.version", "")
     }
 }
+tasks.register('clearCdsClasslist') {
+    doFirst {
+        File classlist = file("build/test-resources/cds/cds.classlist")
+        if (classlist.exists()) {
+            println "Applying workaround to clear cds.classlist"
+            classlist.delete()
+        }
+    }
+}
+
+// Ensure it runs before any other task
+tasks.configureEach { task ->
+    if (task.name != 'clearCdsClasslist') {
+        task.dependsOn 'clearCdsClasslist'
+    }
+}
