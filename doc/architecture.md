@@ -220,8 +220,106 @@ List all tournaments
 
 Add a new tournament
 
-# TO DO ITEMS
+### Timed Events and Event Sequences
 
-- force RavenBrain to be an SSL endpoint
-- define user management packages
-- look at new requirements around eventlog - changes needed?
+All events are tracked in an event log table called RB_EVENT. Events include a timestamp, which is the time at which the
+event was recorded by the client.
+
+Some events occur as part of a sequence (e.g. pick-up-gamepiece, align-to-score, shoot, miss, pick-up-gamepiece,
+align-to-score, shoot, score). Analysis of these events is much more meaningful in the context of the sequence rather
+than alone. Therefore, a system of tracking the sequence is required, and a reasonable reporting structure is required
+to allow sequence reports to be generated with fairly simple client-side code.
+
+#### Sequence Design
+
+Events are linked together loosely by a sequence. A sequence is a defined entity, and includes a name and an ordered
+collection of event types that can be part of it. Sequences can be defined by an administrator via the UI, and can be
+queried by the client. A client will use sequence definitions to render parts of the UI, but the events recorded are not
+directly linked to a sequence.
+
+The fields in a sequence include:
+
+- name
+- description (optional)
+- ordered collection of event type relationships, which shall include
+    - The eventtype name
+    - A flag indicating that this is the first eventtype in the sequence (i.e. this event begins a sequence)
+    - A flag indicating that this is the terminal event in the sequence (i.e. this event ends a sequence)
+
+A sequence can have only one starting eventtype, and an eventtype can only participate in at most one sequence.
+
+A sequence can have one or more ending eventtypes. When the ending eventtype is recorded, the sequence ends.
+
+This design allows the event stream to be recorded the same way for sequences and non-sequences, keeping the client-side
+codebase simple. UI screens, however, do care about sequences, as the first event in a sequence will cause the sequence
+screen to appear, where the user can then choose any of the eventtypes in the sequence. Clicking on a terminal eventtype
+closes the sequence screen.
+
+#### Sequence Report Processing
+
+Sequence reports are to be added to the report API.
+
+The most important sequence report will return aggregate sequence info objects. This can be requested for sequence data
+for a specific match, an entire tournament, or an entire FRC year. This report must also allow filtering sequences based
+on the presence of a particular eventtype datum captured in the sequence (e.g. all pickup sequences from 2026 that had a
+pickup-success event in them).
+
+The following defines the structure of sequence information.
+
+```
+SequenceInfo
+
+- team
+- frcYear
+- SequenceEvent[]
+- SequenceIntervalDuration[]
+- totalDuration
+- SequenceStats
+
+SequenceEvent
+
+- eventtype
+- timestamp
+- elapsedTimeSincePrecedingEvent
+- elapsedTimeSinceStartOfSequence
+
+SequenceIntervalDuration
+
+- intervalStartEventType
+- intervalEndeVentType
+- intervalDuration
+
+MultiSequenceReport
+
+- SequenceInfo[]
+- averageDuration
+- fastestDuration
+- slowestDuration
+- durationStdDev
+- SequenceIntervalStats[]
+
+SequenceIntervalStats
+
+- intervalStartEventType
+- intervalEndEventType
+- averageDuration
+- fastestDuration
+- slowestDuration
+- durationStdDev
+```
+
+The front-end can perform further processing if necessary.
+
+Performance for this report may be problematic. Two options exist to address this:
+
+- pre-calculate data so that it can be requested quickly
+    - this can be very difficult to predict
+- allow the first result to be very slow but then cache the results on the server so that subsequent requests receive
+  the response immediately.
+    - this solution should be very easy to implement, as a similar caching infrastructure already exists for downloaded
+      data from another system (frcdata). This solution could be duplicated and modified slightly to provide a very
+      efficient report cache.
+
+If performance is poor, implement the caching solution first. If that is not suitable given usage patterns, implement
+pre-calculation of data. (pre-calculating the data may just mean priming the response cache as well...)
+
