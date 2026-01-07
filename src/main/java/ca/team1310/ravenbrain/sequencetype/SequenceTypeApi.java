@@ -1,0 +1,51 @@
+package ca.team1310.ravenbrain.sequencetype;
+
+import io.micronaut.http.annotation.*;
+import io.micronaut.security.annotation.Secured;
+import io.micronaut.security.rules.SecurityRule;
+import java.util.List;
+
+/**
+ * @author Junie
+ * @since 2026-01-07
+ */
+@Controller("/api/sequence-types")
+@Secured(SecurityRule.IS_AUTHENTICATED)
+public class SequenceTypeApi {
+
+  private final SequenceTypeService sequenceTypeService;
+
+  public SequenceTypeApi(SequenceTypeService sequenceTypeService) {
+    this.sequenceTypeService = sequenceTypeService;
+  }
+
+  @Get
+  public List<SequenceType> list() {
+    return sequenceTypeService.list();
+  }
+
+  @Get("/{name}")
+  public SequenceType findById(String name) {
+    return sequenceTypeService.findById(name).orElse(null);
+  }
+
+  @Post
+  @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public SequenceType create(@Body SequenceType sequenceType) {
+    return sequenceTypeService.create(sequenceType);
+  }
+
+  @Put("/{name}")
+  @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public SequenceType update(String name, @Body SequenceType sequenceType) {
+    SequenceType toUpdate =
+        new SequenceType(name, sequenceType.description(), sequenceType.events());
+    return sequenceTypeService.update(toUpdate);
+  }
+
+  @Delete("/{name}")
+  @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public void delete(String name) {
+    sequenceTypeService.delete(name);
+  }
+}
