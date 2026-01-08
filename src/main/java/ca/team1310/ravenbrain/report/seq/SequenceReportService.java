@@ -43,6 +43,7 @@ public class SequenceReportService {
     List<SequenceType> types =
         sequenceTypeService.findByFrcyear(year).stream().filter(s -> !s.disabled()).toList();
 
+    // todo: fixme: implement
     // create a blank list of sequenceinfo
     // for each ELR
     //   look to see if it is the start of any sequence (helper function)
@@ -56,6 +57,6 @@ public class SequenceReportService {
     //   assemble into report
     // return report
 
-    return null; // todo: implement
+    return null;
   }
 }
