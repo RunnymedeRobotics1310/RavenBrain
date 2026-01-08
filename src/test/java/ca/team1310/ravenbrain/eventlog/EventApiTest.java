@@ -57,7 +57,7 @@ public class EventApiTest {
             Instant.now(),
             "Test Scout",
             "TEST_TOURN",
-            "Qualification",
+            TournamentLevel.Qualification,
             1,
             "Red",
             1310,
@@ -89,7 +89,7 @@ public class EventApiTest {
                     r.scoutName().equals("Test Scout")
                         && r.eventType().equals("comment")
                         && r.tournamentId().equals("TEST_TOURN")
-                        && r.level().equals("Qualification")
+                        && r.level() == TournamentLevel.Qualification
                         && r.matchId() == 1
                         && r.alliance().equals("Red")
                         && r.teamNumber() == 1310
@@ -107,7 +107,7 @@ public class EventApiTest {
             now,
             "Duplicate Scout",
             "TEST_TOURN",
-            "Qualification",
+            TournamentLevel.Qualification,
             1,
             "Blue",
             1310,
@@ -281,7 +281,7 @@ public class EventApiTest {
             Instant.now(),
             "Test Scout",
             "T".repeat(128), // Max is 127
-            "Qualification",
+            TournamentLevel.Qualification,
             1,
             "Red",
             1310,
@@ -311,7 +311,7 @@ public class EventApiTest {
             Instant.now(),
             "Test Scout",
             "TEST_TOURN",
-            "L".repeat(128), // Max is 127
+            null, // Testing invalid level
             1,
             "Red",
             1310,
@@ -341,7 +341,7 @@ public class EventApiTest {
             Instant.now(),
             "Test Scout",
             "TEST_TOURN",
-            "Qualification",
+            TournamentLevel.Qualification,
             1,
             "Red",
             1310,
@@ -383,7 +383,7 @@ public class EventApiTest {
             Instant.now(),
             "scout",
             tournamentId,
-            TournamentLevel.Practice.name(),
+            TournamentLevel.Practice,
             1,
             "Red",
             teamNumber,
@@ -396,10 +396,10 @@ public class EventApiTest {
     EventLogRecord qualificationEvent =
         new EventLogRecord(
             0,
-            Instant.now(),
+            Instant.now().plusMillis(1),
             "scout",
             tournamentId,
-            TournamentLevel.Qualification.name(),
+            TournamentLevel.Qualification,
             2,
             "Red",
             teamNumber,
@@ -411,19 +411,15 @@ public class EventApiTest {
     // When includePractice is true, both should be returned
     List<EventLogRecord> allEvents =
         eventLogService.listEventsForTeamAndTournament(tournamentId, teamNumber, true);
-    assertTrue(allEvents.stream().anyMatch(e -> e.level().equals(TournamentLevel.Practice.name())));
-    assertTrue(
-        allEvents.stream().anyMatch(e -> e.level().equals(TournamentLevel.Qualification.name())));
+    assertTrue(allEvents.stream().anyMatch(e -> e.level() == TournamentLevel.Practice));
+    assertTrue(allEvents.stream().anyMatch(e -> e.level() == TournamentLevel.Qualification));
 
     // When includePractice is false, only Qualification should be returned
     List<EventLogRecord> nonPracticeEvents =
         eventLogService.listEventsForTeamAndTournament(tournamentId, teamNumber, false);
-    assertFalse(
-        nonPracticeEvents.stream()
-            .anyMatch(e -> e.level().equals(TournamentLevel.Practice.name())));
+    assertFalse(nonPracticeEvents.stream().anyMatch(e -> e.level() == TournamentLevel.Practice));
     assertTrue(
-        nonPracticeEvents.stream()
-            .anyMatch(e -> e.level().equals(TournamentLevel.Qualification.name())));
+        nonPracticeEvents.stream().anyMatch(e -> e.level() == TournamentLevel.Qualification));
 
     // Cleanup
     allEvents.forEach(eventLogService::delete);

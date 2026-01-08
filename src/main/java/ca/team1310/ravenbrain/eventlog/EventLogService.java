@@ -39,9 +39,7 @@ public class EventLogService {
     if (includePractice) {
       return events;
     } else {
-      return events.stream()
-          .filter(record -> !TournamentLevel.Practice.name().equals(record.level()))
-          .toList();
+      return events.stream().filter(record -> record.level() != TournamentLevel.Practice).toList();
     }
   }
 
