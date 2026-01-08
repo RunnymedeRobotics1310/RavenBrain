@@ -86,7 +86,11 @@ public class EventApiTest {
 
     // Verify it was saved
     List<EventLogRecord> saved =
-        eventLogService.listEventsForTeamAndTournament("TEST_TOURN", 1310, true);
+        eventLogService.listEventsForTournament(
+            1310,
+            "TEST_TOURN",
+            List.of(
+                TournamentLevel.Practice, TournamentLevel.Qualification, TournamentLevel.Playoff));
     assertTrue(
         saved.stream()
             .anyMatch(
@@ -412,15 +416,22 @@ public class EventApiTest {
             "qualification");
     eventLogService.save(qualificationEvent);
 
-    // When includePractice is true, both should be returned
     List<EventLogRecord> allEvents =
-        eventLogService.listEventsForTeamAndTournament(tournamentId, teamNumber, true);
+        eventLogService.listEventsForTournament(
+            teamNumber,
+            tournamentId,
+            List.of(
+                TournamentLevel.Practice, TournamentLevel.Qualification, TournamentLevel.Playoff));
+    ;
     assertTrue(allEvents.stream().anyMatch(e -> e.level() == TournamentLevel.Practice));
     assertTrue(allEvents.stream().anyMatch(e -> e.level() == TournamentLevel.Qualification));
 
-    // When includePractice is false, only Qualification should be returned
+    // Only Qualification and Playoff should be returned
     List<EventLogRecord> nonPracticeEvents =
-        eventLogService.listEventsForTeamAndTournament(tournamentId, teamNumber, false);
+        eventLogService.listEventsForTournament(
+            teamNumber,
+            tournamentId,
+            List.of(TournamentLevel.Qualification, TournamentLevel.Playoff));
     assertFalse(nonPracticeEvents.stream().anyMatch(e -> e.level() == TournamentLevel.Practice));
     assertTrue(
         nonPracticeEvents.stream().anyMatch(e -> e.level() == TournamentLevel.Qualification));

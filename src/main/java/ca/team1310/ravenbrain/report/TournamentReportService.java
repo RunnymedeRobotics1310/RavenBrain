@@ -2,6 +2,7 @@ package ca.team1310.ravenbrain.report;
 
 import ca.team1310.ravenbrain.eventlog.EventLogRecord;
 import ca.team1310.ravenbrain.eventlog.EventLogService;
+import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import ca.team1310.ravenbrain.tournament.TournamentRecord;
 import ca.team1310.ravenbrain.tournament.TournamentService;
 import io.micronaut.serde.annotation.Serdeable;
@@ -69,7 +70,11 @@ public class TournamentReportService {
     final TournamentReportResponse resp;
 
     List<EventLogRecord> data =
-        eventService.listEventsForTeamAndTournament(tournamentId, teamId, true);
+        eventService.listEventsForTournament(
+            teamId,
+            tournamentId,
+            List.of(
+                TournamentLevel.Practice, TournamentLevel.Qualification, TournamentLevel.Playoff));
     Map<Integer, List<EventLogRecord>> recordsByMatch = new LinkedHashMap<>();
     for (EventLogRecord record : data) {
       var match = record.matchId();

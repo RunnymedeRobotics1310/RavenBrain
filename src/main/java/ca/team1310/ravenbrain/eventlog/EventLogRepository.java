@@ -1,5 +1,6 @@
 package ca.team1310.ravenbrain.eventlog;
 
+import io.micronaut.data.annotation.Query;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
@@ -16,4 +17,10 @@ public interface EventLogRepository extends CrudRepository<EventLogRecord, Long>
 
   List<EventLogRecord> findAllByTeamNumberAndTournamentIdOrderByTimestampAsc(
       int teamNumber, String tournamentId);
+
+  @Query(
+      "SELECT * FROM 'RB_EVENT' e, RB_TOURNAMENT t WHERE teamnumber = :team "
+          + "AND e.tournamentid = t.id"
+          + "AND t.season = :year")
+  List<EventLogRecord> findForSeason(int team, int year);
 }

@@ -31,16 +31,20 @@ public class EventLogService {
     eventLogRepository.delete(record);
   }
 
-  public List<EventLogRecord> listEventsForTeamAndTournament(
-      String tournamentId, int teamNumber, boolean includePractice) {
-    List<EventLogRecord> events =
-        eventLogRepository.findAllByTeamNumberAndTournamentIdOrderByTimestampAsc(
-            teamNumber, tournamentId);
-    if (includePractice) {
-      return events;
-    } else {
-      return events.stream().filter(record -> record.level() != TournamentLevel.Practice).toList();
-    }
+  public List<EventLogRecord> listEventsForTournament(
+      int team, String tournamentId, List<TournamentLevel> levels) {
+    return eventLogRepository
+        .findAllByTeamNumberAndTournamentIdOrderByTimestampAsc(team, tournamentId)
+        .stream()
+        .filter(e -> levels.contains(e.level()))
+        .toList();
+  }
+
+  public List<EventLogRecord> listEventsForSeason(
+      int team, int year, List<TournamentLevel> levels) {
+    return eventLogRepository.findForSeason(team, year).stream()
+        .filter(e -> levels.contains(e.level()))
+        .toList();
   }
 
   public EventLogRecord save(EventLogRecord record) {
