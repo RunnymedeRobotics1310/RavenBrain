@@ -24,6 +24,11 @@ public class SequenceTypeApi {
     return sequenceTypeService.list();
   }
 
+  @Get("/year/{year}")
+  public List<SequenceType> findByFrcyear(int year) {
+    return sequenceTypeService.findByFrcyear(year);
+  }
+
   @Get("/{id}")
   public SequenceType findById(Long id) {
     return sequenceTypeService.findById(id).orElse(null);
@@ -40,7 +45,11 @@ public class SequenceTypeApi {
   public SequenceType update(Long id, @Body SequenceType sequenceType) {
     SequenceType toUpdate =
         new SequenceType(
-            id, sequenceType.name(), sequenceType.description(), sequenceType.events());
+            id,
+            sequenceType.name(),
+            sequenceType.description(),
+            sequenceType.frcyear(),
+            sequenceType.events());
     return sequenceTypeService.update(toUpdate);
   }
 

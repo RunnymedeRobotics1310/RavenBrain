@@ -25,6 +25,10 @@ public class SequenceTypeService {
     return sequenceTypeRepository.findAll();
   }
 
+  public List<SequenceType> findByFrcyear(int frcyear) {
+    return sequenceTypeRepository.findByFrcyear(frcyear);
+  }
+
   public Optional<SequenceType> findById(Long id) {
     return sequenceTypeRepository.findById(id);
   }

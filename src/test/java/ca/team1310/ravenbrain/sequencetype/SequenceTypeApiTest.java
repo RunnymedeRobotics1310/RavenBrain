@@ -77,7 +77,7 @@ public class SequenceTypeApiTest {
     // 1. Create as admin
     SequenceEvent se1 = new SequenceEvent(null, null, et1, true, false);
     SequenceType st =
-        new SequenceType(null, "test-sequence", "Test Sequence Description", List.of(se1));
+        new SequenceType(null, "test-sequence", "Test Sequence Description", 2025, List.of(se1));
 
     HttpRequest<SequenceType> createRequest =
         HttpRequest.POST("/api/sequence-types", st).basicAuth(adminLogin, adminPass);
@@ -87,6 +87,7 @@ public class SequenceTypeApiTest {
     assertNotNull(created.id());
     assertEquals("test-sequence", created.name());
     assertEquals("Test Sequence Description", created.description());
+    assertEquals(2025, created.frcyear());
     assertEquals(1, created.events().size());
     assertEquals("test-event-1", created.events().get(0).eventtype().eventtype());
 
@@ -96,6 +97,7 @@ public class SequenceTypeApiTest {
     SequenceType fetched = client.toBlocking().retrieve(getRequest, SequenceType.class);
     assertEquals(1, fetched.events().size(), "Events should be persisted and re-fetchable");
     assertEquals("test-event-1", fetched.events().get(0).eventtype().eventtype());
+    assertEquals(2025, fetched.frcyear());
 
     // 2. List
     HttpRequest<?> listRequest =
@@ -104,11 +106,24 @@ public class SequenceTypeApiTest {
         client.toBlocking().retrieve(listRequest, Argument.listOf(SequenceType.class));
     assertTrue(list.stream().anyMatch(s -> s.name().equals("test-sequence")));
 
+    // 2.1 List by year
+    HttpRequest<?> listByYearRequest =
+        HttpRequest.GET("/api/sequence-types/year/2025").basicAuth(adminLogin, adminPass);
+    List<SequenceType> listByYear =
+        client.toBlocking().retrieve(listByYearRequest, Argument.listOf(SequenceType.class));
+    assertTrue(listByYear.stream().anyMatch(s -> s.name().equals("test-sequence")));
+
+    HttpRequest<?> listByOtherYearRequest =
+        HttpRequest.GET("/api/sequence-types/year/2026").basicAuth(adminLogin, adminPass);
+    List<SequenceType> listByOtherYear =
+        client.toBlocking().retrieve(listByOtherYearRequest, Argument.listOf(SequenceType.class));
+    assertFalse(listByOtherYear.stream().anyMatch(s -> s.name().equals("test-sequence")));
+
     // 3. Update
     EventType et2 = eventTypeService.findById("test-event-2").orElseThrow();
     SequenceEvent se2 = new SequenceEvent(null, null, et2, false, true);
     SequenceType updateSt =
-        new SequenceType(created.id(), "test-sequence", "Updated Description", List.of(se2));
+        new SequenceType(created.id(), "test-sequence", "Updated Description", 2025, List.of(se2));
 
     HttpRequest<SequenceType> updateRequest =
         HttpRequest.PUT("/api/sequence-types/" + created.id(), updateSt)
@@ -138,7 +153,7 @@ public class SequenceTypeApiTest {
     String memberPass = "memberPass";
     testUserHelper.createTestUser(memberLogin, memberPass, "ROLE_MEMBER");
 
-    SequenceType st = new SequenceType(null, "security-test", "Should fail", List.of());
+    SequenceType st = new SequenceType(null, "security-test", "Should fail", 2025, List.of());
 
     // Create as member should fail
     HttpRequest<SequenceType> createRequest =

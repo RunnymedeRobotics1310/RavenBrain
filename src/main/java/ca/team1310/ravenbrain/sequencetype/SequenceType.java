@@ -17,5 +17,6 @@ public record SequenceType(
     @Id @GeneratedValue Long id,
     String name,
     String description,
+    int frcyear,
     @Relation(value = Relation.Kind.ONE_TO_MANY, mappedBy = "sequencetype")
         List<SequenceEvent> events) {}
