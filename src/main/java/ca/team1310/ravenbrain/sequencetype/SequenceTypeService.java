@@ -12,9 +12,13 @@ import java.util.Optional;
 public class SequenceTypeService {
 
   private final SequenceTypeRepository sequenceTypeRepository;
+  private final SequenceEventRepository sequenceEventRepository;
 
-  public SequenceTypeService(SequenceTypeRepository sequenceTypeRepository) {
+  public SequenceTypeService(
+      SequenceTypeRepository sequenceTypeRepository,
+      SequenceEventRepository sequenceEventRepository) {
     this.sequenceTypeRepository = sequenceTypeRepository;
+    this.sequenceEventRepository = sequenceEventRepository;
   }
 
   public List<SequenceType> list() {
@@ -25,12 +29,37 @@ public class SequenceTypeService {
     return sequenceTypeRepository.findById(id);
   }
 
+  @jakarta.transaction.Transactional
   public SequenceType create(SequenceType sequenceType) {
-    return sequenceTypeRepository.save(sequenceType);
+    SequenceType saved = sequenceTypeRepository.save(sequenceType);
+    if (sequenceType.events() != null && !sequenceType.events().isEmpty()) {
+      List<SequenceEvent> eventsToSave =
+          sequenceType.events().stream()
+              .map(
+                  se ->
+                      new SequenceEvent(
+                          null, saved, se.eventtype(), se.startOfSequence(), se.endOfSequence()))
+              .toList();
+      sequenceEventRepository.saveAll(eventsToSave);
+    }
+    return findById(saved.id()).orElse(saved);
   }
 
+  @jakarta.transaction.Transactional
   public SequenceType update(SequenceType sequenceType) {
-    return sequenceTypeRepository.update(sequenceType);
+    SequenceType updated = sequenceTypeRepository.update(sequenceType);
+    sequenceEventRepository.deleteBySequencetype(updated);
+    if (sequenceType.events() != null && !sequenceType.events().isEmpty()) {
+      List<SequenceEvent> eventsToSave =
+          sequenceType.events().stream()
+              .map(
+                  se ->
+                      new SequenceEvent(
+                          null, updated, se.eventtype(), se.startOfSequence(), se.endOfSequence()))
+              .toList();
+      sequenceEventRepository.saveAll(eventsToSave);
+    }
+    return findById(updated.id()).orElse(updated);
   }
 
   public void delete(Long id) {

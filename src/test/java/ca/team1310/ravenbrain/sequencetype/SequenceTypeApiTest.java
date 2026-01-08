@@ -90,6 +90,13 @@ public class SequenceTypeApiTest {
     assertEquals(1, created.events().size());
     assertEquals("test-event-1", created.events().get(0).eventtype().eventtype());
 
+    // 1.1 Verify re-fetch
+    HttpRequest<?> getRequest =
+        HttpRequest.GET("/api/sequence-types/" + created.id()).basicAuth(adminLogin, adminPass);
+    SequenceType fetched = client.toBlocking().retrieve(getRequest, SequenceType.class);
+    assertEquals(1, fetched.events().size(), "Events should be persisted and re-fetchable");
+    assertEquals("test-event-1", fetched.events().get(0).eventtype().eventtype());
+
     // 2. List
     HttpRequest<?> listRequest =
         HttpRequest.GET("/api/sequence-types").basicAuth(adminLogin, adminPass);
@@ -109,6 +116,11 @@ public class SequenceTypeApiTest {
     SequenceType updated = client.toBlocking().retrieve(updateRequest, SequenceType.class);
     assertEquals(created.id(), updated.id());
     assertEquals("Updated Description", updated.description());
+
+    // 3.1 Verify update re-fetch
+    SequenceType fetchedUpdated = client.toBlocking().retrieve(getRequest, SequenceType.class);
+    assertEquals(1, fetchedUpdated.events().size());
+    assertEquals("test-event-2", fetchedUpdated.events().get(0).eventtype().eventtype());
 
     // 4. Delete
     HttpRequest<?> deleteRequest =
