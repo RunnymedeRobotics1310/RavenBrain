@@ -14,6 +14,6 @@ public interface EventLogRepository extends CrudRepository<EventLogRecord, Long>
   @Override
   List<EventLogRecord> findAll();
 
-  List<EventLogRecord> findAllByTournamentIdAndTeamNumberOrderByMatchId(
-      String tournamentId, int teamNumber);
+  List<EventLogRecord> findAllByTeamNumberAndTournamentIdOrderByTimestampAsc(
+      int teamNumber, String tournamentId);
 }

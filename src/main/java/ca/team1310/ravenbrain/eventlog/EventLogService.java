@@ -30,10 +30,9 @@ public class EventLogService {
     eventLogRepository.delete(record);
   }
 
-  public List<EventLogRecord> findAllByTournamentIdAndTeamNumberOrderByMatchId(
-      String tournamentId, int teamNumber) {
-    return eventLogRepository.findAllByTournamentIdAndTeamNumberOrderByMatchId(
-        tournamentId, teamNumber);
+  public List<EventLogRecord> listEventsForTeamAndTournament(String tournamentId, int teamNumber) {
+    return eventLogRepository.findAllByTeamNumberAndTournamentIdOrderByTimestampAsc(
+        teamNumber, tournamentId);
   }
 
   public EventLogRecord save(EventLogRecord record) {
