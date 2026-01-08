@@ -49,6 +49,7 @@ public class SequenceTypeApi {
             sequenceType.name(),
             sequenceType.description(),
             sequenceType.frcyear(),
+            sequenceType.disabled(),
             sequenceType.events());
     return sequenceTypeService.update(toUpdate);
   }

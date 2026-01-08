@@ -18,5 +18,6 @@ public record SequenceType(
     String name,
     String description,
     int frcyear,
+    boolean disabled,
     @Relation(value = Relation.Kind.ONE_TO_MANY, mappedBy = "sequencetype")
         List<SequenceEvent> events) {}
