@@ -1,5 +1,6 @@
 package ca.team1310.ravenbrain.sequencetype;
 
+import io.micronaut.data.annotation.GeneratedValue;
 import io.micronaut.data.annotation.Id;
 import io.micronaut.data.annotation.MappedEntity;
 import io.micronaut.data.annotation.Relation;
@@ -13,6 +14,7 @@ import java.util.List;
 @MappedEntity("RB_SEQUENCETYPE")
 @Serdeable
 public record SequenceType(
-    @Id String name,
+    @Id @GeneratedValue Long id,
+    String name,
     String description,
     @Relation(Relation.Kind.ONE_TO_MANY) List<SequenceEvent> events) {}

@@ -24,9 +24,9 @@ public class SequenceTypeApi {
     return sequenceTypeService.list();
   }
 
-  @Get("/{name}")
-  public SequenceType findById(String name) {
-    return sequenceTypeService.findById(name).orElse(null);
+  @Get("/{id}")
+  public SequenceType findById(Long id) {
+    return sequenceTypeService.findById(id).orElse(null);
   }
 
   @Post
@@ -35,17 +35,18 @@ public class SequenceTypeApi {
     return sequenceTypeService.create(sequenceType);
   }
 
-  @Put("/{name}")
+  @Put("/{id}")
   @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
-  public SequenceType update(String name, @Body SequenceType sequenceType) {
+  public SequenceType update(Long id, @Body SequenceType sequenceType) {
     SequenceType toUpdate =
-        new SequenceType(name, sequenceType.description(), sequenceType.events());
+        new SequenceType(
+            id, sequenceType.name(), sequenceType.description(), sequenceType.events());
     return sequenceTypeService.update(toUpdate);
   }
 
-  @Delete("/{name}")
+  @Delete("/{id}")
   @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
-  public void delete(String name) {
-    sequenceTypeService.delete(name);
+  public void delete(Long id) {
+    sequenceTypeService.delete(id);
   }
 }

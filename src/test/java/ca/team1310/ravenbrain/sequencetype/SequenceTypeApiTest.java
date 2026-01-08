@@ -55,7 +55,7 @@ public class SequenceTypeApiTest {
         .forEach(
             st -> {
               if (st.name().startsWith("test-") || st.name().startsWith("security-")) {
-                sequenceTypeService.delete(st.name());
+                sequenceTypeService.delete(st.id());
               }
             });
     eventTypeService
@@ -76,13 +76,15 @@ public class SequenceTypeApiTest {
 
     // 1. Create as admin
     SequenceEvent se1 = new SequenceEvent(null, null, et1, true, false);
-    SequenceType st = new SequenceType("test-sequence", "Test Sequence Description", List.of(se1));
+    SequenceType st =
+        new SequenceType(null, "test-sequence", "Test Sequence Description", List.of(se1));
 
     HttpRequest<SequenceType> createRequest =
         HttpRequest.POST("/api/sequence-types", st).basicAuth(adminLogin, adminPass);
     SequenceType created = client.toBlocking().retrieve(createRequest, SequenceType.class);
 
     assertNotNull(created);
+    assertNotNull(created.id());
     assertEquals("test-sequence", created.name());
     assertEquals("Test Sequence Description", created.description());
     assertEquals(1, created.events().size());
@@ -98,22 +100,19 @@ public class SequenceTypeApiTest {
     // 3. Update
     EventType et2 = eventTypeService.findById("test-event-2").orElseThrow();
     SequenceEvent se2 = new SequenceEvent(null, null, et2, false, true);
-    SequenceType updateSt = new SequenceType("test-sequence", "Updated Description", List.of(se2));
+    SequenceType updateSt =
+        new SequenceType(created.id(), "test-sequence", "Updated Description", List.of(se2));
 
     HttpRequest<SequenceType> updateRequest =
-        HttpRequest.PUT("/api/sequence-types/test-sequence", updateSt)
+        HttpRequest.PUT("/api/sequence-types/" + created.id(), updateSt)
             .basicAuth("superuser", config.superuser());
     SequenceType updated = client.toBlocking().retrieve(updateRequest, SequenceType.class);
-    assertEquals("test-sequence", updated.name());
+    assertEquals(created.id(), updated.id());
     assertEquals("Updated Description", updated.description());
-    // Note: updating a list in Micronaut Data JDBC might depend on how the relations are handled.
-    // If it's ONE_TO_MANY, it might replace or append.
-    // Usually with JDBC it might need manual management if not using a full ORM,
-    // but Micronaut Data JDBC supports some level of cascading.
 
     // 4. Delete
     HttpRequest<?> deleteRequest =
-        HttpRequest.DELETE("/api/sequence-types/test-sequence").basicAuth(adminLogin, adminPass);
+        HttpRequest.DELETE("/api/sequence-types/" + created.id()).basicAuth(adminLogin, adminPass);
     client.toBlocking().exchange(deleteRequest);
 
     // 5. Verify delete
@@ -127,7 +126,7 @@ public class SequenceTypeApiTest {
     String memberPass = "memberPass";
     testUserHelper.createTestUser(memberLogin, memberPass, "ROLE_MEMBER");
 
-    SequenceType st = new SequenceType("security-test", "Should fail", List.of());
+    SequenceType st = new SequenceType(null, "security-test", "Should fail", List.of());
 
     // Create as member should fail
     HttpRequest<SequenceType> createRequest =

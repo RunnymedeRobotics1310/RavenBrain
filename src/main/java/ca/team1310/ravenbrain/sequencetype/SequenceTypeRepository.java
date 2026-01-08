@@ -10,7 +10,7 @@ import java.util.List;
  * @since 2026-01-07
  */
 @JdbcRepository(dialect = Dialect.MYSQL)
-public interface SequenceTypeRepository extends CrudRepository<SequenceType, String> {
+public interface SequenceTypeRepository extends CrudRepository<SequenceType, Long> {
   @Override
   List<SequenceType> findAll();
 }

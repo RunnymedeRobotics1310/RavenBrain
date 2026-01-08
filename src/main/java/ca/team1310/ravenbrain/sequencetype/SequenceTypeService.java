@@ -21,8 +21,8 @@ public class SequenceTypeService {
     return sequenceTypeRepository.findAll();
   }
 
-  public Optional<SequenceType> findById(String name) {
-    return sequenceTypeRepository.findById(name);
+  public Optional<SequenceType> findById(Long id) {
+    return sequenceTypeRepository.findById(id);
   }
 
   public SequenceType create(SequenceType sequenceType) {
@@ -33,7 +33,7 @@ public class SequenceTypeService {
     return sequenceTypeRepository.update(sequenceType);
   }
 
-  public void delete(String name) {
-    sequenceTypeRepository.deleteById(name);
+  public void delete(Long id) {
+    sequenceTypeRepository.deleteById(id);
   }
 }

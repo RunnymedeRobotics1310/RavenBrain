@@ -16,7 +16,7 @@ import io.micronaut.serde.annotation.Serdeable;
 @Serdeable
 public record SequenceEvent(
     @Id @GeneratedValue Long id,
-    @Relation(Relation.Kind.MANY_TO_ONE) @MappedProperty("sequencetype_name")
+    @Relation(Relation.Kind.MANY_TO_ONE) @MappedProperty("sequencetype_id")
         SequenceType sequencetype,
     @Relation(Relation.Kind.MANY_TO_ONE) @MappedProperty("eventtype_id") EventType eventtype,
     boolean startOfSequence,
