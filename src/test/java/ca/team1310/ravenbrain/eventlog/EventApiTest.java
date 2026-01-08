@@ -3,6 +3,7 @@ package ca.team1310.ravenbrain.eventlog;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ca.team1310.ravenbrain.connect.TestUserHelper;
+import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import io.micronaut.core.type.Argument;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
@@ -25,6 +26,7 @@ public class EventApiTest {
   HttpClient client;
 
   @Inject EventLogService eventLogService;
+  @Inject ca.team1310.ravenbrain.eventtype.EventTypeService eventTypeService;
 
   @Inject TestUserHelper testUserHelper;
 
@@ -359,5 +361,72 @@ public class EventApiTest {
     assertNotNull(results);
     assertFalse(results.getFirst().success());
     assertTrue(results.getFirst().reason().contains("Invalid event type"));
+  }
+
+  @Test
+  void testListEventsForTeamAndTournamentFiltering() {
+    String tournamentId = "FILTER_TEST";
+    int teamNumber = 1310;
+    String eventType = "FILTER-TEST-TYPE";
+
+    // Ensure event type exists
+    if (eventTypeService.findById(eventType).isEmpty()) {
+      eventTypeService.create(
+          new ca.team1310.ravenbrain.eventtype.EventType(
+              eventType, "Filter Test Type", "Description", 2025, null));
+    }
+
+    // Create a practice event
+    EventLogRecord practiceEvent =
+        new EventLogRecord(
+            0,
+            Instant.now(),
+            "scout",
+            tournamentId,
+            TournamentLevel.Practice.name(),
+            1,
+            "Red",
+            teamNumber,
+            eventType,
+            1.0,
+            "practice");
+    eventLogService.save(practiceEvent);
+
+    // Create a qualification event
+    EventLogRecord qualificationEvent =
+        new EventLogRecord(
+            0,
+            Instant.now(),
+            "scout",
+            tournamentId,
+            TournamentLevel.Qualification.name(),
+            2,
+            "Red",
+            teamNumber,
+            eventType,
+            1.0,
+            "qualification");
+    eventLogService.save(qualificationEvent);
+
+    // When includePractice is true, both should be returned
+    List<EventLogRecord> allEvents =
+        eventLogService.listEventsForTeamAndTournament(tournamentId, teamNumber, true);
+    assertTrue(allEvents.stream().anyMatch(e -> e.level().equals(TournamentLevel.Practice.name())));
+    assertTrue(
+        allEvents.stream().anyMatch(e -> e.level().equals(TournamentLevel.Qualification.name())));
+
+    // When includePractice is false, only Qualification should be returned
+    List<EventLogRecord> nonPracticeEvents =
+        eventLogService.listEventsForTeamAndTournament(tournamentId, teamNumber, false);
+    assertFalse(
+        nonPracticeEvents.stream()
+            .anyMatch(e -> e.level().equals(TournamentLevel.Practice.name())));
+    assertTrue(
+        nonPracticeEvents.stream()
+            .anyMatch(e -> e.level().equals(TournamentLevel.Qualification.name())));
+
+    // Cleanup
+    allEvents.forEach(eventLogService::delete);
+    eventTypeService.delete(eventType);
   }
 }

@@ -40,7 +40,7 @@ public class EventLogService {
       return events;
     } else {
       return events.stream()
-          .filter(record -> TournamentLevel.Practice.name().equals(record.level()))
+          .filter(record -> !TournamentLevel.Practice.name().equals(record.level()))
           .toList();
     }
   }
