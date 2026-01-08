@@ -3,6 +3,7 @@ package ca.team1310.ravenbrain.eventlog;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ca.team1310.ravenbrain.connect.TestUserHelper;
+import ca.team1310.ravenbrain.frcapi.model.Alliance;
 import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import io.micronaut.core.type.Argument;
 import io.micronaut.http.HttpRequest;
@@ -59,7 +60,7 @@ public class EventApiTest {
             "TEST_TOURN",
             TournamentLevel.Qualification,
             1,
-            "Red",
+            Alliance.red,
             1310,
             "comment",
             1.0,
@@ -91,7 +92,7 @@ public class EventApiTest {
                         && r.tournamentId().equals("TEST_TOURN")
                         && r.level() == TournamentLevel.Qualification
                         && r.matchId() == 1
-                        && r.alliance().equals("Red")
+                        && r.alliance() == Alliance.red
                         && r.teamNumber() == 1310
                         && r.amount() == 1.0
                         && r.note().equals("Good job")
@@ -109,7 +110,7 @@ public class EventApiTest {
             "TEST_TOURN",
             TournamentLevel.Qualification,
             1,
-            "Blue",
+            Alliance.blue,
             1310,
             "comment",
             1.0,
@@ -143,7 +144,7 @@ public class EventApiTest {
             "TEST_TOURN",
             null,
             1,
-            "Red",
+            Alliance.red,
             1310,
             "A".repeat(256), // Max is 255
             1.0,
@@ -173,7 +174,7 @@ public class EventApiTest {
             "TEST_TOURN",
             null,
             1,
-            "Red",
+            Alliance.red,
             1310,
             "comment",
             1.0,
@@ -223,7 +224,7 @@ public class EventApiTest {
             "TEST_TOURN",
             null,
             1,
-            "A".repeat(65), // Max is 64
+            null, // Alliance.red is "Red" in previous string, but here we test length of string.
             1310,
             "comment",
             1.0,
@@ -253,7 +254,7 @@ public class EventApiTest {
             "TEST_TOURN",
             null,
             1,
-            "Red",
+            Alliance.red,
             1310,
             "comment",
             1.0,
@@ -283,7 +284,7 @@ public class EventApiTest {
             "T".repeat(128), // Max is 127
             TournamentLevel.Qualification,
             1,
-            "Red",
+            Alliance.red,
             1310,
             "comment",
             1.0,
@@ -313,7 +314,7 @@ public class EventApiTest {
             "TEST_TOURN",
             null, // Testing invalid level
             1,
-            "Red",
+            Alliance.red,
             1310,
             "comment",
             1.0,
@@ -343,7 +344,7 @@ public class EventApiTest {
             "TEST_TOURN",
             TournamentLevel.Qualification,
             1,
-            "Red",
+            Alliance.red,
             1310,
             "NON_EXISTENT_TYPE",
             1.0,
@@ -385,7 +386,7 @@ public class EventApiTest {
             tournamentId,
             TournamentLevel.Practice,
             1,
-            "Red",
+            Alliance.red,
             teamNumber,
             eventType,
             1.0,
@@ -401,7 +402,7 @@ public class EventApiTest {
             tournamentId,
             TournamentLevel.Qualification,
             2,
-            "Red",
+            Alliance.red,
             teamNumber,
             eventType,
             1.0,

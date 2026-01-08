@@ -1,5 +1,6 @@
 package ca.team1310.ravenbrain.eventlog;
 
+import ca.team1310.ravenbrain.frcapi.model.Alliance;
 import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import io.micronaut.data.annotation.Id;
 import io.micronaut.data.annotation.MappedEntity;
@@ -20,7 +21,7 @@ public record EventLogRecord(
     @MappedProperty("tournamentid") String tournamentId,
     TournamentLevel level,
     @MappedProperty("matchid") int matchId,
-    String alliance,
+    Alliance alliance,
     @MappedProperty("teamnumber") int teamNumber,
     @MappedProperty("eventtype") String eventType,
     double amount,
