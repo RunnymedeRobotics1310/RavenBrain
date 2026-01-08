@@ -1,6 +1,7 @@
 package ca.team1310.ravenbrain.eventlog;
 
 import ca.team1310.ravenbrain.eventtype.EventTypeRepository;
+import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import jakarta.inject.Singleton;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -30,9 +31,18 @@ public class EventLogService {
     eventLogRepository.delete(record);
   }
 
-  public List<EventLogRecord> listEventsForTeamAndTournament(String tournamentId, int teamNumber) {
-    return eventLogRepository.findAllByTeamNumberAndTournamentIdOrderByTimestampAsc(
-        teamNumber, tournamentId);
+  public List<EventLogRecord> listEventsForTeamAndTournament(
+      String tournamentId, int teamNumber, boolean includePractice) {
+    List<EventLogRecord> events =
+        eventLogRepository.findAllByTeamNumberAndTournamentIdOrderByTimestampAsc(
+            teamNumber, tournamentId);
+    if (includePractice) {
+      return events;
+    } else {
+      return events.stream()
+          .filter(record -> TournamentLevel.Practice.name().equals(record.level()))
+          .toList();
+    }
   }
 
   public EventLogRecord save(EventLogRecord record) {

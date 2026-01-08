@@ -68,7 +68,8 @@ public class TournamentReportService {
     }
     final TournamentReportResponse resp;
 
-    List<EventLogRecord> data = eventService.listEventsForTeamAndTournament(tournamentId, teamId);
+    List<EventLogRecord> data =
+        eventService.listEventsForTeamAndTournament(tournamentId, teamId, true);
     Map<Integer, List<EventLogRecord>> recordsByMatch = new LinkedHashMap<>();
     for (EventLogRecord record : data) {
       var match = record.matchId();

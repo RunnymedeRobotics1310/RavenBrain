@@ -78,7 +78,8 @@ public class EventApiTest {
     assertNull(results.getFirst().reason());
 
     // Verify it was saved
-    List<EventLogRecord> saved = eventLogService.listEventsForTeamAndTournament("TEST_TOURN", 1310);
+    List<EventLogRecord> saved =
+        eventLogService.listEventsForTeamAndTournament("TEST_TOURN", 1310, true);
     assertTrue(
         saved.stream()
             .anyMatch(
