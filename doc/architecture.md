@@ -267,45 +267,44 @@ pickup-success event in them).
 The following defines the structure of sequence information.
 
 ```
+IntervalDuration
+
+- start (EventType)
+- end (EventType)
+- duration (milliseconds)
+
+TimedSequenceEvent
+
+- eventtype
+- timestamp
+- elapsedSincePrecedingEvent (milliseconds)
+- elapsedSinceStartOfSequence (milliseconds)
+
 SequenceInfo
 
 - team
 - frcYear
-- SequenceEvent[]
-- SequenceIntervalDuration[]
-- totalDuration
-- SequenceStats
+- TimedSequenceEvent[]
+- IntervalDuration[]
+- duration (milliseconds)
 
-SequenceEvent
+IntervalStats
 
-- eventtype
-- timestamp
-- elapsedTimeSincePrecedingEvent
-- elapsedTimeSinceStartOfSequence
+- start (EventType)
+- end (EventType)
+- average (milliseconds)
+- fastest (milliseconds)
+- slowest (milliseconds)
+- stddev
 
-SequenceIntervalDuration
-
-- intervalStartEventType
-- intervalEndeVentType
-- intervalDuration
-
-MultiSequenceReport
+SequenceReport
 
 - SequenceInfo[]
 - averageDuration
 - fastestDuration
 - slowestDuration
 - durationStdDev
-- SequenceIntervalStats[]
-
-SequenceIntervalStats
-
-- intervalStartEventType
-- intervalEndEventType
-- averageDuration
-- fastestDuration
-- slowestDuration
-- durationStdDev
+- IntervalStats[]
 ```
 
 The front-end can perform further processing if necessary.
