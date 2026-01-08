@@ -3,6 +3,7 @@ package ca.team1310.ravenbrain.eventlog;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ca.team1310.ravenbrain.connect.TestUserHelper;
+import ca.team1310.ravenbrain.connect.User;
 import ca.team1310.ravenbrain.frcapi.model.Alliance;
 import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import io.micronaut.core.type.Argument;
@@ -33,8 +34,11 @@ public class EventApiTest {
 
   @org.junit.jupiter.api.BeforeEach
   void setup() {
-    testUserHelper.createTestUser(AUTH_USER, "password", "ROLE_DATASCOUT");
+    User user = testUserHelper.createTestUser(AUTH_USER, "password", "ROLE_DATASCOUT");
+    this.testUserId = user.id();
   }
+
+  private long testUserId;
 
   @org.junit.jupiter.api.AfterEach
   void tearDown() {
@@ -56,7 +60,7 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             Instant.now(),
-            "Test Scout",
+            testUserId,
             "TEST_TOURN",
             TournamentLevel.Qualification,
             1,
@@ -87,7 +91,7 @@ public class EventApiTest {
         saved.stream()
             .anyMatch(
                 r ->
-                    r.scoutName().equals("Test Scout")
+                    r.userId() == testUserId
                         && r.eventType().equals("comment")
                         && r.tournamentId().equals("TEST_TOURN")
                         && r.level() == TournamentLevel.Qualification
@@ -106,7 +110,7 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             now,
-            "Duplicate Scout",
+            testUserId,
             "TEST_TOURN",
             TournamentLevel.Qualification,
             1,
@@ -140,7 +144,7 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             Instant.now(),
-            "Test Scout",
+            testUserId,
             "TEST_TOURN",
             null,
             1,
@@ -170,7 +174,7 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             Instant.now(),
-            "Test Scout",
+            testUserId,
             "TEST_TOURN",
             null,
             1,
@@ -196,9 +200,8 @@ public class EventApiTest {
 
   @Test
   void testPostEventLogsMissingRequiredFields() {
-    EventLogRecord record =
-        new EventLogRecord(0, null, null, null, null, 0, null, 0, null, 0, null);
-    // Missing timestamp, scoutName, etc. which are NOT NULL in DB
+    EventLogRecord record = new EventLogRecord(0, null, 0, null, null, 0, null, 0, null, 0, null);
+    // Missing timestamp, userId, etc. which are NOT NULL in DB
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
@@ -220,7 +223,7 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             Instant.now(),
-            "Test Scout",
+            testUserId,
             "TEST_TOURN",
             null,
             1,
@@ -245,12 +248,12 @@ public class EventApiTest {
   }
 
   @Test
-  void testPostEventLogsInvalidScoutNameLength() {
+  void testPostEventLogsInvalidUserId() {
     EventLogRecord record =
         new EventLogRecord(
             0,
             Instant.now(),
-            "S".repeat(256), // Max is 255
+            -1, // Invalid user ID
             "TEST_TOURN",
             null,
             1,
@@ -258,7 +261,7 @@ public class EventApiTest {
             1310,
             "comment",
             1.0,
-            "Long scout name");
+            "Invalid user ID");
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
@@ -280,7 +283,7 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             Instant.now(),
-            "Test Scout",
+            testUserId,
             "T".repeat(128), // Max is 127
             TournamentLevel.Qualification,
             1,
@@ -310,7 +313,7 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             Instant.now(),
-            "Test Scout",
+            testUserId,
             "TEST_TOURN",
             null, // Testing invalid level
             1,
@@ -340,7 +343,7 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             Instant.now(),
-            "Test Scout",
+            testUserId,
             "TEST_TOURN",
             TournamentLevel.Qualification,
             1,
@@ -382,7 +385,7 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             Instant.now(),
-            "scout",
+            testUserId,
             tournamentId,
             TournamentLevel.Practice,
             1,
@@ -398,7 +401,7 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             Instant.now().plusMillis(1),
-            "scout",
+            testUserId,
             tournamentId,
             TournamentLevel.Qualification,
             2,

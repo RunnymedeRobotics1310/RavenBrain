@@ -17,7 +17,7 @@ import java.time.Instant;
 public record EventLogRecord(
     @Id long id,
     @MappedProperty("eventtimestamp") Instant timestamp,
-    @MappedProperty("scoutname") String scoutName,
+    @MappedProperty("userid") long userId,
     @MappedProperty("tournamentid") String tournamentId,
     TournamentLevel level,
     @MappedProperty("matchid") int matchId,
