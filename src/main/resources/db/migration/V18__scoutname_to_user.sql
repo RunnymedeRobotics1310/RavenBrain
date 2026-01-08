@@ -1,5 +1,4 @@
 DELETE FROM RB_USER;
-
 ALTER TABLE RB_EVENT ADD COLUMN userid bigint AFTER eventtimestamp;
 
 insert into RB_USER (id, login, display_name, password_hash, roles, enabled, forgot_password)
@@ -78,8 +77,8 @@ VALUES (19, "Meghan", "Meghan", "secret", "ROLE_MEMBER", 0, 0);
 UPDATE RB_EVENT set userid = 19 where scoutname = "Meghan";
 
 ALTER TABLE RB_EVENT drop constraint time_scout_type;
+ALTER TABLE RB_EVENT drop column scoutname;
 
 ALTER TABLE RB_EVENT MODIFY userid BIGINT NOT NULL;
-
 ALTER TABLE RB_EVENT add constraint time_user_type unique (eventtimestamp, userid, eventtype);
 
