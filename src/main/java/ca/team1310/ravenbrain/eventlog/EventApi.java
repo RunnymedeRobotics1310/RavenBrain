@@ -34,7 +34,7 @@ public class EventApi {
     var result = new ArrayList<EventLogPostResult>();
     for (EventLogRecord record : eventLogRecord) {
       try {
-        eventLogService.save(record);
+        record = eventLogService.save(record);
         result.add(new EventLogPostResult(record, true, null));
       } catch (DataAccessException e) {
         if (e.getMessage().contains("Duplicate entry")) {

@@ -82,8 +82,12 @@ public class QuickCommentApiTest {
     // Verify it was actually saved
     List<QuickComment> saved = quickCommentService.findAllByTeamOrderByTimestamp(999_999);
     assertFalse(saved.isEmpty());
+    assertNotNull(saved.getFirst().id(), "Saved comment should have a generated ID");
     assertEquals("Basic valid comment", saved.getFirst().quickComment());
     assertEquals(memberUserId, saved.getFirst().userId());
+
+    // Verify the returned result from API also has the ID
+    assertNotNull(body.getFirst().comment().id(), "Result comment should have a generated ID");
   }
 
   @Test

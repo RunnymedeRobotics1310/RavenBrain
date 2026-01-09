@@ -1,5 +1,6 @@
 package ca.team1310.ravenbrain.quickcomment;
 
+import io.micronaut.data.annotation.GeneratedValue;
 import io.micronaut.data.annotation.Id;
 import io.micronaut.data.annotation.MappedEntity;
 import io.micronaut.data.annotation.MappedProperty;
@@ -13,7 +14,7 @@ import java.time.Instant;
 @MappedEntity(value = "RB_COMMENT")
 @Serdeable
 public record QuickComment(
-    @Id Long id,
+    @Id @GeneratedValue Long id,
     @MappedProperty("userid") long userId,
     @MappedProperty("scoutrole") String role,
     @MappedProperty("teamnumber") int team,

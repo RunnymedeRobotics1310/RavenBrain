@@ -2,6 +2,7 @@ package ca.team1310.ravenbrain.eventlog;
 
 import ca.team1310.ravenbrain.frcapi.model.Alliance;
 import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
+import io.micronaut.data.annotation.GeneratedValue;
 import io.micronaut.data.annotation.Id;
 import io.micronaut.data.annotation.MappedEntity;
 import io.micronaut.data.annotation.MappedProperty;
@@ -15,7 +16,7 @@ import java.time.Instant;
 @MappedEntity(value = "RB_EVENT")
 @Serdeable
 public record EventLogRecord(
-    @Id long id,
+    @Id @GeneratedValue long id,
     @MappedProperty("eventtimestamp") Instant timestamp,
     @MappedProperty("userid") long userId,
     @MappedProperty("tournamentid") String tournamentId,
