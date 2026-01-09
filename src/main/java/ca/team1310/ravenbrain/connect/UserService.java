@@ -25,28 +25,29 @@ public class UserService {
 
   @EventListener
   public void onStartup(StartupEvent event) {
-    syncUser("superuser", "Super User", config.superuser(), List.of("ROLE_SUPERUSER"));
-  }
 
-  private void syncUser(String login, String displayName, String password, List<String> roles) {
-    if (password == null) return;
-    Optional<User> existing = userRepository.findByLogin(login);
-    if (existing.isEmpty()) {
-      userRepository.save(
-          new User(0, login, displayName, hashPassword(password), true, false, roles));
-    } else {
-      User u = existing.get();
-      User updated =
-          new User(
-              u.id(),
-              u.login(),
-              u.displayName(),
-              hashPassword(password),
-              true,
-              u.forgotPassword(),
-              roles);
-      userRepository.update(updated);
-    }
+    // reset the superuser password to the prop value
+    final String password = config.superuser();
+    if (password == null) throw new IllegalStateException("Superuser password is not configured.");
+
+    User u =
+        userRepository
+            .findByLogin("superuser")
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "Superuser not found, but it should always be in the database."));
+    User updated =
+        new User(
+            u.id(),
+            u.login(),
+            u.displayName(),
+            hashPassword(password),
+            true,
+            false,
+            List.of("ROLE_SUPERUSER"));
+
+    userRepository.update(updated);
   }
 
   public List<User> listUsers() {

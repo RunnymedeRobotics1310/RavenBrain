@@ -3,6 +3,7 @@ package ca.team1310.ravenbrain.quickcomment;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ca.team1310.ravenbrain.connect.TestUserHelper;
+import ca.team1310.ravenbrain.connect.User;
 import io.micronaut.core.type.Argument;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
@@ -31,10 +32,15 @@ public class QuickCommentApiTest {
 
   @Inject TestUserHelper testUserHelper;
 
+  private long memberUserId;
+  private long expertUserId;
+
   @org.junit.jupiter.api.BeforeEach
   void setup() {
-    testUserHelper.createTestUser(USER_MEMBER, "password", "ROLE_MEMBER");
-    testUserHelper.createTestUser(USER_EXPERT, "password", "ROLE_EXPERTSCOUT");
+    User member = testUserHelper.createTestUser(USER_MEMBER, "password", "ROLE_MEMBER");
+    memberUserId = member.id();
+    User expert = testUserHelper.createTestUser(USER_EXPERT, "password", "ROLE_EXPERTSCOUT");
+    expertUserId = expert.id();
   }
 
   @org.junit.jupiter.api.AfterEach
@@ -55,7 +61,7 @@ public class QuickCommentApiTest {
   void testPostComments() {
     QuickComment comment =
         new QuickComment(
-            null, "Test Scout", "ROLE_MEMBER", 999_999, Instant.now(), "Basic valid comment");
+            null, memberUserId, "ROLE_MEMBER", 999_999, Instant.now(), "Basic valid comment");
 
     List<QuickComment> comments = Collections.singletonList(comment);
     HttpRequest<List<QuickComment>> request =
@@ -77,6 +83,7 @@ public class QuickCommentApiTest {
     List<QuickComment> saved = quickCommentService.findAllByTeamOrderByTimestamp(999_999);
     assertFalse(saved.isEmpty());
     assertEquals("Basic valid comment", saved.getFirst().quickComment());
+    assertEquals(memberUserId, saved.getFirst().userId());
   }
 
   @Test
@@ -84,9 +91,9 @@ public class QuickCommentApiTest {
     QuickComment comment =
         new QuickComment(
             null,
-            "Duplicate Scout",
+            memberUserId,
             "ROLE_MEMBER",
-            9998,
+            999_998,
             Instant.parse("2025-01-01T12:00:00Z"),
             "Duplicate comment");
 
@@ -117,8 +124,8 @@ public class QuickCommentApiTest {
 
   @Test
   void testPostInvalidData() {
-    QuickComment invalidComment = new QuickComment(null, null, null, 0, null, null);
-    // Missing required fields (e.g., name, comment, timestamp are NOT NULL in DB)
+    QuickComment invalidComment = new QuickComment(null, -1L, null, 100_000, null, null);
+    // Missing required fields (e.g., userId, comment, timestamp are NOT NULL in DB)
     // This should cause an exception in quickCommentService.save() which the API catches.
 
     List<QuickComment> comments = Collections.singletonList(invalidComment);

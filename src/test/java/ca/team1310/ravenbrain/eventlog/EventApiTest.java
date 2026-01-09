@@ -3,6 +3,9 @@ package ca.team1310.ravenbrain.eventlog;
 import static org.junit.jupiter.api.Assertions.*;
 
 import ca.team1310.ravenbrain.connect.TestUserHelper;
+import ca.team1310.ravenbrain.connect.User;
+import ca.team1310.ravenbrain.frcapi.model.Alliance;
+import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import io.micronaut.core.type.Argument;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
@@ -25,13 +28,17 @@ public class EventApiTest {
   HttpClient client;
 
   @Inject EventLogService eventLogService;
+  @Inject ca.team1310.ravenbrain.eventtype.EventTypeService eventTypeService;
 
   @Inject TestUserHelper testUserHelper;
 
   @org.junit.jupiter.api.BeforeEach
   void setup() {
-    testUserHelper.createTestUser(AUTH_USER, "password", "ROLE_DATASCOUT");
+    User user = testUserHelper.createTestUser(AUTH_USER, "password", "ROLE_DATASCOUT");
+    this.testUserId = user.id();
   }
+
+  private long testUserId;
 
   @org.junit.jupiter.api.AfterEach
   void tearDown() {
@@ -53,11 +60,11 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             Instant.now(),
-            "Test Scout",
+            testUserId,
             "TEST_TOURN",
-            "Qualification",
+            TournamentLevel.Qualification,
             1,
-            "Red",
+            Alliance.red,
             1310,
             "comment",
             1.0,
@@ -79,17 +86,21 @@ public class EventApiTest {
 
     // Verify it was saved
     List<EventLogRecord> saved =
-        eventLogService.findAllByTournamentIdAndTeamNumberOrderByMatchId("TEST_TOURN", 1310);
+        eventLogService.listEventsForTournament(
+            1310,
+            "TEST_TOURN",
+            List.of(
+                TournamentLevel.Practice, TournamentLevel.Qualification, TournamentLevel.Playoff));
     assertTrue(
         saved.stream()
             .anyMatch(
                 r ->
-                    r.scoutName().equals("Test Scout")
+                    r.userId() == testUserId
                         && r.eventType().equals("comment")
                         && r.tournamentId().equals("TEST_TOURN")
-                        && r.level().equals("Qualification")
+                        && r.level() == TournamentLevel.Qualification
                         && r.matchId() == 1
-                        && r.alliance().equals("Red")
+                        && r.alliance() == Alliance.red
                         && r.teamNumber() == 1310
                         && r.amount() == 1.0
                         && r.note().equals("Good job")
@@ -103,11 +114,11 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             now,
-            "Duplicate Scout",
+            testUserId,
             "TEST_TOURN",
-            "Qualification",
+            TournamentLevel.Qualification,
             1,
-            "Blue",
+            Alliance.blue,
             1310,
             "comment",
             1.0,
@@ -137,11 +148,11 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             Instant.now(),
-            "Test Scout",
+            testUserId,
             "TEST_TOURN",
             null,
             1,
-            "Red",
+            Alliance.red,
             1310,
             "A".repeat(256), // Max is 255
             1.0,
@@ -167,11 +178,11 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             Instant.now(),
-            "Test Scout",
+            testUserId,
             "TEST_TOURN",
             null,
             1,
-            "Red",
+            Alliance.red,
             1310,
             "comment",
             1.0,
@@ -193,9 +204,8 @@ public class EventApiTest {
 
   @Test
   void testPostEventLogsMissingRequiredFields() {
-    EventLogRecord record =
-        new EventLogRecord(0, null, null, null, null, 0, null, 0, null, 0, null);
-    // Missing timestamp, scoutName, etc. which are NOT NULL in DB
+    EventLogRecord record = new EventLogRecord(0, null, 0, null, null, 0, null, 0, null, 0, null);
+    // Missing timestamp, userId, etc. which are NOT NULL in DB
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
@@ -217,11 +227,11 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             Instant.now(),
-            "Test Scout",
+            testUserId,
             "TEST_TOURN",
             null,
             1,
-            "A".repeat(65), // Max is 64
+            null, // Alliance.red is "Red" in previous string, but here we test length of string.
             1310,
             "comment",
             1.0,
@@ -242,20 +252,20 @@ public class EventApiTest {
   }
 
   @Test
-  void testPostEventLogsInvalidScoutNameLength() {
+  void testPostEventLogsInvalidUserId() {
     EventLogRecord record =
         new EventLogRecord(
             0,
             Instant.now(),
-            "S".repeat(256), // Max is 255
+            -1, // Invalid user ID
             "TEST_TOURN",
             null,
             1,
-            "Red",
+            Alliance.red,
             1310,
             "comment",
             1.0,
-            "Long scout name");
+            "Invalid user ID");
 
     HttpRequest<EventLogRecord[]> request =
         HttpRequest.POST("/api/event", new EventLogRecord[] {record})
@@ -277,11 +287,11 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             Instant.now(),
-            "Test Scout",
+            testUserId,
             "T".repeat(128), // Max is 127
-            "Qualification",
+            TournamentLevel.Qualification,
             1,
-            "Red",
+            Alliance.red,
             1310,
             "comment",
             1.0,
@@ -307,11 +317,11 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             Instant.now(),
-            "Test Scout",
+            testUserId,
             "TEST_TOURN",
-            "L".repeat(128), // Max is 127
+            null, // Testing invalid level
             1,
-            "Red",
+            Alliance.red,
             1310,
             "comment",
             1.0,
@@ -337,11 +347,11 @@ public class EventApiTest {
         new EventLogRecord(
             0,
             Instant.now(),
-            "Test Scout",
+            testUserId,
             "TEST_TOURN",
-            "Qualification",
+            TournamentLevel.Qualification,
             1,
-            "Red",
+            Alliance.red,
             1310,
             "NON_EXISTENT_TYPE",
             1.0,
@@ -359,5 +369,75 @@ public class EventApiTest {
     assertNotNull(results);
     assertFalse(results.getFirst().success());
     assertTrue(results.getFirst().reason().contains("Invalid event type"));
+  }
+
+  @Test
+  void testListEventsForTeamAndTournamentFiltering() {
+    String tournamentId = "FILTER_TEST";
+    int teamNumber = 1310;
+    String eventType = "FILTER-TEST-TYPE";
+
+    // Ensure event type exists
+    if (eventTypeService.findById(eventType).isEmpty()) {
+      eventTypeService.create(
+          new ca.team1310.ravenbrain.eventtype.EventType(
+              eventType, "Filter Test Type", "Description", 2025, null));
+    }
+
+    // Create a practice event
+    EventLogRecord practiceEvent =
+        new EventLogRecord(
+            0,
+            Instant.now(),
+            testUserId,
+            tournamentId,
+            TournamentLevel.Practice,
+            1,
+            Alliance.red,
+            teamNumber,
+            eventType,
+            1.0,
+            "practice");
+    eventLogService.save(practiceEvent);
+
+    // Create a qualification event
+    EventLogRecord qualificationEvent =
+        new EventLogRecord(
+            0,
+            Instant.now().plusMillis(1),
+            testUserId,
+            tournamentId,
+            TournamentLevel.Qualification,
+            2,
+            Alliance.red,
+            teamNumber,
+            eventType,
+            1.0,
+            "qualification");
+    eventLogService.save(qualificationEvent);
+
+    List<EventLogRecord> allEvents =
+        eventLogService.listEventsForTournament(
+            teamNumber,
+            tournamentId,
+            List.of(
+                TournamentLevel.Practice, TournamentLevel.Qualification, TournamentLevel.Playoff));
+    ;
+    assertTrue(allEvents.stream().anyMatch(e -> e.level() == TournamentLevel.Practice));
+    assertTrue(allEvents.stream().anyMatch(e -> e.level() == TournamentLevel.Qualification));
+
+    // Only Qualification and Playoff should be returned
+    List<EventLogRecord> nonPracticeEvents =
+        eventLogService.listEventsForTournament(
+            teamNumber,
+            tournamentId,
+            List.of(TournamentLevel.Qualification, TournamentLevel.Playoff));
+    assertFalse(nonPracticeEvents.stream().anyMatch(e -> e.level() == TournamentLevel.Practice));
+    assertTrue(
+        nonPracticeEvents.stream().anyMatch(e -> e.level() == TournamentLevel.Qualification));
+
+    // Cleanup
+    allEvents.forEach(eventLogService::delete);
+    eventTypeService.delete(eventType);
   }
 }

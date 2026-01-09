@@ -20,4 +20,7 @@ public abstract class TournamentService implements CrudRepository<TournamentReco
 
   @Query("SELECT * FROM RB_TOURNAMENT WHERE starttime > NOW() and endtime < NOW()")
   public abstract List<TournamentRecord> findCurrentTournaments();
+
+  @Query("SELECT season FROM RB_TOURNAMENT WHERE id = :tournamentId")
+  public abstract int findYearForTournament(String tournamentId);
 }

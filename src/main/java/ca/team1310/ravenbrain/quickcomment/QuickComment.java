@@ -14,7 +14,7 @@ import java.time.Instant;
 @Serdeable
 public record QuickComment(
     @Id Long id,
-    @MappedProperty("scoutname") String name,
+    @MappedProperty("userid") long userId,
     @MappedProperty("scoutrole") String role,
     @MappedProperty("teamnumber") int team,
     @MappedProperty("commenttimestamp") Instant timestamp,

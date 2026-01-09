@@ -1,5 +1,7 @@
 package ca.team1310.ravenbrain.eventlog;
 
+import ca.team1310.ravenbrain.frcapi.model.Alliance;
+import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import io.micronaut.data.annotation.Id;
 import io.micronaut.data.annotation.MappedEntity;
 import io.micronaut.data.annotation.MappedProperty;
@@ -15,11 +17,11 @@ import java.time.Instant;
 public record EventLogRecord(
     @Id long id,
     @MappedProperty("eventtimestamp") Instant timestamp,
-    @MappedProperty("scoutname") String scoutName,
+    @MappedProperty("userid") long userId,
     @MappedProperty("tournamentid") String tournamentId,
-    String level,
+    TournamentLevel level,
     @MappedProperty("matchid") int matchId,
-    String alliance,
+    Alliance alliance,
     @MappedProperty("teamnumber") int teamNumber,
     @MappedProperty("eventtype") String eventType,
     double amount,
