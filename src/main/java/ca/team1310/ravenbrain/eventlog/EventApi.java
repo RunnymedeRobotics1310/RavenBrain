@@ -29,7 +29,7 @@ public class EventApi {
   @Post
   @Consumes(APPLICATION_JSON)
   @Produces(APPLICATION_JSON)
-  @Secured({"ROLE_DATASCOUT"})
+  @Secured({"ROLE_DATASCOUT", "ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
   public List<EventLogPostResult> postEventLogs(@Body EventLogRecord[] eventLogRecord) {
     var result = new ArrayList<EventLogPostResult>();
     for (EventLogRecord record : eventLogRecord) {

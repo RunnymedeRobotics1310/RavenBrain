@@ -5,6 +5,7 @@ import static io.micronaut.http.MediaType.APPLICATION_JSON;
 import io.micronaut.data.exceptions.DataAccessException;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
+import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.annotation.Serdeable;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +30,7 @@ public class QuickCommentApi {
   @Post
   @Consumes(APPLICATION_JSON)
   @Produces(APPLICATION_JSON)
-  @Secured({"ROLE_MEMBER"})
+  @Secured(SecurityRule.IS_AUTHENTICATED)
   public List<QuickCommentPostResult> postComments(@Body List<QuickComment> comments) {
     var result = new ArrayList<QuickCommentPostResult>();
     for (QuickComment record : comments) {
