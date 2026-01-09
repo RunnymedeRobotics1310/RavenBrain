@@ -1,5 +1,6 @@
 package ca.team1310.ravenbrain.frcapi.fetch;
 
+import io.micronaut.data.annotation.GeneratedValue;
 import io.micronaut.data.annotation.Id;
 import io.micronaut.data.annotation.MappedEntity;
 import io.micronaut.serde.annotation.Serdeable;
@@ -15,7 +16,7 @@ import java.time.Instant;
 @MappedEntity(value = "RB_FRC_RESPONSES")
 @Serdeable
 public record FrcRawResponse(
-    @Id Long id,
+    @Id @GeneratedValue Long id,
     Instant lastcheck,
     Instant lastmodified,
     boolean processed,

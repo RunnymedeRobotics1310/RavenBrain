@@ -35,7 +35,7 @@ public class QuickCommentApi {
     var result = new ArrayList<QuickCommentPostResult>();
     for (QuickComment record : comments) {
       try {
-        quickCommentService.save(record);
+        record = quickCommentService.save(record);
         result.add(new QuickCommentPostResult(record, true, null));
       } catch (DataAccessException e) {
         if (e.getMessage().contains("Duplicate entry")) {
