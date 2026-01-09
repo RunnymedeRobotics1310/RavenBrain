@@ -30,10 +30,10 @@ public class PresharedKeyAuthenticationProvider<B> implements HttpRequestAuthent
       @Nullable HttpRequest<B> httpRequest,
       @NonNull AuthenticationRequest<String, String> authenticationRequest) {
 
-    String identity = authenticationRequest.getIdentity();
+    String login = authenticationRequest.getIdentity();
     String secret = authenticationRequest.getSecret();
 
-    Optional<User> ou = userService.findByLogin(identity);
+    Optional<User> ou = userService.findByLogin(login);
     if (ou.isEmpty()) {
       return AuthenticationResponse.failure(AuthenticationFailureReason.USER_NOT_FOUND);
     }
@@ -47,7 +47,9 @@ public class PresharedKeyAuthenticationProvider<B> implements HttpRequestAuthent
     }
 
     Map<String, Object> map = new LinkedHashMap<>();
-    map.put("fullName", ou.get().displayName());
-    return AuthenticationResponse.success(identity, ou.get().roles(), map);
+    map.put("userid", ou.get().id());
+    map.put("login", login);
+    map.put("displayName", ou.get().displayName());
+    return AuthenticationResponse.success(login, ou.get().roles(), map);
   }
 }
