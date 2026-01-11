@@ -78,12 +78,6 @@ micronaut {
     }
 }
 
-
-tasks.named("dockerfileNative") {
-    jdkVersion = "25"
-}
-
-
 manifest {
     buildAttributes = false
     implementationAttributes = true
@@ -92,27 +86,6 @@ manifest {
             "Implementation-Title": "Runnymede Robotics Team 1310 Raven Brain",
             "Build-Time"          : Instant.now().toString().substring(0, 19).replace("T", " ") + " UTC"
     ]
-}
-distributions {
-    eb {
-        contents {
-            into('lib') {
-                from shadowJar
-            }
-            into('') {
-                from 'aws'
-            }
-            rename 'raven-brain-(.*).jar', 'raven-brain.jar'
-        }
-    }
-}
-tasks.register('createElasticbeanstalkDist', Copy) {
-    from clean
-    from ebDistZip
-    destinationDir file('build/distributions')
-    rename { String fileName ->
-        fileName.replace("-$project.version", "")
-    }
 }
 tasks.register('clearCdsClasslist') {
     doFirst {
