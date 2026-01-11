@@ -1,6 +1,0 @@
-applicationType: default
-defaultPackage: ca.team1310
-testFramework: junit
-sourceLanguage: java
-buildTool: gradle
-features: [app-name, flyway, gradle, http-client-test, java, java-application, jdbc-hikari, junit, logback, micronaut-aot, micronaut-build, micronaut-http-validation, mysql, properties, readme, security-annotations, security-jwt, serialization-jackson, shade, static-resources, test-resources, tomcat-server]
