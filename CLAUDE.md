@@ -70,6 +70,21 @@ raven-eye.role-passwords.superuser=<superuser-password>
 
 Tests require similar config in `src/test/resources/application-test.properties`.
 
+## Docker Deployment
+
+```bash
+# Build Docker image and start containers (MySQL + app)
+./gradlew deployDocker
+
+# Stop containers
+./gradlew stopDocker
+
+# Production deployment (uses external volume mount)
+MYSQL_DATA_PATH=/mnt/external/ravenbrain ./gradlew deployDockerProd
+```
+
+Copy `.env.example` to `.env` and configure secrets before deploying. The app container connects to MySQL via Docker networking using hostname `mysql`.
+
 ## Code Style
 
 Uses Google Java Format. Install the `google-java-format` IntelliJ plugin.

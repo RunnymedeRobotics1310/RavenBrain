@@ -50,6 +50,12 @@ java {
     targetCompatibility = JavaVersion.toVersion("25")
 }
 
+// Exclude local development properties from production builds
+processResources {
+    exclude 'application-local.properties'
+    exclude 'application-test.properties'
+}
+
 
 graalvmNative.toolchainDetection = false
 
@@ -102,4 +108,35 @@ tasks.configureEach { task ->
     if (task.name != 'clearCdsClasslist') {
         task.dependsOn 'clearCdsClasslist'
     }
+}
+
+// Docker image configuration
+dockerfile {
+    baseImage = "eclipse-temurin:25-jre"
+    exposedPorts = [8888]
+}
+
+dockerBuild {
+    images = ["ravenbrain:${project.version}", "ravenbrain:latest"]
+}
+
+// Docker deployment tasks
+tasks.register('deployDocker', Exec) {
+    group = 'deployment'
+    description = 'Builds the Docker image and starts containers via docker-compose'
+    dependsOn 'dockerBuild'
+    commandLine 'docker-compose', 'up', '-d'
+}
+
+tasks.register('stopDocker', Exec) {
+    group = 'deployment'
+    description = 'Stops and removes Docker containers'
+    commandLine 'docker-compose', 'down'
+}
+
+tasks.register('deployDockerProd', Exec) {
+    group = 'deployment'
+    description = 'Builds and deploys to production using docker-compose.prod.yml'
+    dependsOn 'dockerBuild'
+    commandLine 'docker-compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.prod.yml', 'up', '-d'
 }
