@@ -136,7 +136,7 @@ tasks.register('stopDocker', Exec) {
 
 tasks.register('deployDockerProd', Exec) {
     group = 'deployment'
-    description = 'Builds and deploys to production using docker-compose.prod.yml'
+    description = 'Locally test the production Docker configuration (not for actual server deployment)'
     dependsOn 'dockerBuild'
     commandLine 'docker-compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.prod.yml', 'up', '-d'
 }
