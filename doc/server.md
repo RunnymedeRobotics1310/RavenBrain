@@ -115,7 +115,30 @@ Secure the file:
 
 ```bash
 sudo chmod 600 /opt/ravenbrain/.env
+sudo chown root:root /opt/ravenbrain/.env
 ```
+
+#### Security Rationale
+
+This deployment uses a `.env` file for configuration secrets. This approach is simple and well-supported by Docker Compose, which automatically reads variables from `.env` in the working directory.
+
+**Why this approach:**
+- Simple to set up and maintain
+- No additional tooling required
+- Easy to update configuration without modifying compose files
+- Works identically across bare metal, VMs, and LXC containers (e.g., Proxmox)
+
+**Security considerations:**
+- Secrets are stored in plain text on disk - ensure file permissions are restrictive (`chmod 600`, owned by root)
+- Do not include the `.env` file in backups that leave the server
+- The LXC container or VM hosting Docker should itself be properly secured
+
+**Alternatives for higher-security environments:**
+- Systemd `EnvironmentFile` directive to load secrets into the service
+- External secret management (HashiCorp Vault, etc.)
+- Docker Swarm secrets (requires Swarm mode)
+
+For most self-hosted deployments, the `.env` file approach with proper file permissions provides adequate security.
 
 ### 4. Prepare Data Directories
 
