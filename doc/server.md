@@ -123,20 +123,24 @@ sudo chown root:root /opt/ravenbrain/.env
 
 #### Security Rationale
 
-This deployment uses a `.env` file for configuration secrets. This approach is simple and well-supported by Docker Compose, which automatically reads variables from `.env` in the working directory.
+This deployment uses a `.env` file for configuration secrets. This approach is simple and well-supported by Docker
+Compose, which automatically reads variables from `.env` in the working directory.
 
 **Why this approach:**
+
 - Simple to set up and maintain
 - No additional tooling required
 - Easy to update configuration without modifying compose files
 - Works identically across bare metal, VMs, and LXC containers (e.g., Proxmox)
 
 **Security considerations:**
+
 - Secrets are stored in plain text on disk - ensure file permissions are restrictive (`chmod 600`, owned by root)
 - Do not include the `.env` file in backups that leave the server
 - The LXC container or VM hosting Docker should itself be properly secured
 
 **Alternatives for higher-security environments:**
+
 - Systemd `EnvironmentFile` directive to load secrets into the service
 - External secret management (HashiCorp Vault, etc.)
 - Docker Swarm secrets (requires Swarm mode)
@@ -163,9 +167,9 @@ The production deployment runs HTTPS on port 443. You need to provide SSL certif
 
 Place the following PEM files in the certs directory (`/mnt/data/ravenbrain/certs/`):
 
-| File | Description |
-|------|-------------|
-| `privkey.pem` | Private key |
+| File            | Description                                          |
+|-----------------|------------------------------------------------------|
+| `privkey.pem`   | Private key                                          |
 | `fullchain.pem` | Full certificate chain (certificate + intermediates) |
 
 #### Obtaining Certificates
@@ -329,10 +333,10 @@ The production deployment includes a backup sidecar container that automatically
 
 Set these environment variables in `.env` to customize backup behavior:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `BACKUP_INTERVAL_SECONDS` | 86400 | Time between backups (86400 = 24 hours) |
-| `BACKUP_RETENTION_DAYS` | 60 | Days to keep old backups |
+| Variable                  | Default | Description                             |
+|---------------------------|---------|-----------------------------------------|
+| `BACKUP_INTERVAL_SECONDS` | 86400   | Time between backups (86400 = 24 hours) |
+| `BACKUP_RETENTION_DAYS`   | 60      | Days to keep old backups                |
 
 ### View Backup Status
 
@@ -448,4 +452,132 @@ openssl rsa -noout -modulus -in /mnt/data/ravenbrain/certs/privkey.pem | openssl
 
 ```bash
 docker compose logs app | grep -i ssl
+```
+
+## CI/CD with GitHub Actions
+
+RavenBrain uses GitHub Actions with a self-hosted runner for automated deployments. When code is pushed to the `main`
+branch, the runner on your server automatically builds and deploys the updated application.
+
+### How It Works
+
+1. Code is pushed to the `main` branch on GitHub
+2. GitHub signals the self-hosted runner on your server
+3. The runner checks out the code, builds the Docker image, and restarts the app container
+4. The database container is not affected
+
+### Setting Up the Self-Hosted Runner
+
+The github self-hosted runner should run on the Docker host. There are other deployment options,
+including running it in Docker or on a totally separate server. Here is the rationale for running
+it on the docker hosts:
+
+         Approach          |            Pros              |                                           Cons                                            |
+
+------------------------------------------------------------------------------------------------------------------------------------------------------
+Runner on host (current)  | Simple, direct Docker access | Mixes CI/CD with app |
+Runner in Docker | Isolated | Requires Docker-in-Docker or socket mounting, adds complexity and security
+considerations |
+Runner on separate server | Clean separation | Would need to SSH/access production server to deploy, defeating the
+purpose |
+
+The problem with Docker-in-Docker:
+
+The runner needs to:
+
+1. Run ./gradlew dockerBuild (build a Docker image)
+2. Run docker compose up (restart containers)
+
+If the runner is in a container, it would need access to the host's Docker daemon (via socket mount), which has security
+implications and adds complexity.
+
+Run the runner directly on the host (which in our case is a Proxmox LXC container), not in Docker. It's:
+
+- A lightweight Go process that idles most of the time
+- Needs direct Docker access anyway
+- Simple to install and maintain
+
+The runner and RavenBrain share the same LXC container, but they're separate processes with different purposes.
+This is a common and practical setup for small deployments.
+
+#### 1. Get the Registration Token
+
+1. Go to the repository on GitHub: `https://github.com/RunnymedeRobotics1310/RavenBrain`
+2. Click **Settings** → **Actions** → **Runners**
+3. Click **New self-hosted runner**
+4. Select **Linux** and your architecture (x64 or ARM64)
+5. Copy the registration token shown (valid for 1 hour)
+
+#### 2. Install the Runner on Your Server
+
+SSH into your production server and run:
+
+```bash
+# Create a directory for the runner
+mkdir -p /opt/github-runner && cd /opt/github-runner
+
+# Download the runner (check GitHub for latest version)
+curl -o actions-runner-linux-x64-2.321.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.321.0/actions-runner-linux-x64-2.321.0.tar.gz
+
+# Extract
+tar xzf actions-runner-linux-x64-2.321.0.tar.gz
+
+# Configure the runner
+./config.sh --url https://github.com/RunnymedeRobotics1310/RavenBrain --token <YOUR_TOKEN>
+```
+
+When prompted:
+
+- **Runner group**: Press Enter for default
+- **Runner name**: Enter a name like `ravenbrain-prod`
+- **Labels**: Press Enter for default (or add `production`)
+- **Work folder**: Press Enter for default
+
+#### 3. Install as a Service
+
+```bash
+sudo ./svc.sh install
+sudo ./svc.sh start
+```
+
+Verify the runner is connected:
+
+```bash
+sudo ./svc.sh status
+```
+
+The runner should now appear as "Online" in GitHub Settings → Actions → Runners.
+
+#### 4. Grant Docker Permissions
+
+The runner needs permission to use Docker:
+
+```bash
+sudo usermod -aG docker $(whoami)
+```
+
+Log out and back in for the change to take effect.
+
+### Manual Deployment Trigger
+
+You can manually trigger a deployment from GitHub:
+
+1. Go to the repository → **Actions** → **Deploy to Production**
+2. Click **Run workflow** → **Run workflow**
+
+### Viewing Deployment Logs
+
+Deployment logs are available in GitHub:
+
+1. Go to the repository → **Actions**
+2. Click on the workflow run to see logs
+
+Or check locally on the server:
+
+```bash
+# Runner logs
+journalctl -u actions.runner.RunnymedeRobotics1310-RavenBrain.ravenbrain-prod.service -f
+
+# Application logs
+docker compose -f /opt/ravenbrain/docker-compose.yml -f /opt/ravenbrain/docker-compose.prod.yml logs -f app
 ```
