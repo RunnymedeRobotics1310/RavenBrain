@@ -2,9 +2,68 @@
 
 ## Running the Application
 
-To run the app locally you have two choices - natively in IntelliJ using the Micronaut plugin, or via Gradle.
+There are two ways to run RavenBrain locally:
 
-First, be sure to install both RavenEye and [RavenBrain](setup.md).
+1. **Docker** - Recommended for front-end developers working on RavenEye who just need a running backend
+2. **Native** - Required for developers actively working on RavenBrain code
+
+## Option 1: Running via Docker (Front-End Developers)
+
+This option runs both RavenBrain and MySQL in Docker containers. You do not need to install Java or MySQL on your machine.
+
+### Prerequisites
+
+- Docker Desktop installed and running
+
+### Setup
+
+1. Copy the environment template and configure it:
+
+```bash
+cp .env.example .env
+```
+
+2. Edit `.env` and set at minimum:
+   - `MYSQL_ROOT_PASSWORD` - root password for MySQL
+   - `MYSQL_PASSWORD` - password for the application database user
+   - `FRC_USER` and `FRC_KEY` - your FRC API credentials (optional, only needed for FRC data sync)
+
+3. Build and start the containers:
+
+```bash
+./gradlew deployDocker
+```
+
+4. RavenBrain will be available at `http://localhost:8888`
+
+### Managing Docker Containers
+
+```bash
+# Stop containers
+./gradlew stopDocker
+
+# View logs
+docker-compose logs -f app
+
+# Reset database (removes all data)
+./gradlew stopDocker
+docker volume rm ravenbrain_ravenbrain-mysql-data
+./gradlew deployDocker
+```
+
+### Notes
+
+- MySQL is exposed on port 3307 (not 3306) to avoid conflicts with local MySQL installations
+- The app container waits for MySQL to be healthy before starting
+- Database migrations run automatically via Flyway on startup
+
+---
+
+## Option 2: Running Natively (RavenBrain Developers)
+
+To run the app natively you have two choices - in IntelliJ using the Micronaut plugin, or via Gradle.
+
+First, be sure to complete the [RavenBrain setup instructions](setup.md).
 
 ### Via IntelliJ
 

@@ -50,6 +50,12 @@ java {
     targetCompatibility = JavaVersion.toVersion("25")
 }
 
+// Exclude local development properties from production builds
+processResources {
+    exclude 'application-local.properties'
+    exclude 'application-test.properties'
+}
+
 
 graalvmNative.toolchainDetection = false
 
@@ -78,12 +84,6 @@ micronaut {
     }
 }
 
-
-tasks.named("dockerfileNative") {
-    jdkVersion = "25"
-}
-
-
 manifest {
     buildAttributes = false
     implementationAttributes = true
@@ -92,27 +92,6 @@ manifest {
             "Implementation-Title": "Runnymede Robotics Team 1310 Raven Brain",
             "Build-Time"          : Instant.now().toString().substring(0, 19).replace("T", " ") + " UTC"
     ]
-}
-distributions {
-    eb {
-        contents {
-            into('lib') {
-                from shadowJar
-            }
-            into('') {
-                from 'aws'
-            }
-            rename 'raven-brain-(.*).jar', 'raven-brain.jar'
-        }
-    }
-}
-tasks.register('createElasticbeanstalkDist', Copy) {
-    from clean
-    from ebDistZip
-    destinationDir file('build/distributions')
-    rename { String fileName ->
-        fileName.replace("-$project.version", "")
-    }
 }
 tasks.register('clearCdsClasslist') {
     doFirst {
@@ -129,4 +108,35 @@ tasks.configureEach { task ->
     if (task.name != 'clearCdsClasslist') {
         task.dependsOn 'clearCdsClasslist'
     }
+}
+
+// Docker image configuration
+dockerfile {
+    baseImage = "eclipse-temurin:25-jre"
+    exposedPorts = [8888]
+}
+
+dockerBuild {
+    images = ["ravenbrain:${project.version}", "ravenbrain:latest"]
+}
+
+// Docker deployment tasks
+tasks.register('deployDocker', Exec) {
+    group = 'deployment'
+    description = 'Builds the Docker image and starts containers via docker-compose'
+    dependsOn 'dockerBuild'
+    commandLine 'docker-compose', 'up', '-d'
+}
+
+tasks.register('stopDocker', Exec) {
+    group = 'deployment'
+    description = 'Stops and removes Docker containers'
+    commandLine 'docker-compose', 'down'
+}
+
+tasks.register('deployDockerProd', Exec) {
+    group = 'deployment'
+    description = 'Locally test the production Docker configuration (not for actual server deployment)'
+    dependsOn 'dockerBuild'
+    commandLine 'docker-compose', '-f', 'docker-compose.yml', '-f', 'docker-compose.prod.yml', 'up', '-d'
 }
