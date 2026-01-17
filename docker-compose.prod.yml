@@ -1,7 +1,7 @@
 services:
   mysql:
     volumes:
-      - ${MYSQL_DATA_PATH:-/mnt/data/ravenbrain}/mysql:/var/lib/mysql
+      - ${MYSQL_DATA_PATH:-/mnt/nas/raveneye/rb-data}/mysql:/var/lib/mysql
     ports: [ ]
     restart: unless-stopped
 
@@ -15,7 +15,7 @@ services:
       MICRONAUT_SSL_KEY_PATH: file:/certs/privkey.pem
       MICRONAUT_SSL_CERT_PATH: file:/certs/fullchain.pem
     volumes:
-      - ${SSL_CERT_PATH:-/mnt/data/ravenbrain/certs}:/certs:ro
+      - ${SSL_CERT_PATH:-/mnt/nas/raveneye/rb-data/certs}:/certs:ro
     restart: unless-stopped
 
   backup:
@@ -32,7 +32,7 @@ services:
       BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-60}
       TZ: UTC
     volumes:
-      - ${MYSQL_DATA_PATH:-/mnt/data/ravenbrain}/backup:/backup
+      - ${MYSQL_DATA_PATH:-/mnt/nas/raveneye/rb-data}/backup:/backup
     entrypoint: /bin/bash
     command:
       - -c
