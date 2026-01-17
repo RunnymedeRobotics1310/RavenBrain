@@ -1,7 +1,7 @@
 services:
   mysql:
     volumes:
-      - ${MYSQL_DATA_PATH:-/mnt/nas/raveneye/rb-data}/mysql:/var/lib/mysql
+      - ${MYSQL_DATA_PATH:-/home/quentin/containers/raveneye}/mysql:/var/lib/mysql
     ports: [ ]
     restart: unless-stopped
 
