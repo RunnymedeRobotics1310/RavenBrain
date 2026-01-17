@@ -113,7 +113,7 @@ tasks.configureEach { task ->
 // Docker image configuration
 dockerfile {
     baseImage = "eclipse-temurin:25-jre"
-    exposedPorts = [8888, 444]
+    exposedPorts = [8888]
 }
 
 dockerBuild {
