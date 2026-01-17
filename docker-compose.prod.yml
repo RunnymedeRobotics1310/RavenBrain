@@ -12,8 +12,8 @@ services:
     environment:
       MICRONAUT_SERVER_PORT: 444
       MICRONAUT_SERVER_SSL_ENABLED: true
-      MICRONAUT_SSL_KEY_PATH: file:/certs/privkey.pem
-      MICRONAUT_SSL_CERT_PATH: file:/certs/fullchain.pem
+      MICRONAUT_SERVER_SSL_KEY_PATH: file:/certs/privkey.pem
+      MICRONAUT_SERVER_SSL_CERT_PATH: file:/certs/fullchain.pem
     volumes:
       - /mnt/nas/raveneye/rb-data/certs:/certs:ro
     restart: unless-stopped
