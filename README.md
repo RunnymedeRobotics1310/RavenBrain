@@ -16,6 +16,14 @@ Last Updated December 25, 2025 by Tony Field
 - The app expects infrequent synchronization of the front-end and back-end systems, as internet access for scouts at
   tournaments is unreliable.
 
+## Docker Image
+
+Docker images are automatically published to GitHub Container Registry on every push to `main`:
+
+```bash
+docker pull ghcr.io/runnymederobotics1310/ravenbrain:latest
+```
+
 ## Table of Contents
 
 - [Developer Environment Setup Instructions](doc/setup.md)

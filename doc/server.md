@@ -1,7 +1,5 @@
 # Raven Brain - Server Setup Instructions
 
-## TODO FIXME: THIS HAS CHANGED. TONY AND Q TO FIX SATURDAY.
-
 This guide explains how to deploy RavenBrain to a production server using Docker.
 
 ## Prerequisites
@@ -50,21 +48,21 @@ On the server, load the image:
 gunzip -c ravenbrain-latest.tar.gz | docker load
 ```
 
-### Option B: Use a Container Registry
+### Option B: Pull from GitHub Container Registry (Recommended)
 
-Tag and push to your registry (Docker Hub, GitHub Container Registry, etc.):
+Docker images are automatically built and pushed to GitHub Container Registry on every commit to `main`. This is the recommended approach for production deployments.
 
-```bash
-docker tag ravenbrain:latest your-registry/ravenbrain:latest
-docker push your-registry/ravenbrain:latest
-```
-
-On the server, pull the image:
+On the server, pull the latest image:
 
 ```bash
-docker pull your-registry/ravenbrain:latest
-docker tag your-registry/ravenbrain:latest ravenbrain:latest
+docker pull ghcr.io/runnymederobotics1310/ravenbrain:latest
+docker tag ghcr.io/runnymederobotics1310/ravenbrain:latest ravenbrain:latest
 ```
+
+Available image tags:
+- `ghcr.io/runnymederobotics1310/ravenbrain:latest` - Most recent build from main
+- `ghcr.io/runnymederobotics1310/ravenbrain:<version>` - Specific version (e.g., `2.0.0-SNAPSHOT`)
+- `ghcr.io/runnymederobotics1310/ravenbrain:<commit-sha>` - Specific commit
 
 ## Server Configuration
 
@@ -305,6 +303,20 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml down
 ```
 
 ### Update Application
+
+**Option A: Pull from GitHub Container Registry (Recommended)**
+
+After pushing to `main`, the image is automatically built and published. On the server:
+
+```bash
+cd /opt/ravenbrain
+docker compose -f docker-compose.yml -f docker-compose.prod.yml down
+docker pull ghcr.io/runnymederobotics1310/ravenbrain:latest
+docker tag ghcr.io/runnymederobotics1310/ravenbrain:latest ravenbrain:latest
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
+
+**Option B: Manual Build and Transfer**
 
 On your development machine:
 

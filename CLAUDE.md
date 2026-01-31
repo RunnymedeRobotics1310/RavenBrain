@@ -74,6 +74,20 @@ Tests require similar config in `src/test/resources/application-test.properties`
 
 ## Docker Deployment
 
+### CI/CD (GitHub Actions)
+
+Docker images are automatically built and pushed to GitHub Container Registry on every push to `main`. The workflow (`.github/workflows/docker-publish.yml`) publishes images with three tags:
+- `ghcr.io/runnymederobotics1310/ravenbrain:latest`
+- `ghcr.io/runnymederobotics1310/ravenbrain:<version>` (from build.gradle)
+- `ghcr.io/runnymederobotics1310/ravenbrain:<commit-sha>`
+
+To pull the latest image:
+```bash
+docker pull ghcr.io/runnymederobotics1310/ravenbrain:latest
+```
+
+### Local Docker Build
+
 ```bash
 # Build Docker image and start containers (MySQL + app)
 ./gradlew deployDocker
