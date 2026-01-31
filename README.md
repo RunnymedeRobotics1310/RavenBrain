@@ -24,6 +24,10 @@ Docker images are automatically published to GitHub Container Registry on every 
 docker pull ghcr.io/runnymederobotics1310/ravenbrain:latest
 ```
 
+## Releases
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) and [release-please](https://github.com/googleapis/release-please) for automatic versioning and changelog generation. See [CHANGELOG.md](CHANGELOG.md) for release history.
+
 ## Table of Contents
 
 - [Developer Environment Setup Instructions](doc/setup.md)

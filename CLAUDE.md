@@ -76,10 +76,16 @@ Tests require similar config in `src/test/resources/application-test.properties`
 
 ### CI/CD (GitHub Actions)
 
-Docker images are automatically built and pushed to GitHub Container Registry on every push to `main`. The workflow (`.github/workflows/docker-publish.yml`) publishes images with three tags:
+**Automatic Releases:** When commits are pushed to `main`, release-please analyzes conventional commit messages and creates a Release PR. Merging the Release PR:
+1. Creates a GitHub Release with auto-generated release notes
+2. Updates the version in `build.gradle`
+3. Triggers the Docker build workflow
+
+**Docker Images:** Built and pushed to GitHub Container Registry on every push to `main` and on releases:
 - `ghcr.io/runnymederobotics1310/ravenbrain:latest`
-- `ghcr.io/runnymederobotics1310/ravenbrain:<version>` (from build.gradle)
+- `ghcr.io/runnymederobotics1310/ravenbrain:<version>` (e.g., `2.1.0`)
 - `ghcr.io/runnymederobotics1310/ravenbrain:<commit-sha>`
+- `ghcr.io/runnymederobotics1310/ravenbrain:v<version>` (release tag, e.g., `v2.1.0`)
 
 To pull the latest image:
 ```bash
@@ -104,6 +110,38 @@ Copy `.env.example` to `.env` and configure secrets before deploying. The app co
 ## Code Style
 
 Uses Google Java Format. Install the `google-java-format` IntelliJ plugin.
+
+## Conventional Commits
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automatic versioning and release notes. Commit messages must follow this format:
+
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+**Types that trigger version bumps:**
+- `fix:` - Bug fix (patch version bump, e.g., 2.0.0 → 2.0.1)
+- `feat:` - New feature (minor version bump, e.g., 2.0.0 → 2.1.0)
+- `feat!:` or `BREAKING CHANGE:` - Breaking change (major version bump, e.g., 2.0.0 → 3.0.0)
+
+**Other types (no version bump):**
+- `docs:` - Documentation only
+- `chore:` - Maintenance tasks
+- `refactor:` - Code refactoring
+- `test:` - Adding/updating tests
+- `ci:` - CI/CD changes
+
+**Examples:**
+```
+feat: add team performance comparison report
+fix: correct score calculation for playoff matches
+feat(frcapi): add support for 2026 game data
+fix!: change event timestamp format to ISO 8601
+```
 
 ## API Design
 

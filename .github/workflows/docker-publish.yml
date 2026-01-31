@@ -3,6 +3,8 @@ name: Build and Publish Docker Image
 on:
   push:
     branches: [main]
+  release:
+    types: [published]
   workflow_dispatch:
 
 env:
@@ -42,17 +44,32 @@ jobs:
       - name: Extract version from build.gradle
         id: version
         run: |
-          VERSION=$(grep "^version = " build.gradle | sed 's/version = "\(.*\)"/\1/')
+          VERSION=$(grep "^version = " build.gradle | sed 's/version = "\([^"]*\)".*/\1/')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Determine tags
+        id: tags
+        run: |
+          TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"
+
+          # Add 'latest' tag only for releases or main branch
+          if [[ "${{ github.event_name }}" == "release" ]] || [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          fi
+
+          # Add release tag if this is a release
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}"
+          fi
+
+          echo "tags=$TAGS" >> $GITHUB_OUTPUT
 
       - name: Tag and push Docker image
         run: |
-          # Tag with ghcr.io path
-          docker tag ravenbrain:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          docker tag ravenbrain:${{ steps.version.outputs.version }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
-          docker tag ravenbrain:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-
-          # Push all tags
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
-          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          # Tag and push each tag
+          IFS=',' read -ra TAG_ARRAY <<< "${{ steps.tags.outputs.tags }}"
+          for TAG in "${TAG_ARRAY[@]}"; do
+            docker tag ravenbrain:latest "$TAG"
+            docker push "$TAG"
+          done
