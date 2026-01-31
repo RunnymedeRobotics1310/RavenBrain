@@ -40,12 +40,13 @@ Requires Java 25 (configured in `.sdkmanrc` and `build.gradle`). Use SDKMAN to i
 ### Package Structure (`ca.team1310.ravenbrain`)
 - `connect` - Authentication, user management, JWT token generation
 - `eventlog` - Scout event logging API (`RB_EVENT` table)
+- `eventtype` - Event type definitions for scouting events
 - `frcapi` - FRC API integration with caching client and sync services
   - `fetch` - HTTP client with response caching (`RB_FRC_RESPONSES` table)
   - `service` - Data sync orchestration (`FrcClientService`, `EventSyncService`)
   - `model` - API response models (year-specific models in `model.year2025`)
 - `quickcomment` - Team comments from scouts
-- `report` - Reporting services for team/tournament analysis
+- `report` - Reporting services for team/tournament analysis (includes `seq` subpackage for sequence reports)
 - `schedule` - Match schedule management
 - `sequencetype` - Event sequence definitions for timed event analysis
 - `strategyarea` - Strategy areas configuration
@@ -59,14 +60,15 @@ Requires Java 25 (configured in `.sdkmanrc` and `build.gradle`). Use SDKMAN to i
 
 ## Configuration
 
-Local development requires `src/main/resources/application-local.properties`:
+The app uses environment variables with defaults defined in `application.yml`. For local development, create `src/main/resources/application-local.properties`:
 ```properties
 datasources.default.username=rb
 datasources.default.password=rb
 raven-eye.frc-api.user=<your-frc-api-user>
 raven-eye.frc-api.key=<your-frc-api-key>
-raven-eye.role-passwords.superuser=<superuser-password>
 ```
+
+For production/Docker, configure via environment variables: `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DB`, `MYSQL_USERNAME`, `MYSQL_PASSWORD`, `FRC_USER`, `FRC_KEY`, `JWT_GENERATOR_SIGNATURE_SECRET`, `SUPERUSER_PASSWORD`, `REGISTRATION_SECRET`.
 
 Tests require similar config in `src/test/resources/application-test.properties`.
 
@@ -88,3 +90,11 @@ Copy `.env.example` to `.env` and configure secrets before deploying. The app co
 ## Code Style
 
 Uses Google Java Format. Install the `google-java-format` IntelliJ plugin.
+
+## API Design
+
+The server is designed for bulk synchronization rather than chatty protocols (due to unreliable tournament connectivity). Key endpoints include:
+- `/api/ping` - Health check
+- `/api/validate` - Basic auth to JWT exchange
+- `/api/event` - Batch event submission
+- `/api/tournament`, `/api/schedule`, `/api/quickcomment`, `/api/report/*` - CRUD and reporting endpoints

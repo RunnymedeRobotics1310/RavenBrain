@@ -28,7 +28,7 @@ not included in this documentation at this time.
 
 ### Java and Micronaut Version
 
-This project requires *Java 21* or later.
+This project requires *Java 25* or later.
 
 This project was originally written for *Micronaut Platform 4.7* but is intended to
 be kept up-to-date with the latest version of *Micronaut Platform 4* for the foreseeable

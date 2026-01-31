@@ -12,23 +12,23 @@
 
 ## Install Java
 
-Java 21 is required
+Java 25 is required
 
 #### Mac Users
 
 - Install https://sdkman.io
 - Use `sdk list java` to see the available versions
-- Install the required version (Azul 21 JDK is fine)
+- Install the required version (Azul 25 JDK is fine)
 
 e.g.
 
 ```bash
-sdk install java 21.0.8-zulu
+sdk install java 25.0.1-zulu
 ```
 
 #### Windows Users
 
-- Download the OpenJDK distribution from Azul Systems for JDK 21 for windows from here:
+- Download the OpenJDK distribution from Azul Systems for JDK 25 for windows from here:
   https://www.azul.com/downloads/?package=jdk#zulu
 - Run the installer and choose default options
 
