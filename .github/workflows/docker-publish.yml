@@ -9,7 +9,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build-and-push:
@@ -21,6 +20,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set image name to lowercase
+        id: image
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
 
       - name: Set up Java 25
         uses: actions/setup-java@v4
@@ -50,17 +53,17 @@ jobs:
       - name: Determine tags
         id: tags
         run: |
-          TAGS="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
-          TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"
+          TAGS="${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ github.sha }}"
+          TAGS="$TAGS,${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.version.outputs.version }}"
 
           # Add 'latest' tag only for releases or main branch
           if [[ "${{ github.event_name }}" == "release" ]] || [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+            TAGS="$TAGS,${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:latest"
           fi
 
           # Add release tag if this is a release
           if [[ "${{ github.event_name }}" == "release" ]]; then
-            TAGS="$TAGS,${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}"
+            TAGS="$TAGS,${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ github.event.release.tag_name }}"
           fi
 
           echo "tags=$TAGS" >> $GITHUB_OUTPUT
