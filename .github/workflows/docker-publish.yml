@@ -2,9 +2,8 @@ name: Build and Publish Docker Image
 
 on:
   push:
-    branches: [main]
-  release:
-    types: [published]
+    tags:
+      - 'v*'
   workflow_dispatch:
 
 env:
@@ -50,29 +49,18 @@ jobs:
           VERSION=$(grep "^version = " build.gradle | sed 's/version = "\([^"]*\)".*/\1/')
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      - name: Determine tags
-        id: tags
-        run: |
-          TAGS="${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ github.sha }}"
-          TAGS="$TAGS,${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ steps.version.outputs.version }}"
-
-          # Add 'latest' tag only for releases or main branch
-          if [[ "${{ github.event_name }}" == "release" ]] || [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            TAGS="$TAGS,${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:latest"
-          fi
-
-          # Add release tag if this is a release
-          if [[ "${{ github.event_name }}" == "release" ]]; then
-            TAGS="$TAGS,${{ env.REGISTRY }}/${{ steps.image.outputs.name }}:${{ github.event.release.tag_name }}"
-          fi
-
-          echo "tags=$TAGS" >> $GITHUB_OUTPUT
-
       - name: Tag and push Docker image
         run: |
-          # Tag and push each tag
-          IFS=',' read -ra TAG_ARRAY <<< "${{ steps.tags.outputs.tags }}"
-          for TAG in "${TAG_ARRAY[@]}"; do
-            docker tag ravenbrain:latest "$TAG"
-            docker push "$TAG"
-          done
+          IMAGE="${{ env.REGISTRY }}/${{ steps.image.outputs.name }}"
+
+          # Tag with version, tag name, and latest
+          docker tag ravenbrain:latest "$IMAGE:${{ steps.version.outputs.version }}"
+          docker tag ravenbrain:latest "$IMAGE:${{ github.ref_name }}"
+          docker tag ravenbrain:latest "$IMAGE:latest"
+          docker tag ravenbrain:latest "$IMAGE:${{ github.sha }}"
+
+          # Push all tags
+          docker push "$IMAGE:${{ steps.version.outputs.version }}"
+          docker push "$IMAGE:${{ github.ref_name }}"
+          docker push "$IMAGE:latest"
+          docker push "$IMAGE:${{ github.sha }}"

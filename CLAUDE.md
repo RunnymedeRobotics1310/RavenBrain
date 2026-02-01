@@ -76,12 +76,15 @@ Tests require similar config in `src/test/resources/application-test.properties`
 
 ### CI/CD (GitHub Actions)
 
-**Automatic Releases:** When commits are pushed to `main`, release-please analyzes conventional commit messages and creates a Release PR. Merging the Release PR:
-1. Creates a GitHub Release with auto-generated release notes
-2. Updates the version in `build.gradle`
-3. Triggers the Docker build workflow
+**Automatic Releases:** When commits are pushed to `main`, the release workflow:
+1. Analyzes conventional commit messages to determine version bump (major/minor/patch)
+2. Updates version in `build.gradle`
+3. Updates `CHANGELOG.md`
+4. Commits changes and creates a git tag
+5. Creates a GitHub Release with auto-generated release notes
+6. Triggers the Docker build workflow
 
-**Docker Images:** Built and pushed to GitHub Container Registry on every push to `main` and on releases:
+**Docker Images:** Built and pushed to GitHub Container Registry on every release (tag push):
 - `ghcr.io/runnymederobotics1310/ravenbrain:latest`
 - `ghcr.io/runnymederobotics1310/ravenbrain:<version>` (e.g., `2.1.0`)
 - `ghcr.io/runnymederobotics1310/ravenbrain:<commit-sha>`
