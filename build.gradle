@@ -50,8 +50,8 @@ java {
     targetCompatibility = JavaVersion.toVersion("25")
 }
 
-// Exclude local development properties from production builds
-processResources {
+// Exclude local development properties from production JAR/Docker only
+shadowJar {
     exclude 'application-local.properties'
     exclude 'application-test.properties'
 }
