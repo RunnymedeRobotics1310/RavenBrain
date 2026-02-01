@@ -1,0 +1,156 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    outputs:
+      new_tag: ${{ steps.tag.outputs.new_tag }}
+      new_version: ${{ steps.tag.outputs.new_version }}
+      changelog: ${{ steps.tag.outputs.changelog }}
+      release_created: ${{ steps.tag.outputs.new_tag != '' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get previous tag
+        id: prev_tag
+        run: |
+          PREV_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+          echo "tag=$PREV_TAG" >> $GITHUB_OUTPUT
+
+      - name: Determine version bump
+        id: bump
+        run: |
+          if [ -z "${{ steps.prev_tag.outputs.tag }}" ]; then
+            echo "type=patch" >> $GITHUB_OUTPUT
+            echo "No previous tag, defaulting to patch"
+            exit 0
+          fi
+
+          # Get commits since last tag
+          COMMITS=$(git log ${{ steps.prev_tag.outputs.tag }}..HEAD --pretty=format:"%s")
+
+          # Determine bump type based on conventional commits
+          if echo "$COMMITS" | grep -qE "^feat(\(.+\))?!:|^fix(\(.+\))?!:|^refactor(\(.+\))?!:|BREAKING CHANGE:"; then
+            echo "type=major" >> $GITHUB_OUTPUT
+          elif echo "$COMMITS" | grep -qE "^feat(\(.+\))?:"; then
+            echo "type=minor" >> $GITHUB_OUTPUT
+          elif echo "$COMMITS" | grep -qE "^fix(\(.+\))?:"; then
+            echo "type=patch" >> $GITHUB_OUTPUT
+          else
+            echo "type=none" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Calculate new version
+        id: tag
+        if: steps.bump.outputs.type != 'none'
+        run: |
+          PREV_TAG="${{ steps.prev_tag.outputs.tag }}"
+          BUMP_TYPE="${{ steps.bump.outputs.type }}"
+
+          if [ -z "$PREV_TAG" ]; then
+            # No previous tag, read from build.gradle
+            CURRENT=$(grep "^version = " build.gradle | sed 's/version = "\([^"]*\)".*/\1/')
+            NEW_VERSION="$CURRENT"
+          else
+            # Parse version (remove 'v' prefix if present)
+            VERSION=${PREV_TAG#v}
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+
+            case $BUMP_TYPE in
+              major)
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              minor)
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              patch)
+                PATCH=$((PATCH + 1))
+                ;;
+            esac
+
+            NEW_VERSION="$MAJOR.$MINOR.$PATCH"
+          fi
+
+          NEW_TAG="v$NEW_VERSION"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+
+          # Generate changelog for this release
+          if [ -n "$PREV_TAG" ]; then
+            CHANGELOG=$(git log $PREV_TAG..HEAD --pretty=format:"* %s (%h)" | head -50)
+          else
+            CHANGELOG=$(git log --pretty=format:"* %s (%h)" | head -50)
+          fi
+
+          # Escape for GitHub output
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "changelog<<$EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "$EOF" >> $GITHUB_OUTPUT
+
+      - name: Update build.gradle version
+        if: steps.tag.outputs.new_version != ''
+        run: |
+          sed -i 's/^version = "[^"]*"/version = "${{ steps.tag.outputs.new_version }}"/' build.gradle
+
+      - name: Update changelog
+        if: steps.tag.outputs.new_version != ''
+        run: |
+          DATE=$(date +%Y-%m-%d)
+          NEW_ENTRY="## [${{ steps.tag.outputs.new_version }}](https://github.com/${{ github.repository }}/compare/${{ steps.prev_tag.outputs.tag }}...${{ steps.tag.outputs.new_tag }}) ($DATE)
+
+          ${{ steps.tag.outputs.changelog }}
+
+          "
+          # Insert after the header (line 6)
+          if [ -f CHANGELOG.md ]; then
+            head -6 CHANGELOG.md > CHANGELOG.tmp
+            echo "" >> CHANGELOG.tmp
+            echo "$NEW_ENTRY" >> CHANGELOG.tmp
+            tail -n +7 CHANGELOG.md >> CHANGELOG.tmp
+            mv CHANGELOG.tmp CHANGELOG.md
+          fi
+
+      - name: Commit version bump
+        if: steps.tag.outputs.new_version != ''
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add build.gradle CHANGELOG.md
+          git commit -m "chore: release ${{ steps.tag.outputs.new_version }} [skip ci]"
+          git push
+
+      - name: Create and push tag
+        if: steps.tag.outputs.new_tag != ''
+        run: |
+          git tag ${{ steps.tag.outputs.new_tag }}
+          git push origin ${{ steps.tag.outputs.new_tag }}
+
+      - name: Create GitHub Release
+        if: steps.tag.outputs.new_tag != ''
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag.outputs.new_tag }}
+          name: ${{ steps.tag.outputs.new_tag }}
+          body: |
+            ## What's Changed
+
+            ${{ steps.tag.outputs.changelog }}
+
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.prev_tag.outputs.tag }}...${{ steps.tag.outputs.new_tag }}
+          generate_release_notes: false
