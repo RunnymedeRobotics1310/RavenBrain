@@ -8,8 +8,11 @@ import io.micronaut.security.authentication.AuthenticationRequest;
 import io.micronaut.security.authentication.AuthenticationResponse;
 import io.micronaut.security.authentication.provider.HttpRequestAuthenticationProvider;
 import jakarta.inject.Singleton;
-import java.util.*;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author Tony Field
@@ -19,37 +22,39 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class PresharedKeyAuthenticationProvider<B> implements HttpRequestAuthenticationProvider<B> {
 
-  private final UserService userService;
+    private final UserService userService;
 
-  public PresharedKeyAuthenticationProvider(UserService userService) {
-    this.userService = userService;
-  }
-
-  @Override
-  public AuthenticationResponse authenticate(
-      @Nullable HttpRequest<B> httpRequest,
-      @NonNull AuthenticationRequest<String, String> authenticationRequest) {
-
-    String login = authenticationRequest.getIdentity();
-    String secret = authenticationRequest.getSecret();
-
-    Optional<User> ou = userService.findByLogin(login);
-    if (ou.isEmpty()) {
-      return AuthenticationResponse.failure(AuthenticationFailureReason.USER_NOT_FOUND);
+    public PresharedKeyAuthenticationProvider(UserService userService) {
+        this.userService = userService;
     }
 
-    if (!ou.get().passwordHash().equals(userService.hashPassword(secret))) {
-      return AuthenticationResponse.failure(AuthenticationFailureReason.CREDENTIALS_DO_NOT_MATCH);
-    }
+    @Override
+    public AuthenticationResponse authenticate(
+            @Nullable HttpRequest<B> httpRequest,
+            @NonNull AuthenticationRequest<String, String> authenticationRequest) {
 
-    if (!ou.get().enabled()) {
-      return AuthenticationResponse.failure(AuthenticationFailureReason.USER_DISABLED);
-    }
+        String login = authenticationRequest.getIdentity();
+        String secret = authenticationRequest.getSecret();
 
-    Map<String, Object> map = new LinkedHashMap<>();
-    map.put("userid", ou.get().id());
-    map.put("login", login);
-    map.put("displayName", ou.get().displayName());
-    return AuthenticationResponse.success(login, ou.get().roles(), map);
-  }
+        Optional<User> ou = userService.findByLogin(login);
+        if (ou.isEmpty()) {
+            return AuthenticationResponse.failure(AuthenticationFailureReason.USER_NOT_FOUND);
+        }
+
+        if (!ou.get().passwordHash().equals(userService.hashPassword(secret))) {
+            log.info("Invalid password for user {}", login);
+            return AuthenticationResponse.failure(AuthenticationFailureReason.CREDENTIALS_DO_NOT_MATCH);
+        }
+
+        if (!ou.get().enabled()) {
+            log.info("User {} has been disabled", login);
+            return AuthenticationResponse.failure(AuthenticationFailureReason.USER_DISABLED);
+        }
+
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("userid", ou.get().id());
+        map.put("login", login);
+        map.put("displayName", ou.get().displayName());
+        return AuthenticationResponse.success(login, ou.get().roles(), map);
+    }
 }
