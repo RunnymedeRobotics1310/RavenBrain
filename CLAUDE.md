@@ -76,13 +76,13 @@ Tests require similar config in `src/test/resources/application-test.properties`
 
 ### CI/CD (GitHub Actions)
 
-**Automatic Releases:** When commits are pushed to `main`, the release workflow:
-1. Analyzes conventional commit messages to determine version bump (major/minor/patch)
-2. Updates version in `build.gradle`
-3. Updates `CHANGELOG.md`
-4. Commits changes and creates a git tag
-5. Creates a GitHub Release with auto-generated release notes
-6. Triggers the Docker build workflow
+**Automatic Releases:** When commits with conventional commit messages (`feat:`, `fix:`) are pushed to `main`, the release workflow:
+1. Analyzes commit messages to determine version bump (major/minor/patch)
+2. Creates a git tag (e.g., `v2.1.0`)
+3. Creates a GitHub Release with auto-generated changelog
+4. Triggers the Docker build workflow
+
+Version is derived from git tags at build time - no commits back to `main` required.
 
 **Docker Images:** Built and pushed to GitHub Container Registry on every release (tag push):
 - `ghcr.io/runnymederobotics1310/ravenbrain:latest`
