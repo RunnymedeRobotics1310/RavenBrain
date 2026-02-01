@@ -54,11 +54,12 @@ jobs:
           fi
 
           # Determine bump type based on conventional commits
-          if echo "$COMMITS" | grep -qE "^feat(\(.+\))?!:|^fix(\(.+\))?!:|BREAKING CHANGE:"; then
+          # Patterns allow optional "* " or "- " prefix for squash-merge bullet points
+          if echo "$COMMITS" | grep -qE "^(\* |- )?feat(\(.+\))?!:|^(\* |- )?fix(\(.+\))?!:|BREAKING CHANGE:"; then
             BUMP_TYPE="major"
-          elif echo "$COMMITS" | grep -qE "^feat(\(.+\))?:"; then
+          elif echo "$COMMITS" | grep -qE "^(\* |- )?feat(\(.+\))?:"; then
             BUMP_TYPE="minor"
-          elif echo "$COMMITS" | grep -qE "^fix(\(.+\))?:"; then
+          elif echo "$COMMITS" | grep -qE "^(\* |- )?fix(\(.+\))?:"; then
             BUMP_TYPE="patch"
           else
             echo "should_release=false" >> $GITHUB_OUTPUT
