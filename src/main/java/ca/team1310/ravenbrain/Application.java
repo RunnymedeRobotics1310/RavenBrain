@@ -9,6 +9,7 @@ public class Application {
   }
 
   public static String getVersion() {
-    return "0.0.1";
+    String version = Application.class.getPackage().getImplementationVersion();
+    return version != null ? version : "dev";
   }
 }
