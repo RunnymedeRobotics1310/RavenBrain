@@ -44,8 +44,9 @@ jobs:
             exit 0
           fi
 
-          # Get commits since last tag
-          COMMITS=$(git log ${{ steps.prev_tag.outputs.tag }}..HEAD --pretty=format:"%s")
+          # Get full commit messages (subject + body) since last tag
+          # This catches conventional commits in squash-merge bodies
+          COMMITS=$(git log ${{ steps.prev_tag.outputs.tag }}..HEAD --pretty=format:"%B")
 
           if [ -z "$COMMITS" ]; then
             echo "should_release=false" >> $GITHUB_OUTPUT
