@@ -2,8 +2,8 @@
 
 Back-end datastore for [Team 1310 Raven Eye](https://github.com/runnymederobotics1310/raveneye)
 
-Created March 22, 2025, North Bay, Ontario, Canada by Tony Field, Team 1310, Runnymede Robotics
-Last Updated December 25, 2025 by Tony Field
+Created March 22, 2025, North Bay, Ontario, Canada by Tony Field, Team 1310, Runnymede Robotics\
+Last Updated January 31, 2026 by Tony Field
 
 ## Overview
 
@@ -26,7 +26,9 @@ docker pull ghcr.io/runnymederobotics1310/ravenbrain:latest
 
 ## Releases
 
-This project uses [Conventional Commits](https://www.conventionalcommits.org/) and [release-please](https://github.com/googleapis/release-please) for automatic versioning and changelog generation. See [CHANGELOG.md](CHANGELOG.md) for release history.
+This project uses [Conventional Commits](https://www.conventionalcommits.org/)
+and [release-please](https://github.com/googleapis/release-please) for automatic versioning and changelog generation.
+See [CHANGELOG.md](CHANGELOG.md) for release history.
 
 ## Table of Contents
 

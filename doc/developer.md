@@ -2,14 +2,15 @@
 
 ## Running the Application
 
-There are two ways to run RavenBrain locally:
+There are three ways to run RavenBrain locally:
 
 1. **Docker** - Recommended for front-end developers working on RavenEye who just need a running backend
 2. **Native** - Required for developers actively working on RavenBrain code
 
 ## Option 1: Running via Docker (Front-End Developers)
 
-This option runs both RavenBrain and MySQL in Docker containers. You do not need to install Java or MySQL on your machine.
+This option runs both RavenBrain and MySQL in Docker containers. You do not need to install Java or MySQL on your
+machine.
 
 ### Prerequisites
 
@@ -17,47 +18,13 @@ This option runs both RavenBrain and MySQL in Docker containers. You do not need
 
 ### Setup
 
-1. Copy the environment template and configure it:
+1. Download RavenEye source code to your local machine
+2. Follow the **Developer** instructions. They will guide you in starting RavenBrain on your local computer.
 
-```bash
-cp .env.example .env
-```
+#### Notes
 
-2. Edit `.env` and set at minimum:
-   - `MYSQL_ROOT_PASSWORD` - root password for MySQL
-   - `MYSQL_PASSWORD` - password for the application database user
-   - `FRC_USER` and `FRC_KEY` - your FRC API credentials (optional, only needed for FRC data sync)
-
-3. Build and start the containers:
-
-```bash
-./gradlew deployDocker
-```
-
-4. RavenBrain will be available at `http://localhost:8888`
-
-### Managing Docker Containers
-
-```bash
-# Stop containers
-./gradlew stopDocker
-
-# View logs
-docker-compose logs -f app
-
-# Reset database (removes all data)
-./gradlew stopDocker
-docker volume rm ravenbrain_ravenbrain-mysql-data
-./gradlew deployDocker
-```
-
-### Notes
-
-- MySQL is exposed on port 3307 (not 3306) to avoid conflicts with local MySQL installations
-- The app container waits for MySQL to be healthy before starting
-- Database migrations run automatically via Flyway on startup
-
----
+- If you want to completely reset your instance to the default (mostly empty) database, stop docker and delete the
+  ravenbrain and mysql containers.
 
 ## Option 2: Running Natively (RavenBrain Developers)
 
@@ -84,11 +51,13 @@ If you do not have it there, follow these instructions to add it:
 Via gradle, execute the following, which sets the variable and runs the app.
 
 #### Mac:
+
 ```bash
 MICRONAUT_ENVIRONMENTS=local gradle run
 ```
 
 #### Windows:
+
 ```bash
 set MICRONAUT_ENVIRONMENTS=local
 .\gradlew run
@@ -98,7 +67,6 @@ set MICRONAUT_ENVIRONMENTS=local
 
 
 Allow public and private networks to access `Zulu Platform x64 Architecture`.
-
 
 When RavenBrain starts, you should see the following at the top of the log, after the banner:
 
