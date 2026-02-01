@@ -76,15 +76,13 @@ Tests require similar config in `src/test/resources/application-test.properties`
 
 ### CI/CD (GitHub Actions)
 
-**Automatic Releases:** When commits with conventional commit messages (`feat:`, `fix:`) are pushed to `main`, the release workflow:
+**Automatic Releases:** When commits with conventional commit messages (`feat:`, `fix:`) are pushed to `main`, the release workflow (`.github/workflows/release.yml`):
 1. Analyzes commit messages to determine version bump (major/minor/patch)
 2. Creates a git tag (e.g., `v2.1.0`)
 3. Creates a GitHub Release with auto-generated changelog
-4. Triggers the Docker build workflow
+4. Builds and pushes Docker image to GHCR
 
-Version is derived from git tags at build time - no commits back to `main` required.
-
-**Docker Images:** Built and pushed to GitHub Container Registry on every release (tag push):
+**Docker Images:** Built and pushed to GitHub Container Registry on every release:
 - `ghcr.io/runnymederobotics1310/ravenbrain:latest`
 - `ghcr.io/runnymederobotics1310/ravenbrain:<version>` (e.g., `2.1.0`)
 - `ghcr.io/runnymederobotics1310/ravenbrain:<commit-sha>`
