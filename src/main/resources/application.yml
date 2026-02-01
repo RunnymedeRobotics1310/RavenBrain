@@ -1,3 +1,4 @@
+# Common configuration - env-specific config is in application-local.properties
 micronaut:
   application:
     name: raven-brain
