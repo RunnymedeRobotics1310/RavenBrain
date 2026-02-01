@@ -26,13 +26,16 @@ docker pull ghcr.io/runnymederobotics1310/ravenbrain:latest
 
 ## Releases
 
-This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automatic versioning and changelog generation. Every push to `main` with conventional commit messages triggers an automatic release. See [CHANGELOG.md](CHANGELOG.md) for release history.
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automatic versioning and changelog
+generation. Every push to `main` with conventional commit messages triggers an automatic release.
+See [CHANGELOG.md](CHANGELOG.md) for release history.
+
+Deployment instructions are available
+in [RavenEye Docs](https://github.com/RunnymedeRobotics1310/RavenEye/blob/main/DEPLOYMENT.md)
 
 ## Table of Contents
 
-- [Developer Environment Setup Instructions](doc/setup.md)
-- [Developer Programming Instructions](doc/setup.md)
-- [Server setup Instructions](doc/server.md)
-- [Server Architecture](doc/architecture.md)
+- [Developer Setup Instructions](doc/setup.md)
+- [Application Architecture](doc/architecture.md)
 
 Happy strategizing!
