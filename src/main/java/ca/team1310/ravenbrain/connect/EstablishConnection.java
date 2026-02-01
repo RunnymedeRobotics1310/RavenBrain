@@ -1,7 +1,10 @@
 package ca.team1310.ravenbrain.connect;
 
+import ca.team1310.ravenbrain.Application;
 import io.micronaut.http.MediaType;
-import io.micronaut.http.annotation.*;
+import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Produces;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.authentication.Authentication;
 import io.micronaut.security.rules.SecurityRule;
@@ -28,6 +31,7 @@ public class EstablishConnection {
   public Map<String, String> validate(Authentication authentication) {
     var map = new LinkedHashMap<String, String>();
     map.put("status", "ok");
+    map.put("version", Application.getVersion());
     return map;
   }
 }
