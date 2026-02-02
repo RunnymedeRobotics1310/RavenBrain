@@ -183,4 +183,4 @@ jobs:
             -f event_type=deploy \
             -f 'client_payload={"service":"app"}'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RAVENEYE_DISPATCH_TOKEN }}
