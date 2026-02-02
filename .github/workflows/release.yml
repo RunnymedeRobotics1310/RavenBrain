@@ -107,6 +107,29 @@ jobs:
           echo "$CHANGELOG" >> $GITHUB_OUTPUT
           echo "$EOF" >> $GITHUB_OUTPUT
 
+      - name: Update version in build.gradle
+        if: steps.bump.outputs.should_release == 'true'
+        run: |
+          VERSION="${{ steps.bump.outputs.new_version }}"
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" build.gradle
+          echo "Updated build.gradle to version $VERSION"
+          grep "^version = " build.gradle
+
+      - name: Checkout repository
+        if: steps.bump.outputs.should_release == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Commit build.gradle with version update
+        if: steps.bump.outputs.should_release == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add build.gradle
+          git commit -m "Update version to $VERSION"
+          git push origin HEAD
+
       - name: Create tag
         if: steps.bump.outputs.should_release == 'true'
         run: |
@@ -151,13 +174,6 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-
-      - name: Update version in build.gradle
-        run: |
-          VERSION="${{ needs.release.outputs.new_version }}"
-          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" build.gradle
-          echo "Updated build.gradle to version $VERSION"
-          grep "^version = " build.gradle
 
       - name: Build Docker image with Gradle
         run: ./gradlew dockerBuild
