@@ -1,7 +1,9 @@
 package ca.team1310.ravenbrain.connect;
 
 import ca.team1310.ravenbrain.Application;
+import io.micronaut.http.HttpResponse;
 import io.micronaut.http.MediaType;
+import io.micronaut.http.MutableHttpResponse;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.Produces;
@@ -21,8 +23,10 @@ public class EstablishConnection {
   @Get("/ping")
   @Produces(MediaType.TEXT_PLAIN)
   @Secured(SecurityRule.IS_ANONYMOUS)
-  public String ping() {
-    return "pong";
+  public HttpResponse<?> ping() {
+    MutableHttpResponse<String> res = HttpResponse.ok("pong");
+    res = res.header("X-RavenBrain-Version", Application.getVersion());
+    return res;
   }
 
   @Get("/validate")
@@ -31,7 +35,6 @@ public class EstablishConnection {
   public Map<String, String> validate(Authentication authentication) {
     var map = new LinkedHashMap<String, String>();
     map.put("status", "ok");
-    map.put("version", Application.getVersion());
     return map;
   }
 }

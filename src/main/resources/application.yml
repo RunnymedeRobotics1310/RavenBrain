@@ -14,6 +14,10 @@ micronaut:
   server:
     cors:
       enabled: true
+      configurations:
+        all:
+          exposed-headers:
+            - X-RavenBrain-Version
     port: 8888
   servlet:
     async-supported: false
