@@ -39,7 +39,7 @@ public class QuickCommentApi {
         result.add(new QuickCommentPostResult(record, true, null));
       } catch (DataAccessException e) {
         if (e.getMessage().contains("Duplicate entry")) {
-          log.warn("Duplicate quick comment: {}", record);
+          log.warn("Duplicate Quick Comment: {}", record);
           result.add(new QuickCommentPostResult(record, true, null));
         } else {
           log.error("Failed to save quick comment: {}", record, e);
