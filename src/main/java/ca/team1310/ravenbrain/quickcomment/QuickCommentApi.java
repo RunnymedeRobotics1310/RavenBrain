@@ -42,7 +42,7 @@ public class QuickCommentApi {
           log.warn("Duplicate Quick Comment: {}", record);
           result.add(new QuickCommentPostResult(record, true, null));
         } else {
-          log.error("Failed to save quick comment: {}", record, e);
+          log.error("Failed to save Quick Comment: {}", record, e);
           result.add(new QuickCommentPostResult(record, false, e.getMessage()));
         }
       } catch (Exception e) {
