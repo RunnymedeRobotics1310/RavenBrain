@@ -2,7 +2,7 @@ name: Release
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
 
 permissions:
@@ -177,3 +177,10 @@ jobs:
           docker push "$IMAGE:$TAG"
           docker push "$IMAGE:latest"
           docker push "$IMAGE:${{ github.sha }}"
+      - name: Trigger RavenEye deployment
+        run: |
+          gh api repos/RunnymedeRobotics1310/RavenEye/dispatches \
+            -f event_type=deploy \
+            -f 'client_payload={"service":"app"}'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
