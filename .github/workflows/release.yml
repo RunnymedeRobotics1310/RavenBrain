@@ -115,12 +115,6 @@ jobs:
           echo "Updated build.gradle to version $VERSION"
           grep "^version = " build.gradle
 
-      - name: Checkout repository
-        if: steps.bump.outputs.should_release == 'true'
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
       - name: Commit build.gradle with version update
         if: steps.bump.outputs.should_release == 'true'
         run: |
@@ -129,6 +123,12 @@ jobs:
           git add build.gradle
           git commit -m "Update version to $VERSION"
           git push origin HEAD
+
+      - name: Checkout repository
+        if: steps.bump.outputs.should_release == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Create tag
         if: steps.bump.outputs.should_release == 'true'
