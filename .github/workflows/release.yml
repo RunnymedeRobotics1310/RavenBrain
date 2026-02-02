@@ -152,6 +152,13 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Update version in build.gradle
+        run: |
+          VERSION="${{ needs.release.outputs.new_version }}"
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" build.gradle
+          echo "Updated build.gradle to version $VERSION"
+          grep "^version = " build.gradle
+
       - name: Build Docker image with Gradle
         run: ./gradlew dockerBuild
 
