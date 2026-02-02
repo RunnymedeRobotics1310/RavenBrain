@@ -179,8 +179,8 @@ jobs:
           docker push "$IMAGE:${{ github.sha }}"
       - name: Trigger RavenEye deployment
         run: |
-          gh api repos/RunnymedeRobotics1310/RavenEye/dispatches \                                                                                        
-            -f event_type=deploy \                                                                                                                        
+          gh api repos/RunnymedeRobotics1310/RavenEye/dispatches \
+            -f event_type=deploy \
             -F client_payload='{"service":"app"}'
         env:
           GH_TOKEN: ${{ secrets.RAVENEYE_DISPATCH_TOKEN }}
