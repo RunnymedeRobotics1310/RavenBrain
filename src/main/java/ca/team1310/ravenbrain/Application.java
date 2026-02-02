@@ -10,6 +10,6 @@ public class Application {
 
   public static String getVersion() {
     String version = Application.class.getPackage().getImplementationVersion();
-    return version != null ? version : "dev";
+    return version != null ? version : "Development Build";
   }
 }
