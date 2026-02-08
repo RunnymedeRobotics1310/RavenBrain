@@ -18,4 +18,6 @@ public abstract class QuickCommentService implements CrudRepository<QuickComment
   public abstract List<QuickComment> findAllByTeamOrderByTimestamp(int teamNumber);
 
   public abstract List<QuickComment> findAllOrderByTeamAndTimestamp();
+
+  public abstract boolean existsByUserId(long userId);
 }

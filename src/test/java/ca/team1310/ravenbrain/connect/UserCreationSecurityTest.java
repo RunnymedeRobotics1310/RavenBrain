@@ -243,7 +243,6 @@ public class UserCreationSecurityTest {
                       HttpRequest.PUT("/api/users/" + createdTarget.id(), addAdminRole)
                           .basicAuth(adminLogin, adminPassword));
             });
-    // This is expected to FAIL (currently returns 200)
     assertEquals(HttpStatus.FORBIDDEN, e.getStatus());
 
     // 2. Admin trying to add ROLE_SUPERUSER to existing user
@@ -266,7 +265,6 @@ public class UserCreationSecurityTest {
                       HttpRequest.PUT("/api/users/" + createdTarget.id(), addSuperuserRole)
                           .basicAuth(adminLogin, adminPassword));
             });
-    // This is expected to FAIL (currently returns 200)
     assertEquals(HttpStatus.FORBIDDEN, e2.getStatus());
   }
 
