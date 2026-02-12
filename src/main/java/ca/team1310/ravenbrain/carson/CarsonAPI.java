@@ -21,12 +21,13 @@ public class CarsonAPI {
   @Secured( // Allows anonymous access to this endpoint, overriding line 15
       SecurityRule.IS_ANONYMOUS)
   public String hello() {
-    return "Hello, Carson!"; // returns a string which matches line 20
+    return "Hello Carson!"; // returns a string which matches line 20
   }
 
-  @Get("/secure") // specifies that this is for http GET requests and answers to /api/carson/secure
-  @Produces(MediaType.TEXT_PLAIN) // Specifies that the response will be plain text
+  @Get("/secure")
+  @Produces(MediaType.TEXT_PLAIN)
   public String helloSecure() {
-    return "Hello, Logged In Carson!"; // returns a string which matches line 30
+    // Note we are not overriding @Secured, so the one on the class takes precedence (i.e. secure)
+    return "Hello Logged In Carson!";
   }
 }
