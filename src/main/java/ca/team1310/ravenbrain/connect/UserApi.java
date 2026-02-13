@@ -22,6 +22,19 @@ public class UserApi {
     return userService.listUsers().stream().map(userService::redactPassword).toList();
   }
 
+  @Get("/me")
+  public User me(Authentication authentication) {
+    return userService.redactPassword(
+        userService
+            .findByLogin(authentication.getName())
+            .orElseThrow(() -> new UserNotFoundException("User not found")));
+  }
+
+  @Put("/me")
+  public User updateMe(@Body User user, Authentication authentication) {
+    return userService.redactPassword(userService.updateOwnProfile(user, authentication.getName()));
+  }
+
   @Get("/{id}")
   @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
   public User get(long id) {
