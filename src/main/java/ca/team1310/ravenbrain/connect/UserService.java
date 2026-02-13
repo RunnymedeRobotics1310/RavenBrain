@@ -1,12 +1,16 @@
 package ca.team1310.ravenbrain.connect;
 
+import ca.team1310.ravenbrain.eventlog.EventLogRepository;
+import ca.team1310.ravenbrain.quickcomment.QuickCommentService;
 import io.micronaut.context.event.StartupEvent;
 import io.micronaut.runtime.event.annotation.EventListener;
+import io.micronaut.security.authentication.Authentication;
 import jakarta.inject.Singleton;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,11 +18,19 @@ import java.util.Optional;
 public class UserService {
 
   private final UserRepository userRepository;
+  private final EventLogRepository eventLogRepository;
+  private final QuickCommentService quickCommentService;
   private final Config config;
   private final String seed;
 
-  public UserService(UserRepository userRepository, Config config) {
+  public UserService(
+      UserRepository userRepository,
+      EventLogRepository eventLogRepository,
+      QuickCommentService quickCommentService,
+      Config config) {
     this.userRepository = userRepository;
+    this.eventLogRepository = eventLogRepository;
+    this.quickCommentService = quickCommentService;
     this.config = config;
     this.seed = config.encryptionSeed();
   }
@@ -54,8 +66,10 @@ public class UserService {
     return userRepository.findAll();
   }
 
-  public Optional<User> getUser(long id) {
-    return userRepository.findById(id);
+  public User getUser(long id) {
+    return userRepository
+        .findById(id)
+        .orElseThrow(() -> new UserNotFoundException("User not found"));
   }
 
   public User selfRegister(String signupSecretCode, User user) {
@@ -85,7 +99,15 @@ public class UserService {
             });
   }
 
-  public User createUser(User user) {
+  public User createUser(User user, Authentication caller) {
+    Collection<String> callerRoles = caller.getRoles();
+    if (user.roles().contains("ROLE_SUPERUSER") && !callerRoles.contains("ROLE_SUPERUSER")) {
+      throw new UserForbiddenException("Only superuser can create superuser");
+    }
+    if (user.roles().contains("ROLE_ADMIN") && !callerRoles.contains("ROLE_SUPERUSER")) {
+      throw new UserForbiddenException("Only admin or superuser can create admin");
+    }
+
     Optional<User> existing = userRepository.findByLogin(user.login());
     if (existing.isPresent()) {
       return existing.get();
@@ -103,19 +125,71 @@ public class UserService {
     return userRepository.save(userToSave);
   }
 
-  public User updateUser(long id, User user) {
+  public User updateUser(long id, User user, Authentication caller) {
     User existingUser =
-        userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+        userRepository
+            .findById(id)
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-    String passwordToSave = user.passwordHash();
-    if (passwordToSave != null
-        && !passwordToSave.isEmpty()
-        && !passwordToSave.equals("REDACTED")
-        && !passwordToSave.equals(existingUser.passwordHash())) {
-      passwordToSave = hashPassword(passwordToSave);
+    Collection<String> callerRoles = caller.getRoles();
+    String callerLogin = caller.getName();
+    boolean callerIsSuperuser = callerRoles.contains("ROLE_SUPERUSER");
+    boolean callerIsAdmin = callerRoles.contains("ROLE_ADMIN");
+
+    if (!callerIsSuperuser && existingUser.roles().contains("ROLE_SUPERUSER")) {
+      throw new UserForbiddenException("Only superuser can modify a superuser");
+    }
+
+    if (!callerIsSuperuser
+        && user.enabled()
+        && !existingUser.enabled()
+        && existingUser.roles().contains("ROLE_ADMIN")) {
+      throw new UserForbiddenException("Only superuser can enable a disabled admin");
+    }
+
+    if (!callerIsSuperuser
+        && user.roles().contains("ROLE_SUPERUSER")
+        && !existingUser.roles().contains("ROLE_SUPERUSER")) {
+      throw new UserForbiddenException("Only superuser can add ROLE_SUPERUSER");
+    }
+
+    if (!callerIsSuperuser
+        && user.roles().contains("ROLE_ADMIN")
+        && !existingUser.roles().contains("ROLE_ADMIN")) {
+      throw new UserForbiddenException("Only superuser can add ROLE_ADMIN");
+    }
+
+    // Determine if a new plaintext password is being submitted
+    boolean passwordChanging =
+        user.passwordHash() != null
+            && !user.passwordHash().isEmpty()
+            && !user.passwordHash().equals("REDACTED");
+
+    if (passwordChanging) {
+      // Admins and superusers can always change passwords; otherwise forgotPassword must be set
+      boolean allowed = callerIsSuperuser || callerIsAdmin || existingUser.forgotPassword();
+      if (!allowed) {
+        throw new UserForbiddenException(
+            "Cannot change password unless forgot password flag is set");
+      }
+    }
+
+    // Only admins/superusers can set the forgotPassword flag for other users
+    if (user.forgotPassword() && !existingUser.forgotPassword()) {
+      if (!callerIsSuperuser && !callerIsAdmin && !callerLogin.equals(existingUser.login())) {
+        throw new UserForbiddenException("Cannot set forgot password flag for other users");
+      }
+    }
+
+    String passwordToSave;
+    if (passwordChanging) {
+      passwordToSave = hashPassword(user.passwordHash());
     } else {
       passwordToSave = existingUser.passwordHash();
     }
+
+    // Auto-clear forgotPassword flag when the password is changed
+    boolean forgotPassword = passwordChanging ? false : user.forgotPassword();
 
     User userToUpdate =
         new User(
@@ -124,13 +198,29 @@ public class UserService {
             user.displayName(),
             passwordToSave,
             user.enabled(),
-            user.forgotPassword(),
+            forgotPassword,
             user.roles());
 
     return userRepository.update(userToUpdate);
   }
 
-  public void deleteUser(long id) {
+  public void deleteUser(long id, Authentication caller) {
+    Collection<String> callerRoles = caller.getRoles();
+    if (!callerRoles.contains("ROLE_SUPERUSER")) {
+      User existingUser =
+          userRepository
+              .findById(id)
+              .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+      if (existingUser.roles().contains("ROLE_SUPERUSER")) {
+        throw new UserForbiddenException("Only superuser can delete a superuser");
+      }
+    }
+
+    if (eventLogRepository.existsByUserId(id) || quickCommentService.existsByUserId(id)) {
+      throw new UserInUseException("Cannot delete user with recorded events or comments");
+    }
+
     userRepository.deleteById(id);
   }
 

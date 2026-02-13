@@ -18,6 +18,8 @@ public interface EventLogRepository extends CrudRepository<EventLogRecord, Long>
   List<EventLogRecord> findAllByTeamNumberAndTournamentIdOrderByTimestampAsc(
       int teamNumber, String tournamentId);
 
+  boolean existsByUserId(long userId);
+
   @Query(
       "SELECT * FROM 'RB_EVENT' e, RB_TOURNAMENT t WHERE teamnumber = :team "
           + "AND e.tournamentid = t.id"

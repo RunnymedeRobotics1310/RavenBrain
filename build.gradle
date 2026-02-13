@@ -34,6 +34,8 @@ dependencies {
     runtimeOnly("org.flywaydb:flyway-mysql")
     runtimeOnly("org.yaml:snakeyaml")
     testImplementation("io.micronaut:micronaut-http-client")
+    testImplementation("org.mockito:mockito-core:5.18.0")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.18.0")
     testCompileOnly 'org.projectlombok:lombok:1.18.36'
     testAnnotationProcessor("io.micronaut.serde:micronaut-serde-processor")
     aotPlugins platform("io.micronaut.platform:micronaut-platform")
