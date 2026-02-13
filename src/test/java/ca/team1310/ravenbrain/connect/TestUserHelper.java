@@ -1,5 +1,7 @@
 package ca.team1310.ravenbrain.connect;
 
+import ca.team1310.ravenbrain.eventlog.EventLogRepository;
+import ca.team1310.ravenbrain.quickcomment.QuickCommentService;
 import io.micronaut.core.type.Argument;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.client.HttpClient;
@@ -12,10 +14,18 @@ public class TestUserHelper {
 
   private final HttpClient client;
   private final Config config;
+  private final EventLogRepository eventLogRepository;
+  private final QuickCommentService quickCommentService;
 
-  public TestUserHelper(@Client("/") HttpClient client, Config config) {
+  public TestUserHelper(
+      @Client("/") HttpClient client,
+      Config config,
+      EventLogRepository eventLogRepository,
+      QuickCommentService quickCommentService) {
     this.client = client;
     this.config = config;
+    this.eventLogRepository = eventLogRepository;
+    this.quickCommentService = quickCommentService;
   }
 
   public User createTestUser(String login, String password, String role) {
@@ -35,6 +45,8 @@ public class TestUserHelper {
 
     for (User user : users) {
       if (user.login().contains("testuser")) {
+        eventLogRepository.deleteByUserId(user.id());
+        quickCommentService.deleteByUserId(user.id());
         HttpRequest<?> deleteRequest =
             HttpRequest.DELETE("/api/users/" + user.id())
                 .basicAuth("superuser", config.superuser());
