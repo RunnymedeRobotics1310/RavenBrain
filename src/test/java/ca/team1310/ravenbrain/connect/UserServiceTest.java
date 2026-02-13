@@ -2,7 +2,6 @@ package ca.team1310.ravenbrain.connect;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 import ca.team1310.ravenbrain.eventlog.EventLogRepository;
