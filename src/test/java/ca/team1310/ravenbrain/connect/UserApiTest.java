@@ -74,9 +74,7 @@ public class UserApiTest {
     // First, set forgot password flag so password can be changed
     client
         .toBlocking()
-        .exchange(
-            HttpRequest.POST("/api/users/forgot-password", null)
-                .basicAuth(testUserLogin, "password123"));
+        .exchange(HttpRequest.POST("/api/users/forgot-password?login=" + testUserLogin, null));
 
     User updatedUserRequest =
         new User(
@@ -177,13 +175,12 @@ public class UserApiTest {
                 User.class);
     assertFalse(createdMember.forgotPassword());
 
-    // 2. Call forgot-password as the member
+    // 2. Call forgot-password (unauthenticated, by login)
     HttpResponse<Void> response =
         client
             .toBlocking()
             .exchange(
-                HttpRequest.POST("/api/users/forgot-password", null)
-                    .basicAuth(memberLogin, password));
+                HttpRequest.POST("/api/users/forgot-password?login=" + memberLogin, null));
     assertEquals(HttpStatus.OK, response.getStatus());
 
     // 3. Verify flag is updated

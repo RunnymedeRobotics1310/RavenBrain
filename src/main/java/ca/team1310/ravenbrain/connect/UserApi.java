@@ -47,9 +47,9 @@ public class UserApi {
   }
 
   @Post("/forgot-password")
-  @Secured(SecurityRule.IS_AUTHENTICATED)
-  public void forgotPassword(Authentication authentication) {
-    userService.notePasswordForgotten(authentication.getName());
+  @Secured(SecurityRule.IS_ANONYMOUS)
+  public void forgotPassword(@QueryValue String login) {
+    userService.notePasswordForgotten(login);
   }
 
   @Get("/forgot-password")
