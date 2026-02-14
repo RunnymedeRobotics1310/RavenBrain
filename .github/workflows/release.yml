@@ -143,6 +143,8 @@ jobs:
     needs: release
     if: needs.release.outputs.should_release == 'true'
     runs-on: ubuntu-latest
+    env:
+      DOCKER_DEFAULT_PLATFORM: linux/amd64
 
     steps:
       - name: Checkout repository
