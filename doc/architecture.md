@@ -24,7 +24,9 @@ The database uses the ***default*** datasource, so configuration properties in
 The database server chosen is *MySQL Community Edition 8.4 LTS*, which is free,
 open-source and stable. It can be installed directly onto a Mac, Linux machine,
 or Windows machine. It can also be run in docker, but configuration details are
-not included in this documentation at this time.
+not included in this documentation at this time. For automated tests, *Micronaut
+Test Resources* auto-provisions a MySQL container via *Testcontainers*, so no
+local database setup is needed to run the test suite.
 
 ### Java and Micronaut Version
 
