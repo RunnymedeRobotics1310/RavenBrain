@@ -83,12 +83,13 @@ Tests use Micronaut Test Resources, which auto-provisions a MySQL container via 
 1. Analyzes commit messages to determine version bump (major/minor/patch)
 2. Creates a git tag (e.g., `v2.1.0`)
 3. Creates a GitHub Release with auto-generated changelog
-4. Builds and pushes Docker image to GHCR
+4. Gradle generates the Dockerfile and build context (`./gradlew dockerfile`)
+5. `docker/build-push-action` builds multi-arch images (amd64 + arm64) using QEMU emulation and pushes to GHCR
+6. Triggers RavenEye's deploy workflow via `repository_dispatch`
 
-**Docker Images:** Built and pushed to GitHub Container Registry on every release:
+**Docker Images:** Multi-arch (amd64 + arm64) images pushed to GitHub Container Registry on every release:
 - `ghcr.io/runnymederobotics1310/ravenbrain:latest`
 - `ghcr.io/runnymederobotics1310/ravenbrain:<version>` (e.g., `2.1.0`)
-- `ghcr.io/runnymederobotics1310/ravenbrain:<commit-sha>`
 - `ghcr.io/runnymederobotics1310/ravenbrain:v<version>` (release tag, e.g., `v2.1.0`)
 
 To pull the latest image:
@@ -97,6 +98,8 @@ docker pull ghcr.io/runnymederobotics1310/ravenbrain:latest
 ```
 
 ### Local Docker Build
+
+Local builds use `./gradlew dockerBuild` which creates a single-arch image for the host platform. CI builds use `./gradlew dockerfile` + `docker/build-push-action` for multi-arch (amd64 + arm64).
 
 ```bash
 # Build Docker image and start containers (MySQL + app)
