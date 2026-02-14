@@ -123,6 +123,7 @@ Define a file called `application-local.properties` and place it in your `src/ma
 following properties:
 
 ```properties
+datasources.default.url=jdbc:mysql://localhost:3306/ravenbrain?enabledTLSProtocols=TLSv1.2&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
 datasources.default.username=rb
 datasources.default.password=rb
 raven-eye.frc-api.user=frc_api_user_id
@@ -134,17 +135,19 @@ You will need to substitute the placeholder keys and secrets with the appropriat
 
 | **Parameter**                      | **Description**                                                                                                                                                                                   |
 |------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| datasources.default.url            | The JDBC URL for the local MySQL database. The default value above should work for most local setups.                                                                                             |
 | datasources.default.username       | The username used when creating the database. This was probably `rb`                                                                                                                              |
-| datasources.default.password       | The password used when creating the database. Probagbly `rb` for developer systems, but different for the production system.                                                                      |
+| datasources.default.password       | The password used when creating the database. Probably `rb` for developer systems, but different for the production system.                                                                       |
 | raven-eye.frc-api.user             | The userid you used when you created a FRC API key on the FRC API website. You have to do this yourself - the key is not shared                                                                   |
 | raven-eye.frc-api.key              | The key given you to you by the FRC API site when you registered. This is not shared - you need to sign up yourself.                                                                              |
 | raven-eye.role-passwords.superuser | This is where you DEFINE the superuser password for the system. A superuser has the ability to create admins (and other roles). Never share this password. If blank, no superuser will be active. |
 
 Next, create a second file, this time called `application-test.properties` (i.e. with `-test` instead of `-local`), and
 place it in your
-`src/test/resources` folder (**NOT** the `src/main/resources` folder), and include the same contents. These
-configuration overrides are overlaid on top of the
-properties in `application.yml`.
+`src/test/resources` folder (**NOT** the `src/main/resources` folder). This file does **not** need datasource
+configuration (`url`, `username`, `password`) because tests use **Micronaut Test Resources**, which auto-provisions a
+MySQL container via Testcontainers. **Docker Desktop must be running** to execute tests. Include only non-datasource
+configuration overrides (FRC API keys, security settings, logger levels, etc.).
 
 If you want to change any of the logging levels, add the appropriate logger property to the above file. Valid levels are
 `TRACE`, `DEBUG`, `INFO`, `WARN`, `ERROR`, and `FATAL`. These can be left out if not used, and you can add more detailed

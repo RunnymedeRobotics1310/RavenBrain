@@ -60,17 +60,20 @@ Requires Java 25 (configured in `.sdkmanrc` and `build.gradle`). Use SDKMAN to i
 
 ## Configuration
 
-The app uses environment variables with defaults defined in `application.yml`. For local development, create `src/main/resources/application-local.properties`:
+Datasource connection properties (URL, username, password) are **not** defined in `application.yml`. This allows Micronaut Test Resources to auto-provision a MySQL container via Testcontainers during tests. Connection properties must be provided externally for local and production environments.
+
+For local development, create `src/main/resources/application-local.properties`:
 ```properties
+datasources.default.url=jdbc:mysql://localhost:3306/ravenbrain?enabledTLSProtocols=TLSv1.2&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC
 datasources.default.username=rb
 datasources.default.password=rb
 raven-eye.frc-api.user=<your-frc-api-user>
 raven-eye.frc-api.key=<your-frc-api-key>
 ```
 
-For production/Docker, configure via environment variables: `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DB`, `MYSQL_USERNAME`, `MYSQL_PASSWORD`, `FRC_USER`, `FRC_KEY`, `JWT_GENERATOR_SIGNATURE_SECRET`, `SUPERUSER_PASSWORD`, `REGISTRATION_SECRET`.
+For production/Docker, configure via environment variables: `DATASOURCES_DEFAULT_URL`, `DATASOURCES_DEFAULT_USERNAME`, `DATASOURCES_DEFAULT_PASSWORD`, `FRC_USER`, `FRC_KEY`, `JWT_GENERATOR_SIGNATURE_SECRET`, `SUPERUSER_PASSWORD`, `REGISTRATION_SECRET`.
 
-Tests require similar config in `src/test/resources/application-test.properties`.
+Tests use Micronaut Test Resources, which auto-provisions a MySQL container via Testcontainers — no datasource config is needed in `src/test/resources/application-test.properties`. Docker Desktop must be running to execute tests.
 
 ## Docker Deployment
 

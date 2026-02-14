@@ -20,6 +20,8 @@ public interface EventLogRepository extends CrudRepository<EventLogRecord, Long>
 
   boolean existsByUserId(long userId);
 
+  void deleteByUserId(long userId);
+
   @Query(
       "SELECT * FROM 'RB_EVENT' e, RB_TOURNAMENT t WHERE teamnumber = :team "
           + "AND e.tournamentid = t.id"
