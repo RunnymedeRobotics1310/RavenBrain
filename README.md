@@ -39,3 +39,5 @@ in [RavenEye Docs](https://github.com/RunnymedeRobotics1310/RavenEye/blob/main/D
 - [Application Architecture](doc/architecture.md)
 
 Happy strategizing!
+
+.
