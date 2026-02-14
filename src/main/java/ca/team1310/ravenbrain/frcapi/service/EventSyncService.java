@@ -46,6 +46,13 @@ class EventSyncService {
     this.scheduleService = scheduleService;
   }
 
+  /** Force an immediate synchronization of all tournament and schedule data from the FRC API. */
+  void forceSync() {
+    log.info("Starting to sync everything");
+    loadTournaments();
+    loadAllTournamentSchedulesForThisYear();
+  }
+
   /**
    * Once a week, check with FIRST for new tournament data and save relevant parts of it to our
    * local repository.
