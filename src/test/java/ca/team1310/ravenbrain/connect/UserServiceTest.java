@@ -2,7 +2,6 @@ package ca.team1310.ravenbrain.connect;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 import ca.team1310.ravenbrain.eventlog.EventLogRepository;
@@ -318,6 +317,76 @@ class UserServiceTest {
     userService.deleteUser(1, superuser);
 
     verify(userRepository).deleteById(1L);
+  }
+
+  // --- updateOwnProfile ---
+
+  @Test
+  void updateOwnProfileChangesDisplayName() {
+    User existing = member(1, "scout", "oldhash");
+    when(userRepository.findByLogin("scout")).thenReturn(Optional.of(existing));
+    when(userRepository.update(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+    User request = new User(0, "scout", "New Display Name", "REDACTED", true, false, List.of());
+
+    User result = userService.updateOwnProfile(request, "scout");
+
+    assertEquals("New Display Name", result.displayName());
+    assertEquals("oldhash", result.passwordHash());
+  }
+
+  @Test
+  void updateOwnProfileChangesPassword() {
+    User existing = member(1, "scout", "oldhash");
+    when(userRepository.findByLogin("scout")).thenReturn(Optional.of(existing));
+    when(userRepository.update(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+    User request = new User(0, "scout", "scout", "newPlaintext", true, false, List.of());
+
+    User result = userService.updateOwnProfile(request, "scout");
+
+    assertEquals(userService.hashPassword("newPlaintext"), result.passwordHash());
+  }
+
+  @Test
+  void updateOwnProfilePreservesRolesAndEnabled() {
+    User existing =
+        new User(1, "scout", "scout", "oldhash", true, false, List.of("ROLE_MEMBER", "ROLE_ADMIN"));
+    when(userRepository.findByLogin("scout")).thenReturn(Optional.of(existing));
+    when(userRepository.update(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+    // Request tries to change roles and enabled — should be ignored
+    User request = new User(0, "scout", "scout", "REDACTED", false, false, List.of("ROLE_SUPERUSER"));
+
+    User result = userService.updateOwnProfile(request, "scout");
+
+    assertTrue(result.enabled());
+    assertEquals(List.of("ROLE_MEMBER", "ROLE_ADMIN"), result.roles());
+    assertEquals("scout", result.login());
+  }
+
+  @Test
+  void updateOwnProfileClearsForgotPasswordOnPasswordChange() {
+    User existing =
+        new User(1, "scout", "scout", "oldhash", true, true, List.of("ROLE_MEMBER"));
+    when(userRepository.findByLogin("scout")).thenReturn(Optional.of(existing));
+    when(userRepository.update(any(User.class))).thenAnswer(i -> i.getArgument(0));
+
+    User request = new User(0, "scout", "scout", "newPass", true, true, List.of());
+
+    User result = userService.updateOwnProfile(request, "scout");
+
+    assertFalse(result.forgotPassword());
+  }
+
+  @Test
+  void updateOwnProfileNotFoundThrows() {
+    when(userRepository.findByLogin("ghost")).thenReturn(Optional.empty());
+
+    User request = new User(0, "ghost", "ghost", "REDACTED", true, false, List.of());
+
+    assertThrows(
+        UserNotFoundException.class, () -> userService.updateOwnProfile(request, "ghost"));
   }
 
   @Test

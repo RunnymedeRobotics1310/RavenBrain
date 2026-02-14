@@ -74,9 +74,7 @@ public class UserApiTest {
     // First, set forgot password flag so password can be changed
     client
         .toBlocking()
-        .exchange(
-            HttpRequest.POST("/api/users/forgot-password", null)
-                .basicAuth(testUserLogin, "password123"));
+        .exchange(HttpRequest.POST("/api/users/forgot-password?login=" + testUserLogin, null));
 
     User updatedUserRequest =
         new User(
@@ -177,13 +175,12 @@ public class UserApiTest {
                 User.class);
     assertFalse(createdMember.forgotPassword());
 
-    // 2. Call forgot-password as the member
+    // 2. Call forgot-password (unauthenticated, by login)
     HttpResponse<Void> response =
         client
             .toBlocking()
             .exchange(
-                HttpRequest.POST("/api/users/forgot-password", null)
-                    .basicAuth(memberLogin, password));
+                HttpRequest.POST("/api/users/forgot-password?login=" + memberLogin, null));
     assertEquals(HttpStatus.OK, response.getStatus());
 
     // 3. Verify flag is updated
@@ -206,6 +203,107 @@ public class UserApiTest {
         forgotUsers.stream()
             .filter(u -> u.id() == createdMember.id())
             .allMatch(u -> "REDACTED".equals(u.passwordHash())));
+  }
+
+  @Test
+  void testGetOwnProfile() {
+    String memberLogin = "member-me-testuser-" + System.currentTimeMillis();
+    String password = "memberPass";
+
+    // 1. Create a member user
+    User memberUser =
+        new User(0, memberLogin, "Member User", password, true, false, List.of("ROLE_MEMBER"));
+    client
+        .toBlocking()
+        .exchange(
+            HttpRequest.POST("/api/users", memberUser).basicAuth("superuser", config.superuser()));
+
+    // 2. Member can view their own profile via /me
+    User me =
+        client
+            .toBlocking()
+            .retrieve(
+                HttpRequest.GET("/api/users/me").basicAuth(memberLogin, password), User.class);
+    assertEquals(memberLogin, me.login());
+    assertEquals("Member User", me.displayName());
+    assertEquals("REDACTED", me.passwordHash());
+    assertTrue(me.roles().contains("ROLE_MEMBER"));
+
+    // 3. Unauthenticated request to /me is rejected
+    HttpClientResponseException e =
+        assertThrows(
+            HttpClientResponseException.class,
+            () -> client.toBlocking().retrieve(HttpRequest.GET("/api/users/me"), User.class));
+    assertEquals(HttpStatus.UNAUTHORIZED, e.getStatus());
+  }
+
+  @Test
+  void testUpdateOwnProfile() {
+    String memberLogin = "member-putme-testuser-" + System.currentTimeMillis();
+    String password = "memberPass";
+
+    // 1. Create a member user
+    User memberUser =
+        new User(0, memberLogin, "Original Name", password, true, false, List.of("ROLE_MEMBER"));
+    client
+        .toBlocking()
+        .exchange(
+            HttpRequest.POST("/api/users", memberUser).basicAuth("superuser", config.superuser()));
+
+    // 2. Update display name via PUT /me
+    User updateRequest =
+        new User(0, memberLogin, "Updated Name", "REDACTED", true, false, List.of("ROLE_MEMBER"));
+    User updated =
+        client
+            .toBlocking()
+            .retrieve(
+                HttpRequest.PUT("/api/users/me", updateRequest).basicAuth(memberLogin, password),
+                User.class);
+    assertEquals("Updated Name", updated.displayName());
+    assertEquals("REDACTED", updated.passwordHash());
+
+    // 3. Change password via PUT /me
+    String newPassword = "newSecurePass";
+    User passwordUpdate =
+        new User(
+            0, memberLogin, "Updated Name", newPassword, true, false, List.of("ROLE_MEMBER"));
+    User afterPasswordChange =
+        client
+            .toBlocking()
+            .retrieve(
+                HttpRequest.PUT("/api/users/me", passwordUpdate).basicAuth(memberLogin, password),
+                User.class);
+    assertEquals("Updated Name", afterPasswordChange.displayName());
+
+    // 4. Verify new password works
+    User meWithNewPass =
+        client
+            .toBlocking()
+            .retrieve(
+                HttpRequest.GET("/api/users/me").basicAuth(memberLogin, newPassword), User.class);
+    assertEquals(memberLogin, meWithNewPass.login());
+
+    // 5. Verify roles/enabled/login cannot be changed by the user
+    User escalationAttempt =
+        new User(
+            0,
+            "hacked-login",
+            "Updated Name",
+            "REDACTED",
+            false,
+            false,
+            List.of("ROLE_SUPERUSER"));
+    User afterEscalation =
+        client
+            .toBlocking()
+            .retrieve(
+                HttpRequest.PUT("/api/users/me", escalationAttempt)
+                    .basicAuth(memberLogin, newPassword),
+                User.class);
+    assertEquals(memberLogin, afterEscalation.login());
+    assertTrue(afterEscalation.enabled());
+    assertTrue(afterEscalation.roles().contains("ROLE_MEMBER"));
+    assertFalse(afterEscalation.roles().contains("ROLE_SUPERUSER"));
   }
 
   @Test

@@ -99,6 +99,36 @@ public class UserService {
             });
   }
 
+  public User updateOwnProfile(User update, String login) {
+    User existing =
+        userRepository
+            .findByLogin(login)
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+    String passwordToSave;
+    boolean passwordChanging =
+        update.passwordHash() != null
+            && !update.passwordHash().isEmpty()
+            && !update.passwordHash().equals("REDACTED");
+    if (passwordChanging) {
+      passwordToSave = hashPassword(update.passwordHash());
+    } else {
+      passwordToSave = existing.passwordHash();
+    }
+
+    User userToSave =
+        new User(
+            existing.id(),
+            existing.login(),
+            update.displayName(),
+            passwordToSave,
+            existing.enabled(),
+            passwordChanging ? false : existing.forgotPassword(),
+            existing.roles());
+
+    return userRepository.update(userToSave);
+  }
+
   public User createUser(User user, Authentication caller) {
     Collection<String> callerRoles = caller.getRoles();
     if (user.roles().contains("ROLE_SUPERUSER") && !callerRoles.contains("ROLE_SUPERUSER")) {
