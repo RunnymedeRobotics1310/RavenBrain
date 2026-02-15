@@ -41,7 +41,7 @@ public class StrategyAreaApi {
     // Ensure id matches
     StrategyArea toUpdate =
         new StrategyArea(
-            id, strategyArea.frcyear(), strategyArea.name(), strategyArea.description());
+            id, strategyArea.frcyear(), strategyArea.code(), strategyArea.name(), strategyArea.description());
     return strategyAreaService.update(toUpdate);
   }
 }

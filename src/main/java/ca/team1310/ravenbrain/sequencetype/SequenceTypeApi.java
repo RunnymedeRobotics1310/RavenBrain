@@ -46,10 +46,12 @@ public class SequenceTypeApi {
     SequenceType toUpdate =
         new SequenceType(
             id,
+            sequenceType.code(),
             sequenceType.name(),
             sequenceType.description(),
             sequenceType.frcyear(),
             sequenceType.disabled(),
+            sequenceType.strategyareaId(),
             sequenceType.events());
     return sequenceTypeService.update(toUpdate);
   }
