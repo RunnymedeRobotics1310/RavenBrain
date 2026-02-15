@@ -92,7 +92,10 @@ class EventSyncService {
     frcClientService.markProcessed(resp.getId());
   }
 
-  /** Once a week, load tournament schedules for all tournaments this year and last year. */
+  /**
+   * Load tournament schedules for all tournaments this year and last year. This method is called
+   * once a week (usually), but it can be forced when necessary.
+   */
   @Scheduled(cron = "0 23 * * 1")
   //  @Scheduled(fixedDelay = "1m")
   void loadAllCurrentTournamentSchedules() {
