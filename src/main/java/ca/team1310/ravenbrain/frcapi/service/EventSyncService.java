@@ -50,7 +50,7 @@ class EventSyncService {
   void forceSync() {
     log.info("Starting to sync everything");
     loadTournaments();
-    loadAllTournamentSchedulesForThisYear();
+    loadAllCurrentTournamentSchedules();
   }
 
   /**
@@ -92,14 +92,15 @@ class EventSyncService {
     frcClientService.markProcessed(resp.getId());
   }
 
-  /** Once a week, load tournament schedules for all tournaments this year. */
+  /** Once a week, load tournament schedules for all tournaments this year and last year. */
   @Scheduled(cron = "0 23 * * 1")
   //  @Scheduled(fixedDelay = "1m")
-  void loadAllTournamentSchedulesForThisYear() {
-    log.debug("Loading all tournament schedules for this year");
+  void loadAllCurrentTournamentSchedules() {
+    log.debug("Loading all tournament schedules for this year and last year");
     int thisYear = Year.now(ZoneOffset.UTC).getValue();
+    int lastYear = thisYear - 1;
     for (TournamentRecord tournamentRecord : tournamentService.findAll()) {
-      if (tournamentRecord.season() == thisYear) {
+      if (tournamentRecord.season() == thisYear || tournamentRecord.season() == lastYear) {
         _populateScheduleForTournament(tournamentRecord);
       }
     }
