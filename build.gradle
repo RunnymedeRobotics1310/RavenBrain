@@ -5,7 +5,7 @@ plugins {
     id("io.micronaut.aot") version "4.6.1"
 }
 
-version = "2.2.0" // Updated by CI during release
+version = "2.2.1" // Updated by CI during release
 group = "ca.team1310.ravenbrain"
 
 repositories {
