@@ -53,7 +53,8 @@ public class EventTypeApiTest {
     testUserHelper.createTestUser(adminLogin, adminPass, "ROLE_ADMIN");
 
     // 1. Create as admin
-    EventType et = new EventType("test-event", "Test Event", "Test Description", 2025, -1L);
+    EventType et =
+        new EventType("test-event", "Test Event", "Test Description", 2025, -1L, true, true);
     HttpRequest<EventType> createRequest =
         HttpRequest.POST("/api/event-types", et).basicAuth(adminLogin, adminPass);
     EventType created = client.toBlocking().retrieve(createRequest, EventType.class);
@@ -61,6 +62,8 @@ public class EventTypeApiTest {
     assertEquals("test-event", created.eventtype());
     assertEquals("Test Event", created.name());
     assertEquals("Test Description", created.description());
+    assertTrue(created.showNote());
+    assertTrue(created.showQuantity());
 
     // 2. List (authenticated user can list)
     HttpRequest<?> listRequest =
@@ -71,7 +74,7 @@ public class EventTypeApiTest {
 
     // 3. Update as superuser
     EventType updateEt =
-        new EventType("test-event", "Updated Event", "Updated Description", 2025, -1L);
+        new EventType("test-event", "Updated Event", "Updated Description", 2025, -1L, false, true);
     HttpRequest<EventType> updateRequest =
         HttpRequest.PUT("/api/event-types/test-event", updateEt)
             .basicAuth("superuser", config.superuser());
@@ -79,6 +82,8 @@ public class EventTypeApiTest {
     assertEquals("test-event", updated.eventtype());
     assertEquals("Updated Event", updated.name());
     assertEquals("Updated Description", updated.description());
+    assertFalse(updated.showNote());
+    assertTrue(updated.showQuantity());
 
     // 4. Verify list after update
     list = client.toBlocking().retrieve(listRequest, Argument.listOf(EventType.class));
@@ -102,7 +107,8 @@ public class EventTypeApiTest {
     String memberPass = "memberPass";
     testUserHelper.createTestUser(memberLogin, memberPass, "ROLE_MEMBER");
 
-    EventType et = new EventType("security-test", "Security Test", "Should fail", 2025, -1L);
+    EventType et =
+        new EventType("security-test", "Security Test", "Should fail", 2025, -1L, false, false);
 
     // Create as member should fail
     HttpRequest<EventType> createRequest =
@@ -137,7 +143,8 @@ public class EventTypeApiTest {
     String adminPass = "adminPass";
     testUserHelper.createTestUser(adminLogin, adminPass, "ROLE_ADMIN");
 
-    EventType et = new EventType("invalid event!", "Invalid", "Invalid", 2025, -1L);
+    EventType et =
+        new EventType("invalid event!", "Invalid", "Invalid", 2025, -1L, false, false);
     HttpRequest<EventType> createRequest =
         HttpRequest.POST("/api/event-types", et).basicAuth(adminLogin, adminPass);
 
