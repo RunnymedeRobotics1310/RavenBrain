@@ -78,7 +78,14 @@ public class SequenceTypeApiTest {
     SequenceEvent se1 = new SequenceEvent(null, null, et1, true, false);
     SequenceType st =
         new SequenceType(
-            null, "test-sequence", "Test Sequence Description", 2025, false, List.of(se1));
+            null,
+            "test-sequence",
+            "test-sequence",
+            "Test Sequence Description",
+            2025,
+            false,
+            -1L,
+            List.of(se1));
 
     HttpRequest<SequenceType> createRequest =
         HttpRequest.POST("/api/sequence-types", st).basicAuth(adminLogin, adminPass);
@@ -86,10 +93,12 @@ public class SequenceTypeApiTest {
 
     assertNotNull(created);
     assertNotNull(created.id());
+    assertEquals("test-sequence", created.code());
     assertEquals("test-sequence", created.name());
     assertEquals("Test Sequence Description", created.description());
     assertEquals(2025, created.frcyear());
     assertFalse(created.disabled());
+    assertEquals(-1L, created.strategyareaId());
     assertEquals(1, created.events().size());
     assertEquals("test-event-1", created.events().get(0).eventtype().eventtype());
 
@@ -127,7 +136,14 @@ public class SequenceTypeApiTest {
     SequenceEvent se2 = new SequenceEvent(null, null, et2, false, true);
     SequenceType updateSt =
         new SequenceType(
-            created.id(), "test-sequence", "Updated Description", 2025, true, List.of(se2));
+            created.id(),
+            "test-sequence",
+            "test-sequence",
+            "Updated Description",
+            2025,
+            true,
+            -1L,
+            List.of(se2));
 
     HttpRequest<SequenceType> updateRequest =
         HttpRequest.PUT("/api/sequence-types/" + created.id(), updateSt)
@@ -160,7 +176,8 @@ public class SequenceTypeApiTest {
     testUserHelper.createTestUser(memberLogin, memberPass, "ROLE_MEMBER");
 
     SequenceType st =
-        new SequenceType(null, "security-test", "Should fail", 2025, false, List.of());
+        new SequenceType(
+            null, "security-test", "security-test", "Should fail", 2025, false, -1L, List.of());
 
     // Create as member should fail
     HttpRequest<SequenceType> createRequest =
