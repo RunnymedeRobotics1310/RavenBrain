@@ -53,12 +53,14 @@ public class StrategyAreaApiTest {
     testUserHelper.createTestUser(adminLogin, adminPass, "ROLE_ADMIN");
 
     // 1. Create as admin
-    StrategyArea area = new StrategyArea(0, 2026, "Autonomous", "Autonomous strategy area");
+    StrategyArea area =
+        new StrategyArea(0, 2026, "autonomous", "Autonomous", "Autonomous strategy area");
     HttpRequest<StrategyArea> createRequest =
         HttpRequest.POST("/api/strategy-areas", area).basicAuth(adminLogin, adminPass);
     StrategyArea created = client.toBlocking().retrieve(createRequest, StrategyArea.class);
     assertNotNull(created);
     assertTrue(created.id() > 0);
+    assertEquals("autonomous", created.code());
     assertEquals("Autonomous", created.name());
     assertEquals("Autonomous strategy area", created.description());
 
@@ -80,7 +82,7 @@ public class StrategyAreaApiTest {
 
     // 3. Update as superuser
     StrategyArea updateArea =
-        new StrategyArea(id, 2026, "Autonomous Updated", "Updated description");
+        new StrategyArea(id, 2026, "autonomous-updated", "Autonomous Updated", "Updated description");
     HttpRequest<StrategyArea> updateRequest =
         HttpRequest.PUT("/api/strategy-areas/" + id, updateArea)
             .basicAuth("superuser", config.superuser());
@@ -101,7 +103,7 @@ public class StrategyAreaApiTest {
     String memberPass = "memberPass";
     testUserHelper.createTestUser(memberLogin, memberPass, "ROLE_MEMBER");
 
-    StrategyArea area = new StrategyArea(0, 2026, "Security Test", "Should fail");
+    StrategyArea area = new StrategyArea(0, 2026, "security-test", "Security Test", "Should fail");
 
     // Create as member should fail
     HttpRequest<StrategyArea> createRequest =
