@@ -50,7 +50,9 @@ public class EventTypeApi {
             eventType.name(),
             eventType.description(),
             eventType.frcyear(),
-            eventType.strategyareaId());
+            eventType.strategyareaId(),
+            eventType.showNote(),
+            eventType.showQuantity());
     return eventTypeService.update(toUpdate);
   }
 

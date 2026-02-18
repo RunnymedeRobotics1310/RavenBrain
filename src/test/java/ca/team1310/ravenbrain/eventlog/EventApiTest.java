@@ -381,7 +381,7 @@ public class EventApiTest {
     if (eventTypeService.findById(eventType).isEmpty()) {
       eventTypeService.create(
           new ca.team1310.ravenbrain.eventtype.EventType(
-              eventType, "Filter Test Type", "Description", 2025, null));
+              eventType, "Filter Test Type", "Description", 2025, null, false, false));
     }
 
     // Create a practice event

@@ -16,4 +16,6 @@ public record EventType(
     String name,
     String description,
     int frcyear,
-    @MappedProperty("strategyarea_id") Long strategyareaId) {}
+    @MappedProperty("strategyarea_id") Long strategyareaId,
+    @MappedProperty("showNote") boolean showNote,
+    @MappedProperty("showQuantity") boolean showQuantity) {}
