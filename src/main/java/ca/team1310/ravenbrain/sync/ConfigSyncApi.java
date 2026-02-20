@@ -17,7 +17,7 @@ public class ConfigSyncApi {
   }
 
   @Post
-  @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
+  @Secured({"ROLE_SUPERUSER"})
   public SyncResult sync(@Body SyncRequest request) {
     return configSyncService.syncFromSource(request);
   }
