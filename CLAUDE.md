@@ -50,6 +50,7 @@ Requires Java 25 (configured in `.sdkmanrc` and `build.gradle`). Use SDKMAN to i
 - `schedule` - Match schedule management
 - `sequencetype` - Event sequence definitions for timed event analysis
 - `strategyarea` - Strategy areas configuration
+- `sync` - Config sync from source RavenBrain instance (`POST /api/config-sync`)
 - `tournament` - Tournament management
 
 ### Key Patterns
@@ -157,3 +158,15 @@ The server is designed for bulk synchronization rather than chatty protocols (du
 - `/api/validate` - Basic auth to JWT exchange
 - `/api/event` - Batch event submission
 - `/api/tournament`, `/api/schedule`, `/api/quickcomment`, `/api/report/*` - CRUD and reporting endpoints
+
+### Config Sync (Source → Target)
+
+Syncs config data from a source RavenBrain instance to the local (target) instance for developer setup.
+
+- **Endpoint**: `POST /api/config-sync` (ROLE_SUPERUSER only)
+- **Request body**: `{ "sourceUrl": "http://source:8888", "sourceUser": "...", "sourcePassword": "..." }`
+- **What it does**: Authenticates to the source server, fetches config via its existing GET endpoints, then truncates all target tables (including scouting events/comments) and repopulates config data with preserved IDs
+- **Tables synced**: `RB_STRATEGYAREA`, `RB_EVENTTYPE`, `RB_SEQUENCETYPE`, `RB_SEQUENCEEVENT`, `RB_TOURNAMENT`, `RB_SCHEDULE`
+- **Tables truncated only**: `RB_EVENT`, `RB_COMMENT`
+- **Package**: `ca.team1310.ravenbrain.sync`
+- **Uses raw JDBC** for bulk writes with explicit IDs (necessary to preserve FK integrity from the source)
