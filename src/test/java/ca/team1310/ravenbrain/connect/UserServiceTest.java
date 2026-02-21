@@ -21,6 +21,7 @@ class UserServiceTest {
   @Mock UserRepository userRepository;
   @Mock EventLogRepository eventLogRepository;
   @Mock QuickCommentService quickCommentService;
+  @Mock RefreshTokenRepository refreshTokenRepository;
 
   UserService userService;
 
@@ -30,7 +31,9 @@ class UserServiceTest {
   void setUp() {
     Config.Security security = new Config.Security(SEED, "superpass", "regsecret");
     Config config = new Config("1310", security);
-    userService = new UserService(userRepository, eventLogRepository, quickCommentService, config);
+    userService =
+        new UserService(
+            userRepository, eventLogRepository, quickCommentService, refreshTokenRepository, config);
   }
 
   private Authentication authWith(String name, String... roles) {

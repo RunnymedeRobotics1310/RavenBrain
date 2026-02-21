@@ -6,6 +6,7 @@ import io.micronaut.http.MediaType;
 import io.micronaut.http.MutableHttpResponse;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
+import io.micronaut.http.annotation.Post;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.authentication.Authentication;
@@ -19,6 +20,12 @@ import java.util.Map;
  */
 @Controller("/api")
 public class EstablishConnection {
+
+  private final RefreshTokenRepository refreshTokenRepository;
+
+  public EstablishConnection(RefreshTokenRepository refreshTokenRepository) {
+    this.refreshTokenRepository = refreshTokenRepository;
+  }
 
   @Get("/ping")
   @Produces(MediaType.TEXT_PLAIN)
@@ -36,5 +43,12 @@ public class EstablishConnection {
     var map = new LinkedHashMap<String, String>();
     map.put("status", "ok");
     return map;
+  }
+
+  @Post("/logout")
+  @Secured(SecurityRule.IS_AUTHENTICATED)
+  public HttpResponse<?> logout(Authentication authentication) {
+    refreshTokenRepository.updateByUsername(authentication.getName(), true);
+    return HttpResponse.ok();
   }
 }

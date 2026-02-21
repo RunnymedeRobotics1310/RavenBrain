@@ -11,7 +11,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Singleton
@@ -20,6 +22,7 @@ public class UserService {
   private final UserRepository userRepository;
   private final EventLogRepository eventLogRepository;
   private final QuickCommentService quickCommentService;
+  private final RefreshTokenRepository refreshTokenRepository;
   private final Config config;
   private final String seed;
 
@@ -27,10 +30,12 @@ public class UserService {
       UserRepository userRepository,
       EventLogRepository eventLogRepository,
       QuickCommentService quickCommentService,
+      RefreshTokenRepository refreshTokenRepository,
       Config config) {
     this.userRepository = userRepository;
     this.eventLogRepository = eventLogRepository;
     this.quickCommentService = quickCommentService;
+    this.refreshTokenRepository = refreshTokenRepository;
     this.config = config;
     this.seed = config.encryptionSeed();
   }
@@ -126,7 +131,11 @@ public class UserService {
             passwordChanging ? false : existing.forgotPassword(),
             existing.roles());
 
-    return userRepository.update(userToSave);
+    User saved = userRepository.update(userToSave);
+    if (passwordChanging) {
+      refreshTokenRepository.updateByUsername(existing.login(), true);
+    }
+    return saved;
   }
 
   public User createUser(User user, Authentication caller) {
@@ -231,7 +240,12 @@ public class UserService {
             forgotPassword,
             user.roles());
 
-    return userRepository.update(userToUpdate);
+    User saved = userRepository.update(userToUpdate);
+    boolean disabling = !user.enabled() && existingUser.enabled();
+    if (passwordChanging || disabling) {
+      refreshTokenRepository.updateByUsername(existingUser.login(), true);
+    }
+    return saved;
   }
 
   public void deleteUser(long id, Authentication caller) {
@@ -267,6 +281,14 @@ public class UserService {
     } catch (NoSuchAlgorithmException e) {
       throw new RuntimeException("Error hashing password", e);
     }
+  }
+
+  Map<String, Object> buildClaims(User user) {
+    Map<String, Object> claims = new LinkedHashMap<>();
+    claims.put("userid", user.id());
+    claims.put("login", user.login());
+    claims.put("displayName", user.displayName());
+    return claims;
   }
 
   User redactPassword(User userToRedact) {
