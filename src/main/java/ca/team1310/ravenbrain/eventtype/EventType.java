@@ -1,4 +1,4 @@
-chracpackage ca.team1310.ravenbrain.eventtype;
+package ca.team1310.ravenbrain.eventtype;
 
 import io.micronaut.data.annotation.Id;
 import io.micronaut.data.annotation.MappedEntity;
