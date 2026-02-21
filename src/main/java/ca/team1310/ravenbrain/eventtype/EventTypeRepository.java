@@ -15,4 +15,6 @@ public interface EventTypeRepository extends CrudRepository<EventType, String> {
   List<EventType> findAll();
 
   List<EventType> findByFrcyear(int frcyear);
+
+  boolean existsByStrategyareaId(Long strategyareaId);
 }

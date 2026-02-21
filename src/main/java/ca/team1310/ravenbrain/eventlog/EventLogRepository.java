@@ -20,6 +20,8 @@ public interface EventLogRepository extends CrudRepository<EventLogRecord, Long>
 
   boolean existsByUserId(long userId);
 
+  boolean existsByEventType(String eventType);
+
   void deleteByUserId(long userId);
 
   @Query(

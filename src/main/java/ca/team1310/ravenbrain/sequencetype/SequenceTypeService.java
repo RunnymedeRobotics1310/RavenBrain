@@ -1,5 +1,7 @@
 package ca.team1310.ravenbrain.sequencetype;
 
+import io.micronaut.http.HttpStatus;
+import io.micronaut.http.exceptions.HttpStatusException;
 import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
@@ -67,6 +69,9 @@ public class SequenceTypeService {
   }
 
   public void delete(Long id) {
+    if (!sequenceTypeRepository.existsById(id)) {
+      throw new HttpStatusException(HttpStatus.NOT_FOUND, "Sequence type not found");
+    }
     sequenceTypeRepository.deleteById(id);
   }
 }

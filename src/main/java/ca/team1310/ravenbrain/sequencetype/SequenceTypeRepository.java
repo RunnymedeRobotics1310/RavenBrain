@@ -26,4 +26,6 @@ public interface SequenceTypeRepository extends CrudRepository<SequenceType, Lon
   @Join(value = "events", type = Join.Type.LEFT_FETCH)
   @Join(value = "events.eventtype", type = Join.Type.LEFT_FETCH)
   List<SequenceType> findByFrcyear(int frcyear);
+
+  boolean existsByStrategyareaId(Long strategyareaId);
 }

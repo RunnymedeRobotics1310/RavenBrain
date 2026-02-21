@@ -1,5 +1,6 @@
 package ca.team1310.ravenbrain.sequencetype;
 
+import io.micronaut.data.annotation.Query;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
@@ -11,4 +12,7 @@ import io.micronaut.data.repository.CrudRepository;
 @JdbcRepository(dialect = Dialect.MYSQL)
 public interface SequenceEventRepository extends CrudRepository<SequenceEvent, Long> {
   void deleteBySequencetype(SequenceType sequencetype);
+
+  @Query("SELECT COUNT(*) > 0 FROM RB_SEQUENCEEVENT WHERE eventtype_id = :eventtype")
+  boolean existsByEventtypeId(String eventtype);
 }
