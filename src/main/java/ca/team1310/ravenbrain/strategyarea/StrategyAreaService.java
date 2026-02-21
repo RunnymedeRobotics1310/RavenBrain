@@ -1,5 +1,9 @@
 package ca.team1310.ravenbrain.strategyarea;
 
+import ca.team1310.ravenbrain.eventtype.EventTypeRepository;
+import ca.team1310.ravenbrain.sequencetype.SequenceTypeRepository;
+import io.micronaut.http.HttpStatus;
+import io.micronaut.http.exceptions.HttpStatusException;
 import jakarta.inject.Singleton;
 import java.util.List;
 
@@ -11,9 +15,16 @@ import java.util.List;
 public class StrategyAreaService {
 
   private final StrategyAreaRepository strategyAreaRepository;
+  private final EventTypeRepository eventTypeRepository;
+  private final SequenceTypeRepository sequenceTypeRepository;
 
-  public StrategyAreaService(StrategyAreaRepository strategyAreaRepository) {
+  public StrategyAreaService(
+      StrategyAreaRepository strategyAreaRepository,
+      EventTypeRepository eventTypeRepository,
+      SequenceTypeRepository sequenceTypeRepository) {
     this.strategyAreaRepository = strategyAreaRepository;
+    this.eventTypeRepository = eventTypeRepository;
+    this.sequenceTypeRepository = sequenceTypeRepository;
   }
 
   public List<StrategyArea> list() {
@@ -33,6 +44,15 @@ public class StrategyAreaService {
   }
 
   public void delete(long id) {
+    if (!strategyAreaRepository.existsById(id)) {
+      throw new HttpStatusException(HttpStatus.NOT_FOUND, "Strategy area not found");
+    }
+    if (eventTypeRepository.existsByStrategyareaId(id)
+        || sequenceTypeRepository.existsByStrategyareaId(id)) {
+      throw new HttpStatusException(
+          HttpStatus.CONFLICT,
+          "Cannot delete strategy area because it is referenced by event types or sequence types");
+    }
     strategyAreaRepository.deleteById(id);
   }
 }

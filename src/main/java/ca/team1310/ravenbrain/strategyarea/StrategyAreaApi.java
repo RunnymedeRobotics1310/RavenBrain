@@ -44,4 +44,10 @@ public class StrategyAreaApi {
             id, strategyArea.frcyear(), strategyArea.code(), strategyArea.name(), strategyArea.description());
     return strategyAreaService.update(toUpdate);
   }
+
+  @Delete("/{id}")
+  @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public void delete(long id) {
+    strategyAreaService.delete(id);
+  }
 }

@@ -1,5 +1,9 @@
 package ca.team1310.ravenbrain.eventtype;
 
+import ca.team1310.ravenbrain.eventlog.EventLogRepository;
+import ca.team1310.ravenbrain.sequencetype.SequenceEventRepository;
+import io.micronaut.http.HttpStatus;
+import io.micronaut.http.exceptions.HttpStatusException;
 import jakarta.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
@@ -12,9 +16,16 @@ import java.util.Optional;
 public class EventTypeService {
 
   private final EventTypeRepository eventTypeRepository;
+  private final EventLogRepository eventLogRepository;
+  private final SequenceEventRepository sequenceEventRepository;
 
-  public EventTypeService(EventTypeRepository eventTypeRepository) {
+  public EventTypeService(
+      EventTypeRepository eventTypeRepository,
+      EventLogRepository eventLogRepository,
+      SequenceEventRepository sequenceEventRepository) {
     this.eventTypeRepository = eventTypeRepository;
+    this.eventLogRepository = eventLogRepository;
+    this.sequenceEventRepository = sequenceEventRepository;
   }
 
   public List<EventType> list() {
@@ -42,6 +53,15 @@ public class EventTypeService {
   }
 
   public void delete(String eventtype) {
+    if (!eventTypeRepository.existsById(eventtype)) {
+      throw new HttpStatusException(HttpStatus.NOT_FOUND, "Event type not found");
+    }
+    if (eventLogRepository.existsByEventType(eventtype)
+        || sequenceEventRepository.existsByEventtypeId(eventtype)) {
+      throw new HttpStatusException(
+          HttpStatus.CONFLICT,
+          "Cannot delete event type because it is referenced by event logs or sequence types");
+    }
     eventTypeRepository.deleteById(eventtype);
   }
 }
