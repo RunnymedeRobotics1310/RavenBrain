@@ -145,4 +145,6 @@ public class FrcClientService {
     MatchScores2025 parsedResponse = parse(response.body(), MatchScores2025.class);
     return new ServiceResponse<>(response.id(), parsedResponse);
   }
+
+  // todo: Implement get2026Scores in a manner that is consistent with get2025Scores including defining model types
 }
