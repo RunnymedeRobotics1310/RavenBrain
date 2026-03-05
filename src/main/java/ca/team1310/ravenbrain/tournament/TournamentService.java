@@ -18,7 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class TournamentService implements CrudRepository<TournamentRecord, String> {
   public abstract List<TournamentRecord> findAllSortByStartTime();
 
-  @Query("SELECT * FROM RB_TOURNAMENT WHERE starttime > NOW() and endtime < NOW()")
+  @Query("SELECT * FROM RB_TOURNAMENT WHERE starttime < NOW() AND endtime > NOW()")
   public abstract List<TournamentRecord> findCurrentTournaments();
 
   @Query("SELECT season FROM RB_TOURNAMENT WHERE id = :tournamentId")
