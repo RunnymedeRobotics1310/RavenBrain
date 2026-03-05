@@ -18,8 +18,14 @@ import lombok.extern.slf4j.Slf4j;
 public abstract class TournamentService implements CrudRepository<TournamentRecord, String> {
   public abstract List<TournamentRecord> findAllSortByStartTime();
 
-  @Query("SELECT * FROM RB_TOURNAMENT WHERE starttime > NOW() and endtime < NOW()")
-  public abstract List<TournamentRecord> findCurrentTournaments();
+  /**
+   * Find tournaments that are currently active or ended within the last 36 hours. This captures
+   * tournaments still in progress as well as those that recently concluded, allowing background
+   * tasks and schedule syncs to continue processing shortly after the event ends.
+   */
+  @Query(
+      "SELECT * FROM RB_TOURNAMENT WHERE starttime < NOW() AND DATE_ADD(endtime, INTERVAL 36 HOUR) > NOW()")
+  public abstract List<TournamentRecord> findActiveTournaments();
 
   @Query("SELECT season FROM RB_TOURNAMENT WHERE id = :tournamentId")
   public abstract int findYearForTournament(String tournamentId);
