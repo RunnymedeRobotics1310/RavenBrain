@@ -113,7 +113,7 @@ class EventSyncService {
   @Scheduled(fixedDelay = "3m")
   void loadScheduleForCurrentTournament() {
     log.debug("Loading tournament schedule for current tournament");
-    for (TournamentRecord tournamentRecord : tournamentService.findCurrentTournaments()) {
+    for (TournamentRecord tournamentRecord : tournamentService.findActiveTournaments()) {
       _populateScheduleForTournament(tournamentRecord);
     }
   }
