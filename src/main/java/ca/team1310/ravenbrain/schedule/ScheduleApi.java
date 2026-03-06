@@ -41,7 +41,7 @@ public class ScheduleApi {
 
   @Get("/teams-for-tournament/{tournamentId}")
   @Produces(APPLICATION_JSON)
-  @Secured({"ROLE_EXPERTSCOUT"})
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
   public List<Integer> getTeamsForTournament(@QueryValue String tournamentId) {
     var teams = new TreeSet<Integer>();
     for (var s : scheduleService.findAllByTournamentIdOrderByMatch(tournamentId)) {
@@ -57,7 +57,7 @@ public class ScheduleApi {
 
   @Get("/tournament/{tournamentId}/{teamId}")
   @Produces(APPLICATION_JSON)
-  @Secured({"ROLE_EXPERTSCOUT"})
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
   public TournamentReportService.TournamentReportResponse getTournamentReport(
       @QueryValue String tournamentId, @QueryValue int teamId) {
     return tournamentReportService.getTournamentReport(tournamentId, teamId);

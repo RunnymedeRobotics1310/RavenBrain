@@ -55,7 +55,7 @@ public class QuickCommentApi {
 
   @Get
   @Produces(APPLICATION_JSON)
-  @Secured({"ROLE_EXPERTSCOUT"})
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
   public List<QuickComment> getAll() {
     return quickCommentService.findAllOrderByTeamAndTimestamp();
   }

@@ -36,7 +36,7 @@ public class ReportApi {
 
   @Get("/team/{teamId}")
   @Produces(APPLICATION_JSON)
-  @Secured({"ROLE_EXPERTSCOUT"})
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
   public TeamReportResponse getTeamReport(@QueryValue int teamId) {
     try {
       var report = teamReportService.getTeamReport(teamId);
@@ -48,14 +48,14 @@ public class ReportApi {
 
   @Get("/drill-sessions")
   @Produces(APPLICATION_JSON)
-  @Secured({"ROLE_EXPERTSCOUT"})
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
   public List<String> getDrillSessions() {
     return drillReportService.listDrillSessions();
   }
 
   @Get("/drill/{tournamentId}")
   @Produces(APPLICATION_JSON)
-  @Secured({"ROLE_EXPERTSCOUT"})
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
   public DrillReportResponse getDrillReport(
       @PathVariable String tournamentId,
       @QueryValue int team,
