@@ -29,4 +29,8 @@ public interface EventLogRepository extends CrudRepository<EventLogRecord, Long>
           + "AND e.tournamentid = t.id"
           + "AND t.season = :year")
   List<EventLogRecord> findForSeason(int team, int year);
+
+  @Query(
+      "SELECT DISTINCT tournamentid FROM RB_EVENT WHERE tournamentid LIKE 'DRILL-%' ORDER BY tournamentid DESC")
+  List<String> findDrillTournamentIds();
 }
