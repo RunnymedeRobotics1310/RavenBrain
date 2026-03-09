@@ -1,6 +1,7 @@
 package ca.team1310.ravenbrain.report.seq;
 
 import ca.team1310.ravenbrain.eventtype.EventType;
+import io.micronaut.serde.annotation.Serdeable;
 import java.time.Instant;
 
 /**
@@ -11,6 +12,7 @@ import java.time.Instant;
  * @author Tony Field
  * @since 2026-01-08 06:50
  */
+@Serdeable
 public record TimedSequenceEvent(
     EventType eventtype,
     Instant timestamp,

@@ -47,6 +47,10 @@ public class EventLogService {
         .toList();
   }
 
+  public List<String> listDrillTournamentIds() {
+    return eventLogRepository.findDrillTournamentIds();
+  }
+
   public EventLogRecord save(EventLogRecord record) {
     if (!eventTypeRepository.existsById(record.eventType())) {
       throw new IllegalArgumentException("Invalid event type: " + record.eventType());
