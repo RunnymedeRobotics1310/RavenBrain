@@ -72,6 +72,34 @@ class EventSyncService {
     ServiceResponse<EventResponse> resp =
         frcClientService.getEventListingsForTeam(year, teamNumber);
     if (resp == null) return;
+
+    // Determine the team's district from the team's own events
+    String district = null;
+    for (Event event : resp.getResponse().events()) {
+      if (event.districtCode() != null && !event.districtCode().isBlank()) {
+        district = event.districtCode();
+        break;
+      }
+    }
+
+    saveEvents(year, resp);
+
+    // Also load all events in the team's district
+    if (district != null) {
+      try {
+        DistrictCode districtCode = DistrictCode.valueOf(district);
+        ServiceResponse<EventResponse> districtResp =
+            frcClientService.getEventListingsForDistrict(year, districtCode);
+        if (districtResp != null) {
+          saveEvents(year, districtResp);
+        }
+      } catch (IllegalArgumentException e) {
+        log.warn("Unknown district code: {}", district);
+      }
+    }
+  }
+
+  private void saveEvents(int year, ServiceResponse<EventResponse> resp) {
     for (Event event : resp.getResponse().events()) {
       Instant start = event.dateStart().atZone(ZoneId.of("America/New_York")).toInstant();
       Instant end = event.dateEnd().atZone(ZoneId.of("America/New_York")).toInstant();
