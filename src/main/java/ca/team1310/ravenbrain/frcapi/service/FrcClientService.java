@@ -105,6 +105,31 @@ public class FrcClientService {
     return new ServiceResponse<>(response.id(), parsedResponse);
   }
 
+  /**
+   * Read the district code for a team from the cached FRC response, without requiring the response
+   * to be unprocessed. Returns null if no cached data exists or no district is found.
+   */
+  public @Nullable String peekDistrictForTeam(int season, int teamNumber) {
+    String uri = season + "/events?teamNumber=" + teamNumber;
+    FrcRawResponse response = client.fetch(uri);
+    if (response == null || response.body() == null || response.body().isBlank()) {
+      return null;
+    }
+    try {
+      EventResponse eventResponse = parse(response.body(), EventResponse.class);
+      if (eventResponse != null && eventResponse.events() != null) {
+        for (Event event : eventResponse.events()) {
+          if (event.districtCode() != null && !event.districtCode().isBlank()) {
+            return event.districtCode();
+          }
+        }
+      }
+    } catch (Exception e) {
+      log.warn("Failed to peek district for team {} season {}: {}", teamNumber, season, e.getMessage());
+    }
+    return null;
+  }
+
   public ServiceResponse<EventResponse> getEventListingsForDistrict(
       int season, DistrictCode districtCode) {
     FrcRawResponse response = fetchWork(season + "/events?districtCode=" + districtCode.name());

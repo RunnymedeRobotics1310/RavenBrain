@@ -69,20 +69,25 @@ class EventSyncService {
 
   private void loadTournamentsForYear(int year) {
     log.debug("Loading tournaments for year {}", year);
+
+    // Load team events (may return null if already cached and processed)
+    String district = null;
     ServiceResponse<EventResponse> resp =
         frcClientService.getEventListingsForTeam(year, teamNumber);
-    if (resp == null) return;
-
-    // Determine the team's district from the team's own events
-    String district = null;
-    for (Event event : resp.getResponse().events()) {
-      if (event.districtCode() != null && !event.districtCode().isBlank()) {
-        district = event.districtCode();
-        break;
+    if (resp != null) {
+      for (Event event : resp.getResponse().events()) {
+        if (event.districtCode() != null && !event.districtCode().isBlank()) {
+          district = event.districtCode();
+          break;
+        }
       }
+      saveEvents(year, resp);
     }
 
-    saveEvents(year, resp);
+    // If team events were already processed, detect the district from the cached response
+    if (district == null) {
+      district = frcClientService.peekDistrictForTeam(year, teamNumber);
+    }
 
     // Also load all events in the team's district
     if (district != null) {
