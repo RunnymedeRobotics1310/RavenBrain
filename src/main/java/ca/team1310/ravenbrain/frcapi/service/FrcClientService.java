@@ -130,6 +130,38 @@ public class FrcClientService {
     return null;
   }
 
+  public ServiceResponse<EventResponse> getEventListings(int season) {
+    FrcRawResponse response = fetchWork(season + "/events");
+    if (response == null) return null;
+    EventResponse parsedResponse = parse(response.body(), EventResponse.class);
+    return new ServiceResponse<>(response.id(), parsedResponse);
+  }
+
+  /**
+   * Read event codes for a team from the cached FRC response, without requiring the response to be
+   * unprocessed. Returns null if no cached data exists.
+   */
+  public @Nullable java.util.List<String> peekTeamEventCodes(int season, int teamNumber) {
+    String uri = season + "/events?teamNumber=" + teamNumber;
+    FrcRawResponse response = client.fetch(uri);
+    if (response == null || response.body() == null || response.body().isBlank()) {
+      return null;
+    }
+    try {
+      EventResponse eventResponse = parse(response.body(), EventResponse.class);
+      if (eventResponse != null && eventResponse.events() != null) {
+        return eventResponse.events().stream().map(Event::code).toList();
+      }
+    } catch (Exception e) {
+      log.warn(
+          "Failed to peek event codes for team {} season {}: {}",
+          teamNumber,
+          season,
+          e.getMessage());
+    }
+    return null;
+  }
+
   public ServiceResponse<EventResponse> getEventListingsForDistrict(
       int season, DistrictCode districtCode) {
     FrcRawResponse response = fetchWork(season + "/events?districtCode=" + districtCode.name());

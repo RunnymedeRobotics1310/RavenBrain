@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.time.Year;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -48,9 +49,17 @@ class EventSyncService {
 
   /** Force an immediate synchronization of all tournament and schedule data from the FRC API. */
   void forceSync() {
-    log.info("Starting to sync everything");
+    long start = System.currentTimeMillis();
+    log.info("Force sync: starting");
     loadTournaments();
-    loadAllCurrentTournamentSchedules();
+    int year = Year.now(ZoneOffset.UTC).getValue();
+    log.info(
+        "Force sync: tournaments loaded in {}s, now loading all schedules for season {}",
+        (System.currentTimeMillis() - start) / 1000,
+        year);
+    loadAllSchedulesForSeason(year);
+    log.info(
+        "Force sync: complete in {}s", (System.currentTimeMillis() - start) / 1000);
   }
 
   /**
@@ -63,44 +72,31 @@ class EventSyncService {
   void loadTournaments() {
     int year = Year.now(ZoneOffset.UTC).getValue();
     while (year >= 2020) { // api versions before 2020 not supported
+      log.info("Loading tournaments for year {}", year);
       loadTournamentsForYear(year--);
     }
   }
 
   private void loadTournamentsForYear(int year) {
-    log.debug("Loading tournaments for year {}", year);
-
-    // Load team events (may return null if already cached and processed)
-    String district = null;
-    ServiceResponse<EventResponse> resp =
+    // Load team events — needed to identify team tournaments for scoped schedule sync
+    ServiceResponse<EventResponse> teamResp =
         frcClientService.getEventListingsForTeam(year, teamNumber);
-    if (resp != null) {
-      for (Event event : resp.getResponse().events()) {
-        if (event.districtCode() != null && !event.districtCode().isBlank()) {
-          district = event.districtCode();
-          break;
-        }
-      }
-      saveEvents(year, resp);
+    if (teamResp != null) {
+      log.info(
+          "Year {}: saving {} team events",
+          year,
+          teamResp.getResponse().events().size());
+      saveEvents(year, teamResp);
     }
 
-    // If team events were already processed, detect the district from the cached response
-    if (district == null) {
-      district = frcClientService.peekDistrictForTeam(year, teamNumber);
-    }
-
-    // Also load all events in the team's district
-    if (district != null) {
-      try {
-        DistrictCode districtCode = DistrictCode.valueOf(district);
-        ServiceResponse<EventResponse> districtResp =
-            frcClientService.getEventListingsForDistrict(year, districtCode);
-        if (districtResp != null) {
-          saveEvents(year, districtResp);
-        }
-      } catch (IllegalArgumentException e) {
-        log.warn("Unknown district code: {}", district);
-      }
+    // Load ALL events globally for the season
+    ServiceResponse<EventResponse> allResp = frcClientService.getEventListings(year);
+    if (allResp != null) {
+      log.info(
+          "Year {}: saving {} global events",
+          year,
+          allResp.getResponse().events().size());
+      saveEvents(year, allResp);
     }
   }
 
@@ -126,20 +122,48 @@ class EventSyncService {
   }
 
   /**
-   * Load tournament schedules for all tournaments this year and last year. This method is called
-   * once a week (usually), but it can be forced when necessary.
+   * Load tournament schedules for the team's tournaments this year and last year. Scoped to team
+   * 1310's events only (identified via cached FRC team events response).
    */
   @Scheduled(cron = "0 23 * * 1")
   //  @Scheduled(fixedDelay = "1m")
   void loadAllCurrentTournamentSchedules() {
-    log.debug("Loading all tournament schedules for this year and last year");
+    log.debug("Loading team tournament schedules for this year and last year");
     int thisYear = Year.now(ZoneOffset.UTC).getValue();
     int lastYear = thisYear - 1;
+    var thisYearCodes = frcClientService.peekTeamEventCodes(thisYear, teamNumber);
+    var lastYearCodes = frcClientService.peekTeamEventCodes(lastYear, teamNumber);
     for (TournamentRecord tournamentRecord : tournamentService.findAll()) {
-      if (tournamentRecord.season() == thisYear || tournamentRecord.season() == lastYear) {
+      if (tournamentRecord.season() == thisYear
+          && thisYearCodes != null
+          && thisYearCodes.contains(tournamentRecord.code())) {
+        _populateScheduleForTournament(tournamentRecord);
+      } else if (tournamentRecord.season() == lastYear
+          && lastYearCodes != null
+          && lastYearCodes.contains(tournamentRecord.code())) {
         _populateScheduleForTournament(tournamentRecord);
       }
     }
+  }
+
+  /** Load schedules for every tournament in the given season. Used by force sync. */
+  void loadAllSchedulesForSeason(int year) {
+    List<TournamentRecord> seasonTournaments =
+        tournamentService.findAll().stream()
+            .filter(t -> t.season() == year)
+            .toList();
+    log.info(
+        "Loading schedules for all {} tournaments in season {}", seasonTournaments.size(), year);
+    int count = 0;
+    for (TournamentRecord tournamentRecord : seasonTournaments) {
+      _populateScheduleForTournament(tournamentRecord);
+      count++;
+      if (count % 25 == 0) {
+        log.info(
+            "Schedule sync progress: {}/{} tournaments processed", count, seasonTournaments.size());
+      }
+    }
+    log.info("Schedule sync complete: {}/{} tournaments processed", count, seasonTournaments.size());
   }
 
   /** Every five minutes, load the tournament schedule for the current tournament. */
