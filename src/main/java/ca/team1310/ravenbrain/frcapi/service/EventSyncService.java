@@ -175,6 +175,23 @@ class EventSyncService {
     }
   }
 
+  /**
+   * Fetch and persist the schedule for a single tournament on demand. Uses the caching client, so
+   * repeated calls within the TTL window will not hit the FRC API again.
+   *
+   * @return true if the tournament was found and schedule fetch was attempted
+   */
+  boolean fetchScheduleForTournament(String tournamentId) {
+    var opt = tournamentService.findById(tournamentId);
+    if (opt.isEmpty()) {
+      log.warn("On-demand schedule fetch: tournament {} not found", tournamentId);
+      return false;
+    }
+    log.info("On-demand schedule fetch for tournament {}", tournamentId);
+    _populateScheduleForTournament(opt.get());
+    return true;
+  }
+
   private void _populateScheduleForTournament(TournamentRecord tournamentRecord) {
     for (var level : TournamentLevel.values()) {
       if (level == TournamentLevel.None) continue;

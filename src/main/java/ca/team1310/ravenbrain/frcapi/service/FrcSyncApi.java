@@ -1,6 +1,8 @@
 package ca.team1310.ravenbrain.frcapi.service;
 
+import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Controller;
+import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Post;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
@@ -32,5 +34,15 @@ public class FrcSyncApi {
   @Secured({"ROLE_SUPERUSER"})
   public void forceSync() {
     eventSyncService.forceSync();
+  }
+
+  /**
+   * Fetch schedule data for a single tournament from the FRC API. Uses the caching client so
+   * repeated calls within the TTL window will not re-fetch from FRC.
+   */
+  @Post("/schedule/{tournamentId}")
+  public HttpResponse<Void> fetchSchedule(@PathVariable String tournamentId) {
+    boolean found = eventSyncService.fetchScheduleForTournament(tournamentId);
+    return found ? HttpResponse.ok() : HttpResponse.notFound();
   }
 }
