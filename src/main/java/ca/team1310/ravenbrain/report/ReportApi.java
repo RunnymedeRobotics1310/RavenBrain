@@ -2,8 +2,11 @@ package ca.team1310.ravenbrain.report;
 
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
+import ca.team1310.ravenbrain.eventlog.EventLogService;
 import ca.team1310.ravenbrain.report.drill.DrillReportService;
 import ca.team1310.ravenbrain.report.seq.SequenceReport;
+import ca.team1310.ravenbrain.report.seq.SequenceReportService;
+import ca.team1310.ravenbrain.report.seq.TournamentSequenceReport;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.PathVariable;
@@ -21,10 +24,18 @@ import java.util.List;
 public class ReportApi {
   private final TeamReportService teamReportService;
   private final DrillReportService drillReportService;
+  private final SequenceReportService sequenceReportService;
+  private final EventLogService eventLogService;
 
-  public ReportApi(TeamReportService teamReportService, DrillReportService drillReportService) {
+  public ReportApi(
+      TeamReportService teamReportService,
+      DrillReportService drillReportService,
+      SequenceReportService sequenceReportService,
+      EventLogService eventLogService) {
     this.teamReportService = teamReportService;
     this.drillReportService = drillReportService;
+    this.sequenceReportService = sequenceReportService;
+    this.eventLogService = eventLogService;
   }
 
   @Serdeable
@@ -33,6 +44,10 @@ public class ReportApi {
 
   @Serdeable
   public record DrillReportResponse(SequenceReport report, boolean success, String reason) {}
+
+  @Serdeable
+  public record TournamentSequenceReportResponse(
+      TournamentSequenceReport report, boolean success, String reason) {}
 
   @Get("/team/{teamId}")
   @Produces(APPLICATION_JSON)
@@ -59,12 +74,48 @@ public class ReportApi {
   public DrillReportResponse getDrillReport(
       @PathVariable String tournamentId,
       @QueryValue int team,
-      @QueryValue int year) {
+      @QueryValue int year,
+      @QueryValue(defaultValue = "0") long sequenceTypeId) {
     try {
-      var report = drillReportService.getDrillReport(team, tournamentId, year);
+      var report =
+          sequenceTypeId > 0
+              ? drillReportService.getDrillReport(team, tournamentId, year, sequenceTypeId)
+              : drillReportService.getDrillReport(team, tournamentId, year);
       return new DrillReportResponse(report, true, null);
     } catch (Exception e) {
       return new DrillReportResponse(null, false, e.getMessage());
+    }
+  }
+
+  @Get("/sequence/teams")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public List<Integer> getSequenceTeams() {
+    return eventLogService.listDistinctTeamNumbers();
+  }
+
+  @Get("/sequence/tournaments")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public List<String> getSequenceTournaments(@QueryValue int team) {
+    return eventLogService.listDistinctTournamentIdsByTeamNumber(team);
+  }
+
+  @Get("/sequence/tournament/{tournamentId}")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public TournamentSequenceReportResponse getTournamentSequenceReport(
+      @PathVariable String tournamentId,
+      @QueryValue int team,
+      @QueryValue int year,
+      @QueryValue long sequenceTypeId) {
+    try {
+      var report =
+          sequenceReportService.getTournamentSequenceReport(
+              team, tournamentId, year, sequenceTypeId);
+      return new TournamentSequenceReportResponse(report, true, null);
+    } catch (Exception e) {
+      return new TournamentSequenceReportResponse(null, false, e.getMessage());
     }
   }
 }

@@ -54,14 +54,57 @@ public class SequenceReportService {
   }
 
   public SequenceReport generateReport(int year, List<EventLogRecord> records) {
-    if (records.isEmpty()) {
-      return emptyReport();
-    }
-
     List<SequenceType> types =
         sequenceTypeService.findByFrcyear(year).stream().filter(s -> !s.disabled()).toList();
+    return generateReportInternal(records, types);
+  }
 
-    if (types.isEmpty()) {
+  public SequenceReport generateReport(
+      int year, List<EventLogRecord> records, long sequenceTypeId) {
+    List<SequenceType> types =
+        sequenceTypeService.findByFrcyear(year).stream()
+            .filter(s -> !s.disabled() && s.id() == sequenceTypeId)
+            .toList();
+    return generateReportInternal(records, types);
+  }
+
+  public TournamentSequenceReport getTournamentSequenceReport(
+      int teamId, String tournamentId, int year, long sequenceTypeId) {
+    var records =
+        eventLogService.listEventsForTournament(
+            teamId, tournamentId, List.of(TournamentLevel.Qualification, TournamentLevel.Playoff));
+    if (records.isEmpty()) {
+      return new TournamentSequenceReport(emptyReport(), List.of());
+    }
+
+    // Aggregate report across all events
+    SequenceReport aggregate = generateReport(year, records, sequenceTypeId);
+
+    // Group events by matchId, generate per-match report for each
+    Map<Integer, List<EventLogRecord>> byMatch = new HashMap<>();
+    Map<Integer, TournamentLevel> matchLevels = new HashMap<>();
+    for (EventLogRecord r : records) {
+      byMatch.computeIfAbsent(r.matchId(), k -> new ArrayList<>()).add(r);
+      matchLevels.putIfAbsent(r.matchId(), r.level());
+    }
+
+    List<MatchSequenceReport> matchReports =
+        byMatch.entrySet().stream()
+            .sorted(Map.Entry.comparingByKey())
+            .map(
+                e ->
+                    new MatchSequenceReport(
+                        e.getKey(),
+                        matchLevels.get(e.getKey()),
+                        generateReport(year, e.getValue(), sequenceTypeId)))
+            .toList();
+
+    return new TournamentSequenceReport(aggregate, matchReports);
+  }
+
+  private SequenceReport generateReportInternal(
+      List<EventLogRecord> records, List<SequenceType> types) {
+    if (records.isEmpty() || types.isEmpty()) {
       return emptyReport();
     }
 

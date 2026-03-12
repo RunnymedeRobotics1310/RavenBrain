@@ -31,4 +31,12 @@ public class DrillReportService {
         eventLogService.listEventsForTournament(teamId, tournamentId, List.of(TournamentLevel.Practice));
     return sequenceReportService.generateReport(frcYear, records);
   }
+
+  public SequenceReport getDrillReport(
+      int teamId, String tournamentId, int frcYear, long sequenceTypeId) {
+    var records =
+        eventLogService.listEventsForTournament(
+            teamId, tournamentId, List.of(TournamentLevel.Practice));
+    return sequenceReportService.generateReport(frcYear, records, sequenceTypeId);
+  }
 }
