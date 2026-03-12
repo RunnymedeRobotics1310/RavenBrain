@@ -117,6 +117,8 @@ public class ConfigSyncServiceTest {
         .thenReturn(tournamentsJson);
     when(remoteClient.fetchJson(anyString(), eq("mock-jwt-token"), eq("/api/schedule/2026onham")))
         .thenReturn(schedulesJson);
+    when(remoteClient.fetchJson(anyString(), eq("mock-jwt-token"), eq("/api/tournament/team-ids")))
+        .thenReturn("[\"2026onham\"]");
 
     // Execute sync
     SyncRequest request = new SyncRequest("http://source:8888", "user", "pass");
@@ -129,6 +131,7 @@ public class ConfigSyncServiceTest {
     assertEquals(2, result.sequenceEvents());
     assertEquals(1, result.tournaments());
     assertEquals(2, result.schedules());
+    assertEquals(1, result.teamTournaments());
     assertTrue(result.message().contains("http://source:8888"));
 
     // Verify old data is gone and new data is present

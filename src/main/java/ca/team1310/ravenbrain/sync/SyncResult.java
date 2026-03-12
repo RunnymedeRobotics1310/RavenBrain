@@ -10,4 +10,5 @@ public record SyncResult(
     int sequenceEvents,
     int tournaments,
     int schedules,
+    int teamTournaments,
     String message) {}

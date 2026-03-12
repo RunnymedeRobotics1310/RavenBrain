@@ -27,6 +27,14 @@ public abstract class TournamentService implements CrudRepository<TournamentReco
       "SELECT * FROM RB_TOURNAMENT WHERE starttime < NOW() AND DATE_ADD(endtime, INTERVAL 36 HOUR) > NOW()")
   public abstract List<TournamentRecord> findActiveTournaments();
 
+  /**
+   * Find tournaments starting within 24 hours or that ended within the last 36 hours. This
+   * captures upcoming, in-progress, and recently concluded tournaments for display purposes.
+   */
+  @Query(
+      "SELECT * FROM RB_TOURNAMENT WHERE DATE_SUB(starttime, INTERVAL 24 HOUR) < NOW() AND DATE_ADD(endtime, INTERVAL 36 HOUR) > NOW()")
+  public abstract List<TournamentRecord> findUpcomingAndActiveTournaments();
+
   @Query("SELECT season FROM RB_TOURNAMENT WHERE id = :tournamentId")
   public abstract int findYearForTournament(String tournamentId);
 }

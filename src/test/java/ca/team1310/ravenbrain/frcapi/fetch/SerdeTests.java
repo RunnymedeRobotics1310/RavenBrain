@@ -31,6 +31,7 @@ public class SerdeTests {
         "{\"allianceCount\":\"TwoAlliance\",\"weekNumber\":6,\"announcements\":[],\"code\":\"ONCMP\",\"divisionCode\":null,\"name\":\"FIRST Ontario Provincial Championship\",\"type\":\"DistrictChampionshipWithLevels\",\"districtCode\":\"ONT\",\"venue\":\"The International Centre\",\"city\":\"Mississauga\",\"stateprov\":\"ON\",\"country\":\"Canada\",\"dateStart\":\"2025-04-02T00:00:00\",\"dateEnd\":\"2025-04-05T23:59:59\",\"address\":\"6900 Airport Rd\",\"website\":\"https://firstroboticscanada.org/frc/championship/\",\"webcasts\":[],\"timezone\":\"Eastern Standard Time\"}";
     var resp = mapper.readValue(json, Event.class);
     assertNotNull(resp);
+    assertEquals(6, resp.weekNumber(), "weekNumber should be deserialized from JSON");
   }
 
   @Test
@@ -43,6 +44,8 @@ public class SerdeTests {
     assertNotNull(resp.events());
     assertEquals(6, resp.events().size());
     assertEquals("ONCMP", resp.events().get(0).code());
+    assertEquals(6, resp.events().get(0).weekNumber(), "weekNumber should be 6 for ONCMP");
+    assertEquals(2, resp.events().get(3).weekNumber(), "weekNumber should be 2 for ONSCA");
   }
 
   @Test

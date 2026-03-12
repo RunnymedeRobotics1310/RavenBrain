@@ -2,6 +2,7 @@ package ca.team1310.ravenbrain.sync;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micronaut.context.annotation.Property;
 import jakarta.inject.Singleton;
 import jakarta.transaction.Transactional;
 import java.sql.Connection;
@@ -21,10 +22,15 @@ public class ConfigSyncService {
 
   private final RemoteRavenBrainClient remoteClient;
   private final DataSource dataSource;
+  private final int teamNumber;
 
-  ConfigSyncService(RemoteRavenBrainClient remoteClient, DataSource dataSource) {
+  ConfigSyncService(
+      RemoteRavenBrainClient remoteClient,
+      DataSource dataSource,
+      @Property(name = "raven-eye.team") int teamNumber) {
     this.remoteClient = remoteClient;
     this.dataSource = dataSource;
+    this.teamNumber = teamNumber;
   }
 
   @Transactional
@@ -40,12 +46,14 @@ public class ConfigSyncService {
     String eventTypesJson = remoteClient.fetchJson(baseUrl, token, "/api/event-types");
     String sequenceTypesJson = remoteClient.fetchJson(baseUrl, token, "/api/sequence-types");
     String tournamentsJson = remoteClient.fetchJson(baseUrl, token, "/api/tournament");
+    String teamTournamentIdsJson = remoteClient.fetchJson(baseUrl, token, "/api/tournament/team-ids");
 
     try {
       JsonNode strategyAreas = objectMapper.readTree(strategyAreasJson);
       JsonNode eventTypes = objectMapper.readTree(eventTypesJson);
       JsonNode sequenceTypes = objectMapper.readTree(sequenceTypesJson);
       JsonNode tournaments = objectMapper.readTree(tournamentsJson);
+      JsonNode teamTournamentIds = objectMapper.readTree(teamTournamentIdsJson);
 
       // Fetch schedules per tournament
       JsonNode[] schedules = new JsonNode[tournaments.size()];
@@ -59,12 +67,12 @@ public class ConfigSyncService {
       // Execute sync within the Micronaut-managed transaction
       try (Connection conn = dataSource.getConnection()) {
         int[] counts =
-            writeData(conn, strategyAreas, eventTypes, sequenceTypes, tournaments, schedules);
+            writeData(conn, strategyAreas, eventTypes, sequenceTypes, tournaments, schedules, teamTournamentIds);
 
         String message = "Sync completed successfully from " + baseUrl;
         log.info(message);
         return new SyncResult(
-            counts[0], counts[1], counts[2], counts[3], counts[4], counts[5], message);
+            counts[0], counts[1], counts[2], counts[3], counts[4], counts[5], counts[6], message);
       }
 
     } catch (RuntimeException e) {
@@ -80,7 +88,8 @@ public class ConfigSyncService {
       JsonNode eventTypes,
       JsonNode sequenceTypes,
       JsonNode tournaments,
-      JsonNode[] schedules)
+      JsonNode[] schedules,
+      JsonNode teamTournamentIds)
       throws Exception {
 
     try (Statement stmt = conn.createStatement()) {
@@ -88,6 +97,7 @@ public class ConfigSyncService {
       stmt.execute("SET FOREIGN_KEY_CHECKS=0");
 
       // Truncate all tables
+      stmt.execute("TRUNCATE TABLE RB_TEAM_TOURNAMENT");
       stmt.execute("TRUNCATE TABLE RB_SEQUENCEEVENT");
       stmt.execute("TRUNCATE TABLE RB_SCHEDULE");
       stmt.execute("TRUNCATE TABLE RB_EVENT");
@@ -116,6 +126,9 @@ public class ConfigSyncService {
         schCount += insertSchedules(conn, schedule);
       }
 
+      // Insert team tournaments
+      int ttCount = insertTeamTournaments(conn, teamTournamentIds);
+
       // Reset auto-increment counters
       resetAutoIncrement(stmt, "RB_STRATEGYAREA");
       resetAutoIncrement(stmt, "RB_SEQUENCETYPE");
@@ -125,7 +138,7 @@ public class ConfigSyncService {
       // Re-enable FK checks
       stmt.execute("SET FOREIGN_KEY_CHECKS=1");
 
-      return new int[] {saCount, etCount, stCount, seCount, tCount, schCount};
+      return new int[] {saCount, etCount, stCount, seCount, tCount, schCount, ttCount};
     }
   }
 
@@ -270,6 +283,23 @@ public class ConfigSyncService {
       }
       ps.executeBatch();
       log.info("Inserted {} schedule entries", count);
+      return count;
+    }
+  }
+
+  private int insertTeamTournaments(Connection conn, JsonNode teamTournamentIds) throws Exception {
+    String sql =
+        "INSERT INTO RB_TEAM_TOURNAMENT (tournament_id, team_number) VALUES (?, ?)";
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+      int count = 0;
+      for (JsonNode id : teamTournamentIds) {
+        ps.setString(1, id.asText());
+        ps.setInt(2, teamNumber);
+        ps.addBatch();
+        count++;
+      }
+      ps.executeBatch();
+      log.info("Inserted {} team tournament entries", count);
       return count;
     }
   }
