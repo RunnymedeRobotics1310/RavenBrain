@@ -4,6 +4,8 @@ import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
 import ca.team1310.ravenbrain.eventlog.EventLogService;
 import ca.team1310.ravenbrain.report.drill.DrillReportService;
+import ca.team1310.ravenbrain.report.mega.MegaReport;
+import ca.team1310.ravenbrain.report.mega.MegaReportService;
 import ca.team1310.ravenbrain.report.seq.SequenceReport;
 import ca.team1310.ravenbrain.report.seq.SequenceReportService;
 import ca.team1310.ravenbrain.report.seq.TournamentSequenceReport;
@@ -26,16 +28,19 @@ public class ReportApi {
   private final DrillReportService drillReportService;
   private final SequenceReportService sequenceReportService;
   private final EventLogService eventLogService;
+  private final MegaReportService megaReportService;
 
   public ReportApi(
       TeamReportService teamReportService,
       DrillReportService drillReportService,
       SequenceReportService sequenceReportService,
-      EventLogService eventLogService) {
+      EventLogService eventLogService,
+      MegaReportService megaReportService) {
     this.teamReportService = teamReportService;
     this.drillReportService = drillReportService;
     this.sequenceReportService = sequenceReportService;
     this.eventLogService = eventLogService;
+    this.megaReportService = megaReportService;
   }
 
   @Serdeable
@@ -48,6 +53,9 @@ public class ReportApi {
   @Serdeable
   public record TournamentSequenceReportResponse(
       TournamentSequenceReport report, boolean success, String reason) {}
+
+  @Serdeable
+  public record MegaReportResponse(MegaReport report, boolean success, String reason) {}
 
   @Get("/team/{teamId}")
   @Produces(APPLICATION_JSON)
@@ -116,6 +124,35 @@ public class ReportApi {
       return new TournamentSequenceReportResponse(report, true, null);
     } catch (Exception e) {
       return new TournamentSequenceReportResponse(null, false, e.getMessage());
+    }
+  }
+
+  @Get("/mega/tournaments")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public List<String> getMegaReportTournaments() {
+    return megaReportService.listTournamentsWithData();
+  }
+
+  @Get("/mega/teams/{tournamentId}")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public List<Integer> getMegaReportTeams(@PathVariable String tournamentId) {
+    return megaReportService.listTeamsForTournament(tournamentId);
+  }
+
+  @Get("/mega/{tournamentId}")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public MegaReportResponse getMegaReport(
+      @PathVariable String tournamentId,
+      @QueryValue int team,
+      @QueryValue int year) {
+    try {
+      var report = megaReportService.generateReport(team, tournamentId, year);
+      return new MegaReportResponse(report, true, null);
+    } catch (Exception e) {
+      return new MegaReportResponse(null, false, e.getMessage());
     }
   }
 }
