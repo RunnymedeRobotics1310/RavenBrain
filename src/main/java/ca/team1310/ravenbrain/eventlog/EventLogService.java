@@ -51,6 +51,14 @@ public class EventLogService {
     return eventLogRepository.findDrillTournamentIds();
   }
 
+  public List<Integer> listDistinctTeamNumbers() {
+    return eventLogRepository.findDistinctTeamNumbers();
+  }
+
+  public List<String> listDistinctTournamentIdsByTeamNumber(int team) {
+    return eventLogRepository.findDistinctTournamentIdsByTeamNumber(team);
+  }
+
   public EventLogRecord save(EventLogRecord record) {
     if (!eventTypeRepository.existsById(record.eventType())) {
       throw new IllegalArgumentException("Invalid event type: " + record.eventType());
