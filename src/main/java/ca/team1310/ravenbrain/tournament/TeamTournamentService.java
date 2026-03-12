@@ -63,4 +63,50 @@ public class TeamTournamentService {
       throw new RuntimeException("Failed to replace team tournaments: " + e.getMessage(), e);
     }
   }
+
+  @Transactional
+  public void replaceTeamsForTournament(String tournamentId, List<Integer> teamNumbers) {
+    try (Connection conn = dataSource.getConnection()) {
+      try (PreparedStatement ps =
+          conn.prepareStatement("DELETE FROM RB_TEAM_TOURNAMENT WHERE tournament_id = ?")) {
+        ps.setString(1, tournamentId);
+        ps.executeUpdate();
+      }
+      if (!teamNumbers.isEmpty()) {
+        try (PreparedStatement ps =
+            conn.prepareStatement(
+                "INSERT INTO RB_TEAM_TOURNAMENT (tournament_id, team_number) VALUES (?, ?)")) {
+          for (int teamNumber : teamNumbers) {
+            ps.setString(1, tournamentId);
+            ps.setInt(2, teamNumber);
+            ps.addBatch();
+          }
+          ps.executeBatch();
+        }
+      }
+      log.info(
+          "Replaced teams for tournament {}: {} teams", tournamentId, teamNumbers.size());
+    } catch (Exception e) {
+      throw new RuntimeException("Failed to replace teams for tournament: " + e.getMessage(), e);
+    }
+  }
+
+  @Transactional
+  public List<Integer> findTeamNumbersForTournament(String tournamentId) {
+    String sql = "SELECT team_number FROM RB_TEAM_TOURNAMENT WHERE tournament_id = ?";
+    List<Integer> teamNumbers = new ArrayList<>();
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setString(1, tournamentId);
+      try (ResultSet rs = ps.executeQuery()) {
+        while (rs.next()) {
+          teamNumbers.add(rs.getInt("team_number"));
+        }
+      }
+    } catch (Exception e) {
+      throw new RuntimeException(
+          "Failed to find teams for tournament: " + e.getMessage(), e);
+    }
+    return teamNumbers;
+  }
 }

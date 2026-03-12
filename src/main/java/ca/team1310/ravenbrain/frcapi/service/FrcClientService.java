@@ -208,5 +208,20 @@ public class FrcClientService {
     return new ServiceResponse<>(response.id(), parsedResponse);
   }
 
+  /**
+   * Fetch the list of teams registered for a specific event.
+   *
+   * @param season the FRC season year
+   * @param eventCode the event code (e.g. "ONHAM")
+   * @return the teams response, or null if no work to do
+   */
+  public ServiceResponse<TeamListingResponse> getTeamListingsForEvent(
+      int season, String eventCode) {
+    FrcRawResponse response = fetchWork(season + "/teams?eventCode=" + eventCode);
+    if (response == null) return null;
+    TeamListingResponse parsedResponse = parse(response.body(), TeamListingResponse.class);
+    return new ServiceResponse<>(response.id(), parsedResponse);
+  }
+
   // todo: Implement get2026Scores in a manner that is consistent with get2025Scores including defining model types
 }
