@@ -18,4 +18,5 @@ public record TournamentRecord(
     @MappedProperty("season") int season,
     @MappedProperty("tournamentname") String name,
     @MappedProperty("starttime") Instant startTime,
-    @MappedProperty("endtime") Instant endTime) {}
+    @MappedProperty("endtime") Instant endTime,
+    @MappedProperty("weeknumber") int weekNumber) {}

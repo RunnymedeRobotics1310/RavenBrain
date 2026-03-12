@@ -44,7 +44,8 @@ public class TournamentApi {
       String code,
       String name,
       LocalDateTime startTime,
-      LocalDateTime endTime) {}
+      LocalDateTime endTime,
+      int weekNumber) {}
 
   @Post
   @Consumes(APPLICATION_JSON)
@@ -57,7 +58,8 @@ public class TournamentApi {
             tournamentRecord.season(),
             tournamentRecord.name(),
             tournamentRecord.startTime().toInstant(ZoneOffset.UTC),
-            tournamentRecord.endTime().toInstant(ZoneOffset.UTC));
+            tournamentRecord.endTime().toInstant(ZoneOffset.UTC),
+            tournamentRecord.weekNumber());
     tournamentService.save(t);
   }
 

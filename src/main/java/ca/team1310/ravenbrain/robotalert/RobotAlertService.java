@@ -19,4 +19,7 @@ public abstract class RobotAlertService implements CrudRepository<RobotAlert, Lo
 
   public abstract List<RobotAlert> findAllByTournamentIdAndTeamNumberOrderByCreatedAtDesc(
       String tournamentId, int teamNumber);
+
+  public abstract List<RobotAlert> findAllByTournamentIdInListOrderByTournamentId(
+      List<String> tournamentIds);
 }

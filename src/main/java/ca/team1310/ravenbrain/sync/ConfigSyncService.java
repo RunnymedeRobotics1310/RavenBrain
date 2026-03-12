@@ -229,7 +229,7 @@ public class ConfigSyncService {
 
   private int insertTournaments(Connection conn, JsonNode tournaments) throws Exception {
     String sql =
-        "INSERT INTO RB_TOURNAMENT (id, code, season, tournamentname, starttime, endtime) VALUES (?,?,?,?,?,?)";
+        "INSERT INTO RB_TOURNAMENT (id, code, season, tournamentname, starttime, endtime, weeknumber) VALUES (?,?,?,?,?,?,?)";
     try (PreparedStatement ps = conn.prepareStatement(sql)) {
       int count = 0;
       for (JsonNode t : tournaments) {
@@ -239,6 +239,7 @@ public class ConfigSyncService {
         ps.setString(4, t.get("name").asText());
         ps.setTimestamp(5, parseTimestamp(t.get("startTime")));
         ps.setTimestamp(6, parseTimestamp(t.get("endTime")));
+        ps.setInt(7, t.has("weekNumber") ? t.get("weekNumber").asInt() : 0);
         ps.addBatch();
         count++;
       }

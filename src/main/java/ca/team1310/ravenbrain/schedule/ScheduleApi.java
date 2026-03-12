@@ -39,6 +39,16 @@ public class ScheduleApi {
     return scheduleService.findAllByTournamentIdOrderByMatch(tournamentId);
   }
 
+  @Post("/bulk")
+  @Consumes(APPLICATION_JSON)
+  @Produces(APPLICATION_JSON)
+  public List<ScheduleRecord> getSchedulesForTournaments(@Body List<String> tournamentIds) {
+    if (tournamentIds == null || tournamentIds.isEmpty()) {
+      return List.of();
+    }
+    return scheduleService.findAllByTournamentIdInListOrderByTournamentId(tournamentIds);
+  }
+
   @Get("/teams-for-tournament/{tournamentId}")
   @Produces(APPLICATION_JSON)
   @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})

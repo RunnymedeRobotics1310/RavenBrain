@@ -140,6 +140,56 @@ public class RobotAlertApiTest {
   }
 
   @Test
+  void testBulkGetAlerts() {
+    String tournament2 = "TEST_ALERT_API_2";
+
+    // Post alerts to two different tournaments in a single request
+    // Use distinct timestamps to avoid the (created_at, user_id) unique constraint
+    Instant now = Instant.now();
+    RobotAlert alert1 =
+        new RobotAlert(null, TOURNAMENT, 1310, memberUserId, now, "Alert in tournament 1");
+    RobotAlert alert2 =
+        new RobotAlert(
+            null, tournament2, 254, memberUserId, now.plusMillis(1), "Alert in tournament 2");
+
+    client
+        .toBlocking()
+        .exchange(
+            HttpRequest.POST("/api/robot-alert", List.of(alert1, alert2))
+                .basicAuth(USER_MEMBER, "password"),
+            Argument.listOf(RobotAlertApi.RobotAlertPostResult.class));
+
+    // Bulk GET both tournaments in one request
+    HttpResponse<List<RobotAlert>> response =
+        client
+            .toBlocking()
+            .exchange(
+                HttpRequest.POST("/api/robot-alert/bulk", List.of(TOURNAMENT, tournament2))
+                    .basicAuth(USER_DATASCOUT, "password"),
+                Argument.listOf(RobotAlert.class));
+
+    assertEquals(HttpStatus.OK, response.getStatus());
+    List<RobotAlert> alerts = response.body();
+    assertNotNull(alerts);
+    assertEquals(2, alerts.size());
+  }
+
+  @Test
+  void testBulkGetEmptyListReturnsEmptyResult() {
+    HttpResponse<List<RobotAlert>> response =
+        client
+            .toBlocking()
+            .exchange(
+                HttpRequest.POST("/api/robot-alert/bulk", List.<String>of())
+                    .basicAuth(USER_MEMBER, "password"),
+                Argument.listOf(RobotAlert.class));
+
+    assertEquals(HttpStatus.OK, response.getStatus());
+    assertNotNull(response.body());
+    assertTrue(response.body().isEmpty());
+  }
+
+  @Test
   void testGetEmptyTournamentReturnsEmptyList() {
     HttpRequest<?> request =
         HttpRequest.GET("/api/robot-alert/NONEXISTENT_TOURN")

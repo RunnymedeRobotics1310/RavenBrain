@@ -73,6 +73,11 @@ public class FrcClientService {
     client.markProcessed(responseId);
   }
 
+  /** Clear the processed flag for all cached responses, forcing re-processing on next sync. */
+  public void clearProcessed() {
+    client.clearProcessed();
+  }
+
   private @Nullable <T> T parse(@NonNull String string, @NonNull Class<T> type)
       throws FrcClientServiceException {
     Objects.requireNonNull(type, "Type cannot be null");
