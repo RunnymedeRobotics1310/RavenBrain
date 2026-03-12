@@ -121,7 +121,13 @@ public class ReportApi {
   @Get("/drill-sessions")
   @Produces(APPLICATION_JSON)
   @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
-  public List<String> getDrillSessions() {
+  public List<String> getDrillSessions(
+      @QueryValue(defaultValue = "0") int team,
+      @QueryValue(defaultValue = "0") int year,
+      @QueryValue(defaultValue = "0") long sequenceTypeId) {
+    if (sequenceTypeId > 0 && team > 0 && year > 0) {
+      return drillReportService.listDrillSessionsWithSequences(team, year, sequenceTypeId);
+    }
     return drillReportService.listDrillSessions();
   }
 

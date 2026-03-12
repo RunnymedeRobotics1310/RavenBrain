@@ -26,6 +26,17 @@ public class DrillReportService {
     return eventLogService.listDrillTournamentIds();
   }
 
+  public List<String> listDrillSessionsWithSequences(int teamId, int frcYear, long sequenceTypeId) {
+    List<String> allSessions = eventLogService.listDrillTournamentIds();
+    return allSessions.stream()
+        .filter(
+            tournamentId -> {
+              var report = getDrillReport(teamId, tournamentId, frcYear, sequenceTypeId);
+              return !report.sequences().isEmpty();
+            })
+        .toList();
+  }
+
   public SequenceReport getDrillReport(int teamId, String tournamentId, int frcYear) {
     var records =
         eventLogService.listEventsForTournament(teamId, tournamentId, List.of(TournamentLevel.Practice));
