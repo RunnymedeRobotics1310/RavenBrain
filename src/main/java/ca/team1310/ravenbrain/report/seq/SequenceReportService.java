@@ -97,6 +97,7 @@ public class SequenceReportService {
                         e.getKey(),
                         matchLevels.get(e.getKey()),
                         generateReport(year, e.getValue(), sequenceTypeId)))
+            .filter(mr -> !mr.report().sequences().isEmpty())
             .toList();
 
     return new TournamentSequenceReport(aggregate, matchReports);
