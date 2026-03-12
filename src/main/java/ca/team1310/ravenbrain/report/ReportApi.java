@@ -99,10 +99,17 @@ public class ReportApi {
   public record ChronoReportResponse(
       List<ChronoReportRow> rows, boolean success, String reason) {}
 
+  @Get("/team/teams")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public List<Integer> getTeamReportTeams() {
+    return eventLogService.listDistinctTeamNumbers();
+  }
+
   @Get("/team/{teamId}")
   @Produces(APPLICATION_JSON)
   @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
-  public TeamReportResponse getTeamReport(@QueryValue int teamId) {
+  public TeamReportResponse getTeamReport(@PathVariable int teamId) {
     try {
       var report = teamReportService.getTeamReport(teamId);
       return new TeamReportResponse(report, true, null);
