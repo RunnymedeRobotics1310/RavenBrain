@@ -4,6 +4,7 @@ import ca.team1310.ravenbrain.frcapi.fetch.FrcClientException;
 import ca.team1310.ravenbrain.frcapi.model.*;
 import ca.team1310.ravenbrain.schedule.ScheduleRecord;
 import ca.team1310.ravenbrain.schedule.ScheduleService;
+import ca.team1310.ravenbrain.tournament.TeamTournamentService;
 import ca.team1310.ravenbrain.tournament.TournamentRecord;
 import ca.team1310.ravenbrain.tournament.TournamentService;
 import io.micronaut.context.annotation.Property;
@@ -15,6 +16,8 @@ import java.time.Instant;
 import java.time.Year;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,16 +36,19 @@ import lombok.extern.slf4j.Slf4j;
 class EventSyncService {
   private final FrcClientService frcClientService;
   private final TournamentService tournamentService;
+  private final TeamTournamentService teamTournamentService;
   private final int teamNumber;
   private final ScheduleService scheduleService;
 
   EventSyncService(
       FrcClientService frcClientService,
       TournamentService tournamentService,
+      TeamTournamentService teamTournamentService,
       @Property(name = "raven-eye.team") int teamNumber,
       ScheduleService scheduleService) {
     this.frcClientService = frcClientService;
     this.tournamentService = tournamentService;
+    this.teamTournamentService = teamTournamentService;
     this.teamNumber = teamNumber;
     this.scheduleService = scheduleService;
   }
@@ -56,7 +62,7 @@ class EventSyncService {
     log.info(
         "Force sync: tournaments loaded in {}s, now loading schedules for active tournaments",
         (System.currentTimeMillis() - start) / 1000);
-    for (TournamentRecord t : tournamentService.findActiveTournaments()) {
+    for (TournamentRecord t : tournamentService.findUpcomingAndActiveTournaments()) {
       try {
         _populateScheduleForTournament(t);
       } catch (FrcClientException e) {
@@ -76,13 +82,29 @@ class EventSyncService {
   //  @Scheduled(fixedDelay = "1m")
   void loadTournaments() {
     int year = Year.now(ZoneOffset.UTC).getValue();
+    List<String> allTeamTournamentIds = new ArrayList<>();
+    boolean gotFreshTeamData = false;
     while (year >= 2020) { // api versions before 2020 not supported
       log.info("Loading tournaments for year {}", year);
-      loadTournamentsForYear(year--);
+      List<String> yearIds = loadTournamentsForYear(year--);
+      if (yearIds != null) {
+        allTeamTournamentIds.addAll(yearIds);
+        gotFreshTeamData = true;
+      }
+    }
+    if (gotFreshTeamData) {
+      teamTournamentService.replaceTeamTournaments(teamNumber, allTeamTournamentIds);
+    } else {
+      log.info("No fresh team event data from FRC API — preserving existing team tournament IDs");
     }
   }
 
-  private void loadTournamentsForYear(int year) {
+  /**
+   * @return list of team tournament IDs if fresh team data was fetched, or null if cached/processed
+   */
+  private List<String> loadTournamentsForYear(int year) {
+    List<String> teamTournamentIds = null;
+
     // Load team events — needed to identify team tournaments for scoped schedule sync
     ServiceResponse<EventResponse> teamResp =
         frcClientService.getEventListingsForTeam(year, teamNumber);
@@ -92,6 +114,10 @@ class EventSyncService {
           year,
           teamResp.getResponse().events().size());
       saveEvents(year, teamResp);
+      teamTournamentIds = new ArrayList<>();
+      for (Event event : teamResp.getResponse().events()) {
+        teamTournamentIds.add(year + event.code());
+      }
     }
 
     // Load ALL events globally for the season
@@ -103,6 +129,8 @@ class EventSyncService {
           allResp.getResponse().events().size());
       saveEvents(year, allResp);
     }
+
+    return teamTournamentIds;
   }
 
   private void saveEvents(int year, ServiceResponse<EventResponse> resp) {
@@ -133,11 +161,11 @@ class EventSyncService {
     frcClientService.markProcessed(resp.getId());
   }
 
-  /** Every three minutes, load the tournament schedule for active tournaments. */
+  /** Every three minutes, load the tournament schedule for upcoming and active tournaments. */
   @Scheduled(fixedDelay = "3m")
   void loadScheduleForCurrentTournament() {
-    log.debug("Loading tournament schedule for current tournament");
-    for (TournamentRecord tournamentRecord : tournamentService.findActiveTournaments()) {
+    log.debug("Loading tournament schedule for upcoming and active tournaments");
+    for (TournamentRecord tournamentRecord : tournamentService.findUpcomingAndActiveTournaments()) {
       try {
         _populateScheduleForTournament(tournamentRecord);
       } catch (FrcClientException e) {
