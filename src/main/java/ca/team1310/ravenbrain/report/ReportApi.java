@@ -2,7 +2,12 @@ package ca.team1310.ravenbrain.report;
 
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
+import ca.team1310.ravenbrain.connect.User;
+import ca.team1310.ravenbrain.connect.UserService;
 import ca.team1310.ravenbrain.eventlog.EventLogService;
+import ca.team1310.ravenbrain.eventtype.EventType;
+import ca.team1310.ravenbrain.eventtype.EventTypeRepository;
+import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import ca.team1310.ravenbrain.report.drill.DrillReportService;
 import ca.team1310.ravenbrain.report.mega.MegaReport;
 import ca.team1310.ravenbrain.report.mega.MegaReportService;
@@ -17,6 +22,8 @@ import io.micronaut.http.annotation.QueryValue;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.serde.annotation.Serdeable;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author Tony Field
@@ -29,18 +36,24 @@ public class ReportApi {
   private final SequenceReportService sequenceReportService;
   private final EventLogService eventLogService;
   private final MegaReportService megaReportService;
+  private final EventTypeRepository eventTypeRepository;
+  private final UserService userService;
 
   public ReportApi(
       TeamReportService teamReportService,
       DrillReportService drillReportService,
       SequenceReportService sequenceReportService,
       EventLogService eventLogService,
-      MegaReportService megaReportService) {
+      MegaReportService megaReportService,
+      EventTypeRepository eventTypeRepository,
+      UserService userService) {
     this.teamReportService = teamReportService;
     this.drillReportService = drillReportService;
     this.sequenceReportService = sequenceReportService;
     this.eventLogService = eventLogService;
     this.megaReportService = megaReportService;
+    this.eventTypeRepository = eventTypeRepository;
+    this.userService = userService;
   }
 
   @Serdeable
@@ -56,6 +69,21 @@ public class ReportApi {
 
   @Serdeable
   public record MegaReportResponse(MegaReport report, boolean success, String reason) {}
+
+  @Serdeable
+  public record ChronoReportRow(
+      String timestamp,
+      String level,
+      int matchId,
+      String eventType,
+      String eventTypeName,
+      double amount,
+      String note,
+      String recorder) {}
+
+  @Serdeable
+  public record ChronoReportResponse(
+      List<ChronoReportRow> rows, boolean success, String reason) {}
 
   @Get("/team/{teamId}")
   @Produces(APPLICATION_JSON)
@@ -153,6 +181,60 @@ public class ReportApi {
       return new MegaReportResponse(report, true, null);
     } catch (Exception e) {
       return new MegaReportResponse(null, false, e.getMessage());
+    }
+  }
+
+  @Get("/chrono/{tournamentId}")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public ChronoReportResponse getChronoReport(
+      @PathVariable String tournamentId,
+      @QueryValue int team,
+      @QueryValue int year) {
+    try {
+      var levels = List.of(TournamentLevel.Qualification, TournamentLevel.Playoff);
+      var records = eventLogService.listEventsForTournament(team, tournamentId, levels);
+
+      Map<String, EventType> eventTypeMap =
+          eventTypeRepository.findByFrcyear(year).stream()
+              .collect(Collectors.toMap(EventType::eventtype, e -> e));
+
+      // Build user lookup for recorder names
+      Map<Long, String> userNameMap =
+          records.stream()
+              .map(r -> r.userId())
+              .distinct()
+              .collect(
+                  Collectors.toMap(
+                      id -> id,
+                      id -> {
+                        try {
+                          return userService.getUser(id).displayName();
+                        } catch (Exception e) {
+                          return "Unknown";
+                        }
+                      }));
+
+      var rows =
+          records.stream()
+              .map(
+                  r -> {
+                    var et = eventTypeMap.get(r.eventType());
+                    return new ChronoReportRow(
+                        r.timestamp().toString(),
+                        r.level().name(),
+                        r.matchId(),
+                        r.eventType(),
+                        et != null ? et.name() : r.eventType(),
+                        r.amount(),
+                        r.note() != null ? r.note() : "",
+                        userNameMap.getOrDefault(r.userId(), "Unknown"));
+                  })
+              .toList();
+
+      return new ChronoReportResponse(rows, true, null);
+    } catch (Exception e) {
+      return new ChronoReportResponse(null, false, e.getMessage());
     }
   }
 }
