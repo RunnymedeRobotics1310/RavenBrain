@@ -52,7 +52,8 @@ public class EventTypeApi {
             eventType.frcyear(),
             eventType.strategyareaId(),
             eventType.showNote(),
-            eventType.showQuantity());
+            eventType.showQuantity(),
+            eventType.disabled());
     return eventTypeService.update(toUpdate);
   }
 

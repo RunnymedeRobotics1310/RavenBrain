@@ -41,11 +41,11 @@ public class SequenceTypeApiTest {
   void setup() {
     if (eventTypeService.findById("test-event-1").isEmpty()) {
       eventTypeService.create(
-          new EventType("test-event-1", "Test Event 1", "Desc 1", 2025, -1L, false, false));
+          new EventType("test-event-1", "Test Event 1", "Desc 1", 2025, -1L, false, false, false));
     }
     if (eventTypeService.findById("test-event-2").isEmpty()) {
       eventTypeService.create(
-          new EventType("test-event-2", "Test Event 2", "Desc 2", 2025, -1L, false, false));
+          new EventType("test-event-2", "Test Event 2", "Desc 2", 2025, -1L, false, false, false));
     }
   }
 

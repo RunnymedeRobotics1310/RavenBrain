@@ -18,4 +18,5 @@ public record EventType(
     int frcyear,
     @MappedProperty("strategyarea_id") Long strategyareaId,
     @MappedProperty("showNote") boolean showNote,
-    @MappedProperty("showQuantity") boolean showQuantity) {}
+    @MappedProperty("showQuantity") boolean showQuantity,
+    boolean disabled) {}

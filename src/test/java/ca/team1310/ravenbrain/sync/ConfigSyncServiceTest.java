@@ -39,9 +39,9 @@ public class ConfigSyncServiceTest {
   @Test
   void testSyncFromSource() throws Exception {
     // Pre-populate "old" data that should be wiped by the sync
-    StrategyArea oldSa = strategyAreaService.create(new StrategyArea(0, 2025, "OLD", "Old Area", "should be wiped"));
+    StrategyArea oldSa = strategyAreaService.create(new StrategyArea(0, 2025, "OLD", "Old Area", "should be wiped", false));
     eventTypeService.create(
-        new EventType("OLD-EVENT", "Old Event", "should be wiped", 2025, oldSa.id(), false, false));
+        new EventType("OLD-EVENT", "Old Event", "should be wiped", 2025, oldSa.id(), false, false, false));
 
     // Verify old data exists
     assertFalse(strategyAreaService.list().isEmpty());
@@ -179,7 +179,7 @@ public class ConfigSyncServiceTest {
 
     // Verify auto-increment is set correctly
     // Creating a new strategy area should get an ID > 20 (max synced ID)
-    StrategyArea newSa = strategyAreaService.create(new StrategyArea(0, 2026, "NEW", "New", "test"));
+    StrategyArea newSa = strategyAreaService.create(new StrategyArea(0, 2026, "NEW", "New", "test", false));
     assertTrue(newSa.id() > 20, "Auto-increment should be reset; got id=" + newSa.id());
   }
 }
