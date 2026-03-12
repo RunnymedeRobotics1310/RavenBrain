@@ -1,5 +1,6 @@
 package ca.team1310.ravenbrain.frcapi.service;
 
+import ca.team1310.ravenbrain.frcapi.fetch.FrcClientException;
 import ca.team1310.ravenbrain.frcapi.model.*;
 import ca.team1310.ravenbrain.schedule.ScheduleRecord;
 import ca.team1310.ravenbrain.schedule.ScheduleService;
@@ -14,7 +15,6 @@ import java.time.Instant;
 import java.time.Year;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -50,14 +50,19 @@ class EventSyncService {
   /** Force an immediate synchronization of all tournament and schedule data from the FRC API. */
   void forceSync() {
     long start = System.currentTimeMillis();
-    log.info("Force sync: starting");
+    log.info("Force sync: starting — clearing processed flags");
+    frcClientService.clearProcessed();
     loadTournaments();
-    int year = Year.now(ZoneOffset.UTC).getValue();
     log.info(
-        "Force sync: tournaments loaded in {}s, now loading all schedules for season {}",
-        (System.currentTimeMillis() - start) / 1000,
-        year);
-    loadAllSchedulesForSeason(year);
+        "Force sync: tournaments loaded in {}s, now loading schedules for active tournaments",
+        (System.currentTimeMillis() - start) / 1000);
+    for (TournamentRecord t : tournamentService.findActiveTournaments()) {
+      try {
+        _populateScheduleForTournament(t);
+      } catch (FrcClientException e) {
+        log.error("Force sync: failed to fetch schedule for {}: {}", t.id(), e.getMessage());
+      }
+    }
     log.info(
         "Force sync: complete in {}s", (System.currentTimeMillis() - start) / 1000);
   }
@@ -105,7 +110,14 @@ class EventSyncService {
       Instant start = event.dateStart().atZone(ZoneId.of("America/New_York")).toInstant();
       Instant end = event.dateEnd().atZone(ZoneId.of("America/New_York")).toInstant();
       TournamentRecord tournamentRecord =
-          new TournamentRecord(year + event.code(), event.code(), year, event.name(), start, end);
+          new TournamentRecord(
+              year + event.code(),
+              event.code(),
+              year,
+              event.name(),
+              start,
+              end,
+              event.weekNumber());
       log.trace("Saving tournament {}", tournamentRecord);
       try {
         tournamentService.save(tournamentRecord);
@@ -121,57 +133,19 @@ class EventSyncService {
     frcClientService.markProcessed(resp.getId());
   }
 
-  /**
-   * Load tournament schedules for the team's tournaments this year and last year. Scoped to team
-   * 1310's events only (identified via cached FRC team events response).
-   */
-  @Scheduled(cron = "0 23 * * 1")
-  //  @Scheduled(fixedDelay = "1m")
-  void loadAllCurrentTournamentSchedules() {
-    log.debug("Loading team tournament schedules for this year and last year");
-    int thisYear = Year.now(ZoneOffset.UTC).getValue();
-    int lastYear = thisYear - 1;
-    var thisYearCodes = frcClientService.peekTeamEventCodes(thisYear, teamNumber);
-    var lastYearCodes = frcClientService.peekTeamEventCodes(lastYear, teamNumber);
-    for (TournamentRecord tournamentRecord : tournamentService.findAll()) {
-      if (tournamentRecord.season() == thisYear
-          && thisYearCodes != null
-          && thisYearCodes.contains(tournamentRecord.code())) {
-        _populateScheduleForTournament(tournamentRecord);
-      } else if (tournamentRecord.season() == lastYear
-          && lastYearCodes != null
-          && lastYearCodes.contains(tournamentRecord.code())) {
-        _populateScheduleForTournament(tournamentRecord);
-      }
-    }
-  }
-
-  /** Load schedules for every tournament in the given season. Used by force sync. */
-  void loadAllSchedulesForSeason(int year) {
-    List<TournamentRecord> seasonTournaments =
-        tournamentService.findAll().stream()
-            .filter(t -> t.season() == year)
-            .toList();
-    log.info(
-        "Loading schedules for all {} tournaments in season {}", seasonTournaments.size(), year);
-    int count = 0;
-    for (TournamentRecord tournamentRecord : seasonTournaments) {
-      _populateScheduleForTournament(tournamentRecord);
-      count++;
-      if (count % 25 == 0) {
-        log.info(
-            "Schedule sync progress: {}/{} tournaments processed", count, seasonTournaments.size());
-      }
-    }
-    log.info("Schedule sync complete: {}/{} tournaments processed", count, seasonTournaments.size());
-  }
-
-  /** Every five minutes, load the tournament schedule for the current tournament. */
+  /** Every three minutes, load the tournament schedule for active tournaments. */
   @Scheduled(fixedDelay = "3m")
   void loadScheduleForCurrentTournament() {
     log.debug("Loading tournament schedule for current tournament");
     for (TournamentRecord tournamentRecord : tournamentService.findActiveTournaments()) {
-      _populateScheduleForTournament(tournamentRecord);
+      try {
+        _populateScheduleForTournament(tournamentRecord);
+      } catch (FrcClientException e) {
+        log.error(
+            "Scheduled sync: failed to fetch schedule for {}: {}",
+            tournamentRecord.id(),
+            e.getMessage());
+      }
     }
   }
 

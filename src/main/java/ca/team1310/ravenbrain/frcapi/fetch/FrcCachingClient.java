@@ -128,8 +128,8 @@ public class FrcCachingClient {
     }
   }
 
-  /** Clear the processed flag for all items. For test use only. */
-  void clearProcessed() {
+  /** Clear the processed flag for all items, forcing re-processing on next sync. */
+  public void clearProcessed() {
     for (FrcRawResponse response : repo.findAll()) {
       repo.update(
           new FrcRawResponse(

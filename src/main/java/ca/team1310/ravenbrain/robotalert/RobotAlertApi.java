@@ -55,4 +55,15 @@ public class RobotAlertApi {
   public List<RobotAlert> getByTournament(@PathVariable String tournamentId) {
     return robotAlertService.findAllByTournamentIdOrderByTeamNumberAscCreatedAtDesc(tournamentId);
   }
+
+  @Post("/bulk")
+  @Consumes(APPLICATION_JSON)
+  @Produces(APPLICATION_JSON)
+  @Secured(SecurityRule.IS_AUTHENTICATED)
+  public List<RobotAlert> getByTournaments(@Body List<String> tournamentIds) {
+    if (tournamentIds == null || tournamentIds.isEmpty()) {
+      return List.of();
+    }
+    return robotAlertService.findAllByTournamentIdInListOrderByTournamentId(tournamentIds);
+  }
 }

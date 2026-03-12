@@ -59,7 +59,8 @@ public class TournamentApiTest {
             "TEST",
             "Test Tournament",
             LocalDateTime.of(2025, 3, 26, 8, 0),
-            LocalDateTime.of(2025, 3, 26, 17, 0));
+            LocalDateTime.of(2025, 3, 26, 17, 0),
+            1);
 
     HttpRequest<TournamentApi.TournamentDTO> request =
         HttpRequest.POST("/api/tournament", dto).basicAuth(USER_MEMBER, "password");
@@ -85,7 +86,8 @@ public class TournamentApiTest {
             "GETTEST",
             "Get Test Tournament",
             LocalDateTime.of(2025, 4, 1, 8, 0),
-            LocalDateTime.of(2025, 4, 1, 17, 0));
+            LocalDateTime.of(2025, 4, 1, 17, 0),
+            1);
 
     // Save via API
     client
@@ -116,7 +118,8 @@ public class TournamentApiTest {
             "TEST",
             "Test Tournament",
             LocalDateTime.of(2025, 3, 26, 8, 0),
-            LocalDateTime.of(2025, 3, 26, 17, 0));
+            LocalDateTime.of(2025, 3, 26, 17, 0),
+            1);
 
     HttpRequest<TournamentApi.TournamentDTO> request =
         HttpRequest.POST("/api/tournament", dto).basicAuth(USER_MEMBER, "password");
@@ -133,7 +136,8 @@ public class TournamentApiTest {
             "TEST",
             null,
             LocalDateTime.of(2025, 3, 26, 8, 0),
-            LocalDateTime.of(2025, 3, 26, 17, 0));
+            LocalDateTime.of(2025, 3, 26, 17, 0),
+            1);
 
     HttpRequest<TournamentApi.TournamentDTO> request =
         HttpRequest.POST("/api/tournament", dto).basicAuth(USER_MEMBER, "password");
@@ -151,7 +155,8 @@ public class TournamentApiTest {
             "TEST",
             "Test Tournament",
             LocalDateTime.of(2025, 3, 26, 8, 0),
-            LocalDateTime.of(2025, 3, 26, 17, 0));
+            LocalDateTime.of(2025, 3, 26, 17, 0),
+            1);
 
     HttpRequest<TournamentApi.TournamentDTO> request =
         HttpRequest.POST("/api/tournament", dto).basicAuth(USER_MEMBER, "password");
@@ -167,7 +172,7 @@ public class TournamentApiTest {
   void testCreateTournamentInvalidNullDates() {
     TournamentApi.TournamentDTO dto =
         new TournamentApi.TournamentDTO(
-            "INVALID_DATES", 2025, "TEST", "Test Tournament", null, null);
+            "INVALID_DATES", 2025, "TEST", "Test Tournament", null, null, 1);
 
     HttpRequest<TournamentApi.TournamentDTO> request =
         HttpRequest.POST("/api/tournament", dto).basicAuth(USER_MEMBER, "password");

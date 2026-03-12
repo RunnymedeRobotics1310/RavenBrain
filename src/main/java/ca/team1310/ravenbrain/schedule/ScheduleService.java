@@ -20,6 +20,9 @@ public abstract class ScheduleService implements CrudRepository<ScheduleRecord, 
 
   public abstract List<ScheduleRecord> findAllByTournamentIdOrderByMatch(String tournamentId);
 
+  public abstract List<ScheduleRecord> findAllByTournamentIdInListOrderByTournamentId(
+      List<String> tournamentIds);
+
   public abstract Optional<ScheduleRecord> findByTournamentIdAndLevelAndMatch(
       String tournamentId, TournamentLevel level, int match);
 }

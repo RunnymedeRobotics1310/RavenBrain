@@ -111,9 +111,13 @@ class FrcClient {
           throw new FrcClientException("Response " + code + ": " + response.body());
       }
 
-    } catch (Exception e) {
+    } catch (java.net.ConnectException e) {
       throw new FrcClientException(
-          "Exception retrieving response for " + uri + ": " + e.getMessage(), e);
+          "Could not connect to FRC API for " + uri + " — is the network available?", e);
+    } catch (Exception e) {
+      String detail = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+      throw new FrcClientException(
+          "Exception retrieving response for " + uri + ": " + detail, e);
     }
   }
 
