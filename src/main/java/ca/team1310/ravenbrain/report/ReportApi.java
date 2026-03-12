@@ -9,6 +9,7 @@ import ca.team1310.ravenbrain.eventtype.EventType;
 import ca.team1310.ravenbrain.eventtype.EventTypeRepository;
 import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import ca.team1310.ravenbrain.report.drill.DrillReportService;
+import ca.team1310.ravenbrain.sequencetype.SequenceTypeService;
 import ca.team1310.ravenbrain.report.mega.MegaReport;
 import ca.team1310.ravenbrain.report.mega.MegaReportService;
 import ca.team1310.ravenbrain.report.seq.SequenceReport;
@@ -23,6 +24,7 @@ import io.micronaut.security.annotation.Secured;
 import io.micronaut.serde.annotation.Serdeable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -38,6 +40,7 @@ public class ReportApi {
   private final MegaReportService megaReportService;
   private final EventTypeRepository eventTypeRepository;
   private final UserService userService;
+  private final SequenceTypeService sequenceTypeService;
 
   public ReportApi(
       TeamReportService teamReportService,
@@ -46,7 +49,8 @@ public class ReportApi {
       EventLogService eventLogService,
       MegaReportService megaReportService,
       EventTypeRepository eventTypeRepository,
-      UserService userService) {
+      UserService userService,
+      SequenceTypeService sequenceTypeService) {
     this.teamReportService = teamReportService;
     this.drillReportService = drillReportService;
     this.sequenceReportService = sequenceReportService;
@@ -54,6 +58,16 @@ public class ReportApi {
     this.megaReportService = megaReportService;
     this.eventTypeRepository = eventTypeRepository;
     this.userService = userService;
+    this.sequenceTypeService = sequenceTypeService;
+  }
+
+  private Set<String> resolveAllowedEventTypes(long sequenceTypeId) {
+    if (sequenceTypeId <= 0) return null;
+    var seqType = sequenceTypeService.findById(sequenceTypeId).orElse(null);
+    if (seqType == null || seqType.events() == null) return null;
+    return seqType.events().stream()
+        .map(se -> se.eventtype().eventtype())
+        .collect(Collectors.toSet());
   }
 
   @Serdeable
@@ -175,9 +189,11 @@ public class ReportApi {
   public MegaReportResponse getMegaReport(
       @PathVariable String tournamentId,
       @QueryValue int team,
-      @QueryValue int year) {
+      @QueryValue int year,
+      @QueryValue(defaultValue = "0") long sequenceTypeId) {
     try {
-      var report = megaReportService.generateReport(team, tournamentId, year);
+      var allowedEventTypes = resolveAllowedEventTypes(sequenceTypeId);
+      var report = megaReportService.generateReport(team, tournamentId, year, allowedEventTypes);
       return new MegaReportResponse(report, true, null);
     } catch (Exception e) {
       return new MegaReportResponse(null, false, e.getMessage());
@@ -190,10 +206,18 @@ public class ReportApi {
   public ChronoReportResponse getChronoReport(
       @PathVariable String tournamentId,
       @QueryValue int team,
-      @QueryValue int year) {
+      @QueryValue int year,
+      @QueryValue(defaultValue = "0") long sequenceTypeId) {
     try {
       var levels = List.of(TournamentLevel.Qualification, TournamentLevel.Playoff);
-      var records = eventLogService.listEventsForTournament(team, tournamentId, levels);
+      var allRecords = eventLogService.listEventsForTournament(team, tournamentId, levels);
+      var allowedEventTypes = resolveAllowedEventTypes(sequenceTypeId);
+      var records =
+          allowedEventTypes != null
+              ? allRecords.stream()
+                  .filter(r -> allowedEventTypes.contains(r.eventType()))
+                  .toList()
+              : allRecords;
 
       Map<String, EventType> eventTypeMap =
           eventTypeRepository.findByFrcyear(year).stream()

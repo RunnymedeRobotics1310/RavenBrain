@@ -17,4 +17,5 @@ public record TimedSequenceEvent(
     EventType eventtype,
     Instant timestamp,
     long elapsedSincePrecedingEvent,
-    long elapsedSinceStartOfSequence) {}
+    long elapsedSinceStartOfSequence,
+    String note) {}

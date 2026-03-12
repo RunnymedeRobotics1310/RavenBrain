@@ -190,9 +190,9 @@ public class SequenceReportService {
     EventType startType = eventTypeMap.get(start.eventType());
     EventType endType = eventTypeMap.get(end.eventType());
 
-    TimedSequenceEvent startEvent = new TimedSequenceEvent(startType, startTime, 0, 0);
+    TimedSequenceEvent startEvent = new TimedSequenceEvent(startType, startTime, 0, 0, start.note());
     TimedSequenceEvent endEvent =
-        new TimedSequenceEvent(endType, endTime, duration, duration);
+        new TimedSequenceEvent(endType, endTime, duration, duration, end.note());
 
     List<TimedSequenceEvent> events = List.of(startEvent, endEvent);
     List<IntervalDuration> intervals = List.of(new IntervalDuration(startType, endType, duration));

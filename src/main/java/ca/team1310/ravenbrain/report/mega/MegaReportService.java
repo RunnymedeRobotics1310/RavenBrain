@@ -31,16 +31,20 @@ public class MegaReportService {
     return eventLogRepository.findDistinctTeamNumbersByTournamentId(tournamentId);
   }
 
-  public MegaReport generateReport(int team, String tournamentId, int year) {
-    var records =
+  public MegaReport generateReport(
+      int team, String tournamentId, int year, Set<String> allowedEventTypes) {
+    var stream =
         eventLogRepository
             .findAllByTeamNumberAndTournamentIdOrderByTimestampAsc(team, tournamentId)
             .stream()
             .filter(
                 e ->
                     e.level() == TournamentLevel.Qualification
-                        || e.level() == TournamentLevel.Playoff)
-            .toList();
+                        || e.level() == TournamentLevel.Playoff);
+    if (allowedEventTypes != null) {
+      stream = stream.filter(e -> allowedEventTypes.contains(e.eventType()));
+    }
+    var records = stream.toList();
 
     // Build event type lookup for the year
     Map<String, EventType> eventTypeMap =
