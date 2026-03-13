@@ -104,8 +104,20 @@ public class TournamentApiTest {
   }
 
   @Test
-  void testUnauthorized() {
+  void testAnonymousGetTournaments() {
     HttpRequest<?> request = HttpRequest.GET("/api/tournament");
+    HttpResponse<?> response = client.toBlocking().exchange(request);
+    assertEquals(HttpStatus.OK, response.getStatus());
+  }
+
+  @Test
+  void testAnonymousCreateTournamentUnauthorized() {
+    TournamentApi.TournamentDTO dto =
+        new TournamentApi.TournamentDTO(
+            "anon-test", 2025, "ANONTEST", "Anon Test",
+            LocalDateTime.of(2025, 3, 26, 8, 0),
+            LocalDateTime.of(2025, 3, 26, 17, 0), 1);
+    HttpRequest<?> request = HttpRequest.POST("/api/tournament", dto);
     assertThrows(Exception.class, () -> client.toBlocking().exchange(request));
   }
 

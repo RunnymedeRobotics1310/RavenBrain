@@ -102,6 +102,25 @@ public class FrcClientTests {
   }
 
   @Test
+  void testGetScheduleStartTimes() {
+    try {
+      frcCachingClient.clearProcessed();
+      var resp = service.getEventSchedule(2026, "AUSC", TournamentLevel.Qualification);
+      assertNotNull(resp, "Schedule response should not be null");
+      var matches = resp.getResponse().schedule();
+      assertNotNull(matches, "Schedule list should not be null");
+      Assertions.assertFalse(matches.isEmpty(), "Should have at least one match");
+      for (var match : matches) {
+        log.info("Match {}: startTime={}", match.matchNumber(), match.startTime());
+        assertNotNull(match.startTime(), "Match " + match.matchNumber() + " should have a startTime");
+      }
+    } catch (Exception e) {
+      log.error("testGetScheduleStartTimes", e);
+      Assertions.fail(e);
+    }
+  }
+
+  @Test
   void testGetScheduleForTeam() {
     try {
       frcCachingClient.clearProcessed();

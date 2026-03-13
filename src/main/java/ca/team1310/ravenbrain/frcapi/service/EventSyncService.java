@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -218,11 +219,21 @@ class EventSyncService {
     frcClientService.markProcessed(resp.getId());
   }
 
-  /** Every three minutes, load the tournament schedule for upcoming and active tournaments. */
+  private List<TournamentRecord> getOwnerTeamActiveTournaments() {
+    Set<String> ownerTournamentIds =
+        Set.copyOf(teamTournamentService.findTournamentIdsForTeam(teamNumber));
+    return tournamentService.findUpcomingAndActiveTournaments().stream()
+        .filter(t -> ownerTournamentIds.contains(t.id()))
+        .toList();
+  }
+
+  /** Every three minutes, load the tournament schedule for the owner team's active tournaments. */
   @Scheduled(fixedDelay = "3m")
   void loadScheduleForCurrentTournament() {
-    log.debug("Loading tournament schedule for upcoming and active tournaments");
-    for (TournamentRecord tournamentRecord : tournamentService.findUpcomingAndActiveTournaments()) {
+    log.info("Loading tournament schedule for owner team's active tournaments");
+    for (TournamentRecord tournamentRecord : getOwnerTeamActiveTournaments()) {
+      log.info("Syncing schedule for tournament {} (season={}, code={})",
+          tournamentRecord.id(), tournamentRecord.season(), tournamentRecord.code());
       try {
         _populateScheduleForTournament(tournamentRecord);
         teamScheduleService.refreshCache(tournamentRecord.id());
@@ -235,13 +246,13 @@ class EventSyncService {
     }
   }
 
-  /** Every 30 seconds, sync scores for active tournaments. */
+  /** Every 30 seconds, sync scores for the owner team's active tournaments. */
   @Scheduled(fixedDelay = "30s")
   void syncScoresForActiveTournaments() {
-    for (TournamentRecord tournament : tournamentService.findUpcomingAndActiveTournaments()) {
+    for (TournamentRecord tournament : getOwnerTeamActiveTournaments()) {
       boolean updated = false;
       for (TournamentLevel level : TournamentLevel.values()) {
-        if (level == TournamentLevel.None) continue;
+        if (level == TournamentLevel.None || level == TournamentLevel.Practice) continue;
 
         MatchScores2025 scoresResp =
             frcClientService.peekScores(tournament.season(), tournament.code(), level);
@@ -333,23 +344,33 @@ class EventSyncService {
   private void _populateScheduleForTournament(TournamentRecord tournamentRecord) {
     for (var level : TournamentLevel.values()) {
       if (level == TournamentLevel.None) continue;
-      ServiceResponse<ScheduleResponse> scheduleResponse =
-          frcClientService.getEventSchedule(
+      ScheduleResponse scheduleData =
+          frcClientService.peekSchedule(
               tournamentRecord.season(), tournamentRecord.code(), level);
 
-      if (scheduleResponse == null) continue;
+      if (scheduleData == null || scheduleData.schedule() == null) {
+        log.info("No schedule response for {} {}", tournamentRecord.code(), level);
+        continue;
+      }
+      log.info("Got {} {} matches for {} {}", scheduleData.schedule().size(),
+          level, tournamentRecord.code(),
+          scheduleData.schedule().isEmpty() ? "" :
+              "firstStartTime=" + scheduleData.schedule().get(0).startTime());
 
-      // Build a score lookup map for this level
+      // Build a score lookup map for this level (Practice has no scores in FRC API)
       Map<Integer, ScoreData> scoresByMatch = new HashMap<>();
-      MatchScores2025 scoresResp =
-          frcClientService.peekScores(tournamentRecord.season(), tournamentRecord.code(), level);
-      if (scoresResp != null && scoresResp.scores() != null) {
-        for (ScoreData sd : scoresResp.scores()) {
-          scoresByMatch.put(sd.matchNumber(), sd);
+      if (level != TournamentLevel.Practice) {
+        MatchScores2025 scoresResp =
+            frcClientService.peekScores(
+                tournamentRecord.season(), tournamentRecord.code(), level);
+        if (scoresResp != null && scoresResp.scores() != null) {
+          for (ScoreData sd : scoresResp.scores()) {
+            scoresByMatch.put(sd.matchNumber(), sd);
+          }
         }
       }
 
-      for (Schedule schedule : scheduleResponse.getResponse().schedule()) {
+      for (Schedule schedule : scheduleData.schedule()) {
         int red1 = 0, red2 = 0, red3 = 0, red4 = 0, blue1 = 0, blue2 = 0, blue3 = 0, blue4 = 0;
         for (ScheduleTeam team : schedule.teams()) {
           switch (team.station()) {
@@ -392,13 +413,16 @@ class EventSyncService {
             scheduleService.findByTournamentIdAndLevelAndMatch(
                 tournamentRecord.id(), level, schedule.matchNumber());
         if (existingRecord.isPresent()) {
+          // Preserve existing start time if the new one is null (FRC API may omit it after event)
+          String effectiveStartTime =
+              startTime != null ? startTime : existingRecord.get().startTime();
           ScheduleRecord scheduleRecord =
               new ScheduleRecord(
                   existingRecord.get().id(),
                   tournamentRecord.id(),
                   level,
                   schedule.matchNumber(),
-                  startTime,
+                  effectiveStartTime,
                   red1,
                   red2,
                   red3,
@@ -437,7 +461,6 @@ class EventSyncService {
           scheduleService.save(scheduleRecord);
         }
       }
-      frcClientService.markProcessed(scheduleResponse.getId());
     }
   }
 }

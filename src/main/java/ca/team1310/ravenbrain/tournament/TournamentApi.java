@@ -64,18 +64,21 @@ public class TournamentApi {
 
   @Get
   @Produces(APPLICATION_JSON)
+  @Secured(SecurityRule.IS_ANONYMOUS)
   public List<TournamentRecord> getTournaments() {
     return tournamentService.findAllSortByStartTime();
   }
 
   @Get("/team-ids")
   @Produces(APPLICATION_JSON)
+  @Secured(SecurityRule.IS_ANONYMOUS)
   public List<String> getTeamTournamentIds() {
     return teamTournamentService.findTournamentIdsForTeam(teamNumber);
   }
 
   @Get("/active-team")
   @Produces(APPLICATION_JSON)
+  @Secured(SecurityRule.IS_ANONYMOUS)
   public List<TournamentRecord> getActiveTeamTournaments() {
     Set<String> teamIds = Set.copyOf(teamTournamentService.findTournamentIdsForTeam(teamNumber));
     return tournamentService.findActiveTournaments().stream()

@@ -107,33 +107,48 @@ public class TeamScheduleService {
   /** Build rankings from qualification matches by summing RP per team. */
   private List<TeamRanking> buildRankings(List<TeamScheduleMatch> matches) {
     Map<Integer, Integer> rpByTeam = new HashMap<>();
+    Map<Integer, Integer> matchesByTeam = new HashMap<>();
 
     for (TeamScheduleMatch m : matches) {
       if (!"Qualification".equals(m.level()) || m.winningAlliance() == 0) continue;
 
-      // Red alliance teams
       int[] redTeams = {m.red1(), m.red2(), m.red3(), m.red4()};
       int[] blueTeams = {m.blue1(), m.blue2(), m.blue3(), m.blue4()};
       Integer redRp = m.redRp() != null ? m.redRp() : 0;
       Integer blueRp = m.blueRp() != null ? m.blueRp() : 0;
 
       for (int t : redTeams) {
-        if (t != 0) rpByTeam.merge(t, redRp, Integer::sum);
+        if (t != 0) {
+          rpByTeam.merge(t, redRp, Integer::sum);
+          matchesByTeam.merge(t, 1, Integer::sum);
+        }
       }
       for (int t : blueTeams) {
-        if (t != 0) rpByTeam.merge(t, blueRp, Integer::sum);
+        if (t != 0) {
+          rpByTeam.merge(t, blueRp, Integer::sum);
+          matchesByTeam.merge(t, 1, Integer::sum);
+        }
       }
     }
 
     return rpByTeam.entrySet().stream()
-        .map(e -> new TeamRanking(e.getKey(), e.getValue()))
-        .sorted(Comparator.comparingInt(TeamRanking::rp).reversed()
-            .thenComparingInt(TeamRanking::teamNumber))
+        .map(
+            e -> {
+              int team = e.getKey();
+              int rp = e.getValue();
+              int played = matchesByTeam.getOrDefault(team, 1);
+              double rs = (double) rp / played;
+              return new TeamRanking(team, rp, played, Math.round(rs * 100.0) / 100.0);
+            })
+        .sorted(
+            Comparator.comparingDouble(TeamRanking::rs)
+                .reversed()
+                .thenComparingInt(TeamRanking::teamNumber))
         .toList();
   }
 
   @Serdeable
-  public record TeamRanking(int teamNumber, int rp) {}
+  public record TeamRanking(int teamNumber, int rp, int matchesPlayed, double rs) {}
 
   @Serdeable
   public record TeamScheduleMatch(
