@@ -9,8 +9,12 @@ import ca.team1310.ravenbrain.frcapi.model.ScheduleTeam;
 import ca.team1310.ravenbrain.frcapi.model.TeamListing;
 import ca.team1310.ravenbrain.frcapi.model.TeamListingResponse;
 import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
+import ca.team1310.ravenbrain.frcapi.model.year2025.Alliance;
+import ca.team1310.ravenbrain.frcapi.model.year2025.MatchScores2025;
+import ca.team1310.ravenbrain.frcapi.model.year2025.ScoreData;
 import ca.team1310.ravenbrain.schedule.ScheduleRecord;
 import ca.team1310.ravenbrain.schedule.ScheduleService;
+import ca.team1310.ravenbrain.schedule.TeamScheduleService;
 import ca.team1310.ravenbrain.tournament.TeamTournamentService;
 import ca.team1310.ravenbrain.tournament.TournamentRecord;
 import ca.team1310.ravenbrain.tournament.TournamentService;
@@ -24,7 +28,9 @@ import java.time.Year;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -46,18 +52,21 @@ class EventSyncService {
   private final TeamTournamentService teamTournamentService;
   private final int teamNumber;
   private final ScheduleService scheduleService;
+  private final TeamScheduleService teamScheduleService;
 
   EventSyncService(
       FrcClientService frcClientService,
       TournamentService tournamentService,
       TeamTournamentService teamTournamentService,
       @Property(name = "raven-eye.team") int teamNumber,
-      ScheduleService scheduleService) {
+      ScheduleService scheduleService,
+      TeamScheduleService teamScheduleService) {
     this.frcClientService = frcClientService;
     this.tournamentService = tournamentService;
     this.teamTournamentService = teamTournamentService;
     this.teamNumber = teamNumber;
     this.scheduleService = scheduleService;
+    this.teamScheduleService = teamScheduleService;
   }
 
   /** Force an immediate synchronization of all tournament and schedule data from the FRC API. */
@@ -72,6 +81,7 @@ class EventSyncService {
     for (TournamentRecord t : tournamentService.findUpcomingAndActiveTournaments()) {
       try {
         _populateScheduleForTournament(t);
+        teamScheduleService.refreshCache(t.id());
       } catch (FrcClientException e) {
         log.error("Force sync: failed to fetch schedule for {}: {}", t.id(), e.getMessage());
       }
@@ -215,6 +225,7 @@ class EventSyncService {
     for (TournamentRecord tournamentRecord : tournamentService.findUpcomingAndActiveTournaments()) {
       try {
         _populateScheduleForTournament(tournamentRecord);
+        teamScheduleService.refreshCache(tournamentRecord.id());
       } catch (FrcClientException e) {
         log.error(
             "Scheduled sync: failed to fetch schedule for {}: {}",
@@ -222,6 +233,83 @@ class EventSyncService {
             e.getMessage());
       }
     }
+  }
+
+  /** Every 30 seconds, sync scores for active tournaments. */
+  @Scheduled(fixedDelay = "30s")
+  void syncScoresForActiveTournaments() {
+    for (TournamentRecord tournament : tournamentService.findUpcomingAndActiveTournaments()) {
+      boolean updated = false;
+      for (TournamentLevel level : TournamentLevel.values()) {
+        if (level == TournamentLevel.None) continue;
+
+        MatchScores2025 scoresResp =
+            frcClientService.peekScores(tournament.season(), tournament.code(), level);
+        if (scoresResp == null || scoresResp.scores() == null) continue;
+
+        for (ScoreData scoreData : scoresResp.scores()) {
+          Optional<ScheduleRecord> existing =
+              scheduleService.findByTournamentIdAndLevelAndMatch(
+                  tournament.id(), scoreData.matchLevel(), scoreData.matchNumber());
+          if (existing.isEmpty()) continue;
+
+          ScheduleRecord rec = existing.get();
+          Integer redScore = null, blueScore = null, redRp = null, blueRp = null;
+          int winningAlliance = scoreData.winningAlliance();
+
+          if (scoreData.alliances() != null) {
+            for (Alliance a : scoreData.alliances()) {
+              if ("Red".equalsIgnoreCase(a.alliance())) {
+                redScore = a.totalPoints();
+                redRp = a.rp();
+              } else if ("Blue".equalsIgnoreCase(a.alliance())) {
+                blueScore = a.totalPoints();
+                blueRp = a.rp();
+              }
+            }
+          }
+
+          // Only update if scores have changed
+          if (!equals(rec.redScore(), redScore)
+              || !equals(rec.blueScore(), blueScore)
+              || !equals(rec.redRp(), redRp)
+              || !equals(rec.blueRp(), blueRp)
+              || rec.winningAlliance() != winningAlliance) {
+            ScheduleRecord updatedRecord =
+                new ScheduleRecord(
+                    rec.id(),
+                    rec.tournamentId(),
+                    rec.level(),
+                    rec.match(),
+                    rec.startTime(),
+                    rec.red1(),
+                    rec.red2(),
+                    rec.red3(),
+                    rec.red4(),
+                    rec.blue1(),
+                    rec.blue2(),
+                    rec.blue3(),
+                    rec.blue4(),
+                    redScore,
+                    blueScore,
+                    redRp,
+                    blueRp,
+                    winningAlliance);
+            scheduleService.update(updatedRecord);
+            updated = true;
+          }
+        }
+      }
+      if (updated) {
+        teamScheduleService.refreshCache(tournament.id());
+      }
+    }
+  }
+
+  private static boolean equals(Object a, Object b) {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    return a.equals(b);
   }
 
   /**
@@ -238,6 +326,7 @@ class EventSyncService {
     }
     log.info("On-demand schedule fetch for tournament {}", tournamentId);
     _populateScheduleForTournament(opt.get());
+    teamScheduleService.refreshCache(tournamentId);
     return true;
   }
 
@@ -250,18 +339,55 @@ class EventSyncService {
 
       if (scheduleResponse == null) continue;
 
+      // Build a score lookup map for this level
+      Map<Integer, ScoreData> scoresByMatch = new HashMap<>();
+      MatchScores2025 scoresResp =
+          frcClientService.peekScores(tournamentRecord.season(), tournamentRecord.code(), level);
+      if (scoresResp != null && scoresResp.scores() != null) {
+        for (ScoreData sd : scoresResp.scores()) {
+          scoresByMatch.put(sd.matchNumber(), sd);
+        }
+      }
+
       for (Schedule schedule : scheduleResponse.getResponse().schedule()) {
-        int red1 = 0, red2 = 0, red3 = 0, blue1 = 0, blue2 = 0, blue3 = 0;
+        int red1 = 0, red2 = 0, red3 = 0, red4 = 0, blue1 = 0, blue2 = 0, blue3 = 0, blue4 = 0;
         for (ScheduleTeam team : schedule.teams()) {
           switch (team.station()) {
             case "Red1" -> red1 = team.teamNumber();
             case "Red2" -> red2 = team.teamNumber();
             case "Red3" -> red3 = team.teamNumber();
+            case "Red4" -> red4 = team.teamNumber();
             case "Blue1" -> blue1 = team.teamNumber();
             case "Blue2" -> blue2 = team.teamNumber();
             case "Blue3" -> blue3 = team.teamNumber();
+            case "Blue4" -> blue4 = team.teamNumber();
           }
         }
+
+        // Extract start time
+        String startTime = null;
+        if (schedule.startTime() != null) {
+          String timeStr = schedule.startTime().toLocalTime().toString();
+          startTime = timeStr.length() >= 5 ? timeStr.substring(0, 5) : timeStr;
+        }
+
+        // Extract score data
+        Integer redScore = null, blueScore = null, redRp = null, blueRp = null;
+        int winningAlliance = 0;
+        ScoreData scoreData = scoresByMatch.get(schedule.matchNumber());
+        if (scoreData != null && scoreData.alliances() != null) {
+          winningAlliance = scoreData.winningAlliance();
+          for (Alliance a : scoreData.alliances()) {
+            if ("Red".equalsIgnoreCase(a.alliance())) {
+              redScore = a.totalPoints();
+              redRp = a.rp();
+            } else if ("Blue".equalsIgnoreCase(a.alliance())) {
+              blueScore = a.totalPoints();
+              blueRp = a.rp();
+            }
+          }
+        }
+
         Optional<ScheduleRecord> existingRecord =
             scheduleService.findByTournamentIdAndLevelAndMatch(
                 tournamentRecord.id(), level, schedule.matchNumber());
@@ -272,12 +398,20 @@ class EventSyncService {
                   tournamentRecord.id(),
                   level,
                   schedule.matchNumber(),
+                  startTime,
                   red1,
                   red2,
                   red3,
+                  red4,
                   blue1,
                   blue2,
-                  blue3);
+                  blue3,
+                  blue4,
+                  redScore,
+                  blueScore,
+                  redRp,
+                  blueRp,
+                  winningAlliance);
           scheduleService.update(scheduleRecord);
         } else {
           ScheduleRecord scheduleRecord =
@@ -286,12 +420,20 @@ class EventSyncService {
                   tournamentRecord.id(),
                   level,
                   schedule.matchNumber(),
+                  startTime,
                   red1,
                   red2,
                   red3,
+                  red4,
                   blue1,
                   blue2,
-                  blue3);
+                  blue3,
+                  blue4,
+                  redScore,
+                  blueScore,
+                  redRp,
+                  blueRp,
+                  winningAlliance);
           scheduleService.save(scheduleRecord);
         }
       }
