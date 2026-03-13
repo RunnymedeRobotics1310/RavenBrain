@@ -36,7 +36,7 @@ public class FrcSyncApiTest {
     HttpRequest<?> request =
         HttpRequest.POST("/api/frc-sync", "").basicAuth("superuser", config.superuser());
     HttpResponse<?> response = client.toBlocking().exchange(request);
-    assertEquals(HttpStatus.OK, response.getStatus());
+    assertEquals(HttpStatus.ACCEPTED, response.getStatus());
   }
 
   @Test

@@ -26,6 +26,7 @@ public class TeamScheduleApi {
 
   @Get("/{tournamentId}")
   @Produces(APPLICATION_JSON)
+  @Secured(SecurityRule.IS_ANONYMOUS)
   public TeamScheduleService.TeamScheduleResponse getTeamSchedule(
       @PathVariable String tournamentId) {
     return teamScheduleService.getTeamSchedule(tournamentId);
