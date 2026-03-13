@@ -54,7 +54,9 @@ public class ScheduleApiTest {
   void testCreateScheduleItem() {
     String tournId = "TEST_TOURN_1_" + System.currentTimeMillis();
     ScheduleRecord record =
-        new ScheduleRecord(0, tournId, TournamentLevel.Qualification, 1, 1310, 1, 2, 3, 4, 5);
+        new ScheduleRecord(
+            0, tournId, TournamentLevel.Qualification, 1, null, 1310, 1, 2, 0, 3, 4, 5, 0, null,
+            null, null, null, 0);
 
     HttpRequest<ScheduleRecord> request =
         HttpRequest.POST("/api/schedule", record).basicAuth(USER_MEMBER, "password");
@@ -73,7 +75,9 @@ public class ScheduleApiTest {
   @Test
   void testCreateScheduleItemInvalid() {
     ScheduleRecord record =
-        new ScheduleRecord(0, null, TournamentLevel.Qualification, 2, 0, 0, 0, 0, 0, 0);
+        new ScheduleRecord(
+            0, null, TournamentLevel.Qualification, 2, null, 0, 0, 0, 0, 0, 0, 0, 0, null, null,
+            null, null, 0);
 
     HttpRequest<ScheduleRecord> request =
         HttpRequest.POST("/api/schedule", record).basicAuth(USER_MEMBER, "password");
@@ -87,7 +91,8 @@ public class ScheduleApiTest {
     String tournId = "TEST_TOURN_2_" + System.currentTimeMillis();
     ScheduleRecord record =
         new ScheduleRecord(
-            0, tournId, TournamentLevel.Qualification, 1, 100, 101, 102, 103, 104, 105);
+            0, tournId, TournamentLevel.Qualification, 1, null, 100, 101, 102, 0, 103, 104, 105, 0,
+            null, null, null, null, 0);
 
     // Save via API so it's committed and visible to subsequent GET
     client
@@ -109,7 +114,9 @@ public class ScheduleApiTest {
   void testGetTeamsForTournament() {
     String tournId = "TEST_TOURN_3_" + System.currentTimeMillis();
     ScheduleRecord record =
-        new ScheduleRecord(0, tournId, TournamentLevel.Qualification, 1, 10, 11, 12, 13, 14, 15);
+        new ScheduleRecord(
+            0, tournId, TournamentLevel.Qualification, 1, null, 10, 11, 12, 0, 13, 14, 15, 0, null,
+            null, null, null, 0);
 
     // Save via API
     client

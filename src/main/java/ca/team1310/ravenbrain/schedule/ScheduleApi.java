@@ -58,9 +58,11 @@ public class ScheduleApi {
       teams.add(s.blue1());
       teams.add(s.blue2());
       teams.add(s.blue3());
+      if (s.blue4() != 0) teams.add(s.blue4());
       teams.add(s.red1());
       teams.add(s.red2());
       teams.add(s.red3());
+      if (s.red4() != 0) teams.add(s.red4());
     }
     return teams.stream().toList();
   }

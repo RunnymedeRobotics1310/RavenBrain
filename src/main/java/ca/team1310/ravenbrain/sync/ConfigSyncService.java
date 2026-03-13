@@ -266,7 +266,7 @@ public class ConfigSyncService {
 
   private int insertSchedules(Connection conn, JsonNode schedules) throws Exception {
     String sql =
-        "INSERT INTO RB_SCHEDULE (id, tournamentid, level, matchnum, red1, red2, red3, blue1, blue2, blue3) VALUES (?,?,?,?,?,?,?,?,?,?)";
+        "INSERT INTO RB_SCHEDULE (id, tournamentid, level, matchnum, starttime, red1, red2, red3, red4, blue1, blue2, blue3, blue4, redscore, bluescore, redrp, bluerp, winningalliance) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
     try (PreparedStatement ps = conn.prepareStatement(sql)) {
       int count = 0;
       for (JsonNode s : schedules) {
@@ -274,12 +274,36 @@ public class ConfigSyncService {
         ps.setString(2, s.get("tournamentId").asText());
         ps.setString(3, s.get("level").asText());
         ps.setInt(4, s.get("match").asInt());
-        ps.setInt(5, s.get("red1").asInt());
-        ps.setInt(6, s.get("red2").asInt());
-        ps.setInt(7, s.get("red3").asInt());
-        ps.setInt(8, s.get("blue1").asInt());
-        ps.setInt(9, s.get("blue2").asInt());
-        ps.setInt(10, s.get("blue3").asInt());
+        ps.setString(5, s.has("startTime") ? s.get("startTime").asText(null) : null);
+        ps.setInt(6, s.get("red1").asInt());
+        ps.setInt(7, s.get("red2").asInt());
+        ps.setInt(8, s.get("red3").asInt());
+        ps.setInt(9, s.has("red4") ? s.get("red4").asInt() : 0);
+        ps.setInt(10, s.get("blue1").asInt());
+        ps.setInt(11, s.get("blue2").asInt());
+        ps.setInt(12, s.get("blue3").asInt());
+        ps.setInt(13, s.has("blue4") ? s.get("blue4").asInt() : 0);
+        if (s.has("redScore") && !s.get("redScore").isNull()) {
+          ps.setInt(14, s.get("redScore").asInt());
+        } else {
+          ps.setNull(14, java.sql.Types.INTEGER);
+        }
+        if (s.has("blueScore") && !s.get("blueScore").isNull()) {
+          ps.setInt(15, s.get("blueScore").asInt());
+        } else {
+          ps.setNull(15, java.sql.Types.INTEGER);
+        }
+        if (s.has("redRp") && !s.get("redRp").isNull()) {
+          ps.setInt(16, s.get("redRp").asInt());
+        } else {
+          ps.setNull(16, java.sql.Types.INTEGER);
+        }
+        if (s.has("blueRp") && !s.get("blueRp").isNull()) {
+          ps.setInt(17, s.get("blueRp").asInt());
+        } else {
+          ps.setNull(17, java.sql.Types.INTEGER);
+        }
+        ps.setInt(18, s.has("winningAlliance") ? s.get("winningAlliance").asInt() : 0);
         ps.addBatch();
         count++;
       }
