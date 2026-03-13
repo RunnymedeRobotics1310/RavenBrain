@@ -6,7 +6,10 @@ import io.micronaut.context.annotation.Property;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.inject.Singleton;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -84,6 +87,8 @@ public class TeamScheduleService {
     boolean hasQualification = matches.stream().anyMatch(m -> "Qualification".equals(m.level()));
     boolean hasPlayoff = matches.stream().anyMatch(m -> "Playoff".equals(m.level()));
 
+    List<TeamRanking> rankings = buildRankings(matches);
+
     TeamScheduleResponse response =
         new TeamScheduleResponse(
             tournamentId,
@@ -92,11 +97,43 @@ public class TeamScheduleService {
             hasPractice,
             hasQualification,
             hasPlayoff,
-            matches);
+            matches,
+            rankings);
 
     cache.put(tournamentId, response);
     return response;
   }
+
+  /** Build rankings from qualification matches by summing RP per team. */
+  private List<TeamRanking> buildRankings(List<TeamScheduleMatch> matches) {
+    Map<Integer, Integer> rpByTeam = new HashMap<>();
+
+    for (TeamScheduleMatch m : matches) {
+      if (!"Qualification".equals(m.level()) || m.winningAlliance() == 0) continue;
+
+      // Red alliance teams
+      int[] redTeams = {m.red1(), m.red2(), m.red3(), m.red4()};
+      int[] blueTeams = {m.blue1(), m.blue2(), m.blue3(), m.blue4()};
+      Integer redRp = m.redRp() != null ? m.redRp() : 0;
+      Integer blueRp = m.blueRp() != null ? m.blueRp() : 0;
+
+      for (int t : redTeams) {
+        if (t != 0) rpByTeam.merge(t, redRp, Integer::sum);
+      }
+      for (int t : blueTeams) {
+        if (t != 0) rpByTeam.merge(t, blueRp, Integer::sum);
+      }
+    }
+
+    return rpByTeam.entrySet().stream()
+        .map(e -> new TeamRanking(e.getKey(), e.getValue()))
+        .sorted(Comparator.comparingInt(TeamRanking::rp).reversed()
+            .thenComparingInt(TeamRanking::teamNumber))
+        .toList();
+  }
+
+  @Serdeable
+  public record TeamRanking(int teamNumber, int rp) {}
 
   @Serdeable
   public record TeamScheduleMatch(
@@ -125,5 +162,6 @@ public class TeamScheduleService {
       boolean hasPractice,
       boolean hasQualification,
       boolean hasPlayoff,
-      List<TeamScheduleMatch> matches) {}
+      List<TeamScheduleMatch> matches,
+      List<TeamRanking> rankings) {}
 }
