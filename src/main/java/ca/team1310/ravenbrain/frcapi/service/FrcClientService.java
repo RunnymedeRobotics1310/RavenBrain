@@ -224,4 +224,48 @@ public class FrcClientService {
   }
 
   // todo: Implement get2026Scores in a manner that is consistent with get2025Scores including defining model types
+
+  /**
+   * Peek at cached schedule data for a tournament level without affecting the processed flag. Will
+   * refresh from FRC API if cache TTL has expired.
+   */
+  public @Nullable ScheduleResponse peekSchedule(
+      int season, String eventCode, TournamentLevel tournamentLevel) {
+    String path = season + "/schedule/" + eventCode + "?tournamentLevel=" + tournamentLevel.name();
+    try {
+      FrcRawResponse response = client.fetch(path);
+      if (response == null
+          || response.body() == null
+          || response.body().isBlank()
+          || response.statuscode() == 404) {
+        return null;
+      }
+      return parse(response.body(), ScheduleResponse.class);
+    } catch (Exception e) {
+      log.warn("Failed to peek schedule for {} {}: {}", eventCode, tournamentLevel, e.getMessage());
+      return null;
+    }
+  }
+
+  /**
+   * Peek at cached score data for a tournament level without affecting the processed flag. Will
+   * refresh from FRC API if cache TTL has expired. Parses using the 2025 model which contains the
+   * common fields (totalPoints, rp, winningAlliance) needed across all seasons.
+   */
+  public @Nullable MatchScores2025 peekScores(int season, String eventCode, TournamentLevel level) {
+    String uri = season + "/scores/" + eventCode + "/" + level.name();
+    try {
+      FrcRawResponse response = client.fetch(uri);
+      if (response == null
+          || response.body() == null
+          || response.body().isBlank()
+          || response.statuscode() == 404) {
+        return null;
+      }
+      return parse(response.body(), MatchScores2025.class);
+    } catch (Exception e) {
+      log.warn("Failed to peek 2025 scores for {} {}: {}", eventCode, level, e.getMessage());
+      return null;
+    }
+  }
 }
