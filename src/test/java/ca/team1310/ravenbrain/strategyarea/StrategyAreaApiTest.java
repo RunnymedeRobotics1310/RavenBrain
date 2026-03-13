@@ -54,7 +54,7 @@ public class StrategyAreaApiTest {
 
     // 1. Create as admin
     StrategyArea area =
-        new StrategyArea(0, 2026, "autonomous", "Autonomous", "Autonomous strategy area");
+        new StrategyArea(0, 2026, "autonomous", "Autonomous", "Autonomous strategy area", false);
     HttpRequest<StrategyArea> createRequest =
         HttpRequest.POST("/api/strategy-areas", area).basicAuth(adminLogin, adminPass);
     StrategyArea created = client.toBlocking().retrieve(createRequest, StrategyArea.class);
@@ -63,6 +63,7 @@ public class StrategyAreaApiTest {
     assertEquals("autonomous", created.code());
     assertEquals("Autonomous", created.name());
     assertEquals("Autonomous strategy area", created.description());
+    assertFalse(created.disabled());
 
     long id = created.id();
 
@@ -80,9 +81,9 @@ public class StrategyAreaApiTest {
     assertEquals(id, fetchedById.id());
     assertEquals("Autonomous", fetchedById.name());
 
-    // 3. Update as superuser
+    // 3. Update as superuser (also set disabled to true)
     StrategyArea updateArea =
-        new StrategyArea(id, 2026, "autonomous-updated", "Autonomous Updated", "Updated description");
+        new StrategyArea(id, 2026, "autonomous-updated", "Autonomous Updated", "Updated description", true);
     HttpRequest<StrategyArea> updateRequest =
         HttpRequest.PUT("/api/strategy-areas/" + id, updateArea)
             .basicAuth("superuser", config.superuser());
@@ -90,6 +91,7 @@ public class StrategyAreaApiTest {
     assertEquals(id, updated.id());
     assertEquals("Autonomous Updated", updated.name());
     assertEquals("Updated description", updated.description());
+    assertTrue(updated.disabled());
 
     // 4. Verify list after update
     list = client.toBlocking().retrieve(listRequest, Argument.listOf(StrategyArea.class));
@@ -103,7 +105,7 @@ public class StrategyAreaApiTest {
     String memberPass = "memberPass";
     testUserHelper.createTestUser(memberLogin, memberPass, "ROLE_MEMBER");
 
-    StrategyArea area = new StrategyArea(0, 2026, "security-test", "Security Test", "Should fail");
+    StrategyArea area = new StrategyArea(0, 2026, "security-test", "Security Test", "Should fail", false);
 
     // Create as member should fail
     HttpRequest<StrategyArea> createRequest =

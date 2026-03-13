@@ -144,7 +144,7 @@ public class ConfigSyncService {
 
   private int insertStrategyAreas(Connection conn, JsonNode strategyAreas) throws Exception {
     String sql =
-        "INSERT INTO RB_STRATEGYAREA (id, frcyear, code, name, description) VALUES (?,?,?,?,?)";
+        "INSERT INTO RB_STRATEGYAREA (id, frcyear, code, name, description, disabled) VALUES (?,?,?,?,?,?)";
     try (PreparedStatement ps = conn.prepareStatement(sql)) {
       int count = 0;
       for (JsonNode sa : strategyAreas) {
@@ -153,6 +153,7 @@ public class ConfigSyncService {
         ps.setString(3, sa.get("code").asText());
         ps.setString(4, sa.get("name").asText());
         ps.setString(5, sa.has("description") ? sa.get("description").asText(null) : null);
+        ps.setBoolean(6, sa.has("disabled") && sa.get("disabled").asBoolean());
         ps.addBatch();
         count++;
       }
@@ -164,7 +165,7 @@ public class ConfigSyncService {
 
   private int insertEventTypes(Connection conn, JsonNode eventTypes) throws Exception {
     String sql =
-        "INSERT INTO RB_EVENTTYPE (eventtype, name, description, frcyear, strategyarea_id, showNote, showQuantity) VALUES (?,?,?,?,?,?,?)";
+        "INSERT INTO RB_EVENTTYPE (eventtype, name, description, frcyear, strategyarea_id, showNote, showQuantity, disabled) VALUES (?,?,?,?,?,?,?,?)";
     try (PreparedStatement ps = conn.prepareStatement(sql)) {
       int count = 0;
       for (JsonNode et : eventTypes) {
@@ -179,6 +180,7 @@ public class ConfigSyncService {
         }
         ps.setBoolean(6, et.has("showNote") && et.get("showNote").asBoolean());
         ps.setBoolean(7, et.has("showQuantity") && et.get("showQuantity").asBoolean());
+        ps.setBoolean(8, et.has("disabled") && et.get("disabled").asBoolean());
         ps.addBatch();
         count++;
       }
