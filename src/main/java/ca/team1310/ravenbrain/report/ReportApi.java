@@ -41,6 +41,7 @@ public class ReportApi {
   private final EventTypeRepository eventTypeRepository;
   private final UserService userService;
   private final SequenceTypeService sequenceTypeService;
+  private final CustomTournamentStatsService customTournamentStatsService;
 
   public ReportApi(
       TeamReportService teamReportService,
@@ -50,7 +51,8 @@ public class ReportApi {
       MegaReportService megaReportService,
       EventTypeRepository eventTypeRepository,
       UserService userService,
-      SequenceTypeService sequenceTypeService) {
+      SequenceTypeService sequenceTypeService,
+      CustomTournamentStatsService customTournamentStatsService) {
     this.teamReportService = teamReportService;
     this.drillReportService = drillReportService;
     this.sequenceReportService = sequenceReportService;
@@ -59,6 +61,7 @@ public class ReportApi {
     this.eventTypeRepository = eventTypeRepository;
     this.userService = userService;
     this.sequenceTypeService = sequenceTypeService;
+    this.customTournamentStatsService = customTournamentStatsService;
   }
 
   private Set<String> resolveAllowedEventTypes(long sequenceTypeId) {
@@ -98,6 +101,12 @@ public class ReportApi {
   @Serdeable
   public record ChronoReportResponse(
       List<ChronoReportRow> rows, boolean success, String reason) {}
+
+  @Serdeable
+  public record CustomTournamentStatsResponse(
+      List<CustomTournamentStatsService.CustomTournamentStats> stats,
+      boolean success,
+      String reason) {}
 
   @Get("/team/teams")
   @Produces(APPLICATION_JSON)
@@ -272,6 +281,18 @@ public class ReportApi {
       return new ChronoReportResponse(rows, true, null);
     } catch (Exception e) {
       return new ChronoReportResponse(null, false, e.getMessage());
+    }
+  }
+
+  @Get("/custom-stats")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public CustomTournamentStatsResponse getCustomTournamentStats(@QueryValue int team) {
+    try {
+      var stats = customTournamentStatsService.getStatsForTeam(team);
+      return new CustomTournamentStatsResponse(stats, true, null);
+    } catch (Exception e) {
+      return new CustomTournamentStatsResponse(null, false, e.getMessage());
     }
   }
 }

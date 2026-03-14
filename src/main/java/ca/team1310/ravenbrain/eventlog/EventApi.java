@@ -2,11 +2,13 @@ package ca.team1310.ravenbrain.eventlog;
 
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
+import ca.team1310.ravenbrain.report.CustomTournamentStatsService;
 import io.micronaut.data.exceptions.DataAccessException;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.serde.annotation.Serdeable;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
@@ -18,9 +20,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EventApi {
   private final EventLogService eventLogService;
+  private final CustomTournamentStatsService customTournamentStatsService;
 
-  public EventApi(EventLogService eventLogService) {
+  public EventApi(
+      EventLogService eventLogService,
+      CustomTournamentStatsService customTournamentStatsService) {
     this.eventLogService = eventLogService;
+    this.customTournamentStatsService = customTournamentStatsService;
   }
 
   @Serdeable
@@ -32,10 +38,12 @@ public class EventApi {
   @Secured({"ROLE_DATASCOUT", "ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
   public List<EventLogPostResult> postEventLogs(@Body EventLogRecord[] eventLogRecord) {
     var result = new ArrayList<EventLogPostResult>();
+    var invalidatedTournaments = new HashSet<String>();
     for (EventLogRecord record : eventLogRecord) {
       try {
         record = eventLogService.save(record);
         result.add(new EventLogPostResult(record, true, null));
+        invalidatedTournaments.add(record.tournamentId());
       } catch (DataAccessException e) {
         if (e.getMessage().contains("Duplicate entry")) {
           log.warn("Duplicate event log record: {}", record);
@@ -48,6 +56,9 @@ public class EventApi {
         log.error("Failed to save event log record: {}", record, e);
         result.add(new EventLogPostResult(record, false, e.getMessage()));
       }
+    }
+    for (var tournamentId : invalidatedTournaments) {
+      customTournamentStatsService.invalidate(tournamentId);
     }
     return result;
   }
