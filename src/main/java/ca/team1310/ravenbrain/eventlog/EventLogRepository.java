@@ -53,4 +53,10 @@ public interface EventLogRepository extends CrudRepository<EventLogRecord, Long>
   @Query(
       "SELECT DISTINCT tournamentid, eventtype FROM RB_EVENT WHERE teamnumber = :team ORDER BY tournamentid")
   List<TournamentEventTypePair> findDistinctTournamentAndEventTypeByTeamNumber(int team);
+
+  @Query(
+      "SELECT DISTINCT tournamentid FROM RB_EVENT WHERE teamnumber = :team"
+          + " AND eventtype LIKE 'pmva-%' AND tournamentid NOT LIKE 'DRILL-%'"
+          + " ORDER BY tournamentid")
+  List<String> findDistinctPmvaTournamentIds(int team);
 }
