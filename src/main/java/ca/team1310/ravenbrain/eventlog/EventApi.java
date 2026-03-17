@@ -3,6 +3,7 @@ package ca.team1310.ravenbrain.eventlog;
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
 import ca.team1310.ravenbrain.report.CustomTournamentStatsService;
+import ca.team1310.ravenbrain.report.cache.ReportCacheService;
 import io.micronaut.data.exceptions.DataAccessException;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
@@ -21,12 +22,15 @@ import lombok.extern.slf4j.Slf4j;
 public class EventApi {
   private final EventLogService eventLogService;
   private final CustomTournamentStatsService customTournamentStatsService;
+  private final ReportCacheService reportCacheService;
 
   public EventApi(
       EventLogService eventLogService,
-      CustomTournamentStatsService customTournamentStatsService) {
+      CustomTournamentStatsService customTournamentStatsService,
+      ReportCacheService reportCacheService) {
     this.eventLogService = eventLogService;
     this.customTournamentStatsService = customTournamentStatsService;
+    this.reportCacheService = reportCacheService;
   }
 
   @Serdeable
@@ -59,6 +63,7 @@ public class EventApi {
     }
     for (var tournamentId : invalidatedTournaments) {
       customTournamentStatsService.invalidate(tournamentId);
+      reportCacheService.invalidateForTournament(tournamentId);
     }
     return result;
   }

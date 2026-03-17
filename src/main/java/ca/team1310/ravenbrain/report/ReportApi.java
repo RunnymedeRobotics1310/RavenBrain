@@ -8,20 +8,25 @@ import ca.team1310.ravenbrain.eventlog.EventLogService;
 import ca.team1310.ravenbrain.eventtype.EventType;
 import ca.team1310.ravenbrain.eventtype.EventTypeRepository;
 import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
+import ca.team1310.ravenbrain.report.cache.ReportCacheService;
 import ca.team1310.ravenbrain.report.drill.DrillReportService;
-import ca.team1310.ravenbrain.sequencetype.SequenceTypeService;
 import ca.team1310.ravenbrain.report.mega.MegaReport;
 import ca.team1310.ravenbrain.report.mega.MegaReportService;
+import ca.team1310.ravenbrain.report.pmva.PmvaReport;
+import ca.team1310.ravenbrain.report.pmva.PmvaReportService;
 import ca.team1310.ravenbrain.report.seq.SequenceReport;
 import ca.team1310.ravenbrain.report.seq.SequenceReportService;
 import ca.team1310.ravenbrain.report.seq.TournamentSequenceReport;
+import ca.team1310.ravenbrain.sequencetype.SequenceTypeService;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.PathVariable;
 import io.micronaut.http.annotation.Produces;
 import io.micronaut.http.annotation.QueryValue;
 import io.micronaut.security.annotation.Secured;
+import io.micronaut.serde.ObjectMapper;
 import io.micronaut.serde.annotation.Serdeable;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -42,6 +47,9 @@ public class ReportApi {
   private final UserService userService;
   private final SequenceTypeService sequenceTypeService;
   private final CustomTournamentStatsService customTournamentStatsService;
+  private final PmvaReportService pmvaReportService;
+  private final ReportCacheService reportCacheService;
+  private final ObjectMapper objectMapper;
 
   public ReportApi(
       TeamReportService teamReportService,
@@ -52,7 +60,10 @@ public class ReportApi {
       EventTypeRepository eventTypeRepository,
       UserService userService,
       SequenceTypeService sequenceTypeService,
-      CustomTournamentStatsService customTournamentStatsService) {
+      CustomTournamentStatsService customTournamentStatsService,
+      PmvaReportService pmvaReportService,
+      ReportCacheService reportCacheService,
+      ObjectMapper objectMapper) {
     this.teamReportService = teamReportService;
     this.drillReportService = drillReportService;
     this.sequenceReportService = sequenceReportService;
@@ -62,6 +73,9 @@ public class ReportApi {
     this.userService = userService;
     this.sequenceTypeService = sequenceTypeService;
     this.customTournamentStatsService = customTournamentStatsService;
+    this.pmvaReportService = pmvaReportService;
+    this.reportCacheService = reportCacheService;
+    this.objectMapper = objectMapper;
   }
 
   private Set<String> resolveAllowedEventTypes(long sequenceTypeId) {
@@ -294,5 +308,54 @@ public class ReportApi {
     } catch (Exception e) {
       return new CustomTournamentStatsResponse(null, false, e.getMessage());
     }
+  }
+
+  // ── PMVA Report ─────────────────────────────────────────────────────────
+
+  @Serdeable
+  public record PmvaReportResponse(PmvaReport report, boolean success, String reason) {}
+
+  @Get("/pmva/tournaments")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public List<String> getPmvaTournaments() {
+    return pmvaReportService.listTournamentsWithData();
+  }
+
+  @Get("/pmva/{tournamentId}")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public PmvaReportResponse getPmvaReport(@PathVariable String tournamentId) {
+    try {
+      String cacheKey = "pmva:" + tournamentId;
+      var cached = reportCacheService.get(cacheKey);
+      if (cached.isPresent()) {
+        PmvaReport report = objectMapper.readValue(cached.get(), PmvaReport.class);
+        return new PmvaReportResponse(report, true, null);
+      }
+      var report = pmvaReportService.generate(tournamentId);
+      reportCacheService.put(cacheKey, objectMapper.writeValueAsString(report));
+      return new PmvaReportResponse(report, true, null);
+    } catch (IOException e) {
+      // Cache deserialization failed — regenerate
+      try {
+        var report = pmvaReportService.generate(tournamentId);
+        return new PmvaReportResponse(report, true, null);
+      } catch (Exception e2) {
+        return new PmvaReportResponse(null, false, e2.getMessage());
+      }
+    } catch (Exception e) {
+      return new PmvaReportResponse(null, false, e.getMessage());
+    }
+  }
+
+  // ── Report Cache Management ─────────────────────────────────────────────
+
+  @Get("/cache/clear")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public Map<String, Object> clearReportCache() {
+    reportCacheService.clearAll();
+    return Map.of("success", true);
   }
 }
