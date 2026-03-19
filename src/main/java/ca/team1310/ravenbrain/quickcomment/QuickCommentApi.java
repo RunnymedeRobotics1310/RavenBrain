@@ -2,6 +2,7 @@ package ca.team1310.ravenbrain.quickcomment;
 
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
+import ca.team1310.ravenbrain.report.cache.ReportCacheService;
 import io.micronaut.data.exceptions.DataAccessException;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
@@ -19,9 +20,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class QuickCommentApi {
   private final QuickCommentService quickCommentService;
+  private final ReportCacheService reportCacheService;
 
-  public QuickCommentApi(QuickCommentService quickCommentService) {
+  public QuickCommentApi(
+      QuickCommentService quickCommentService, ReportCacheService reportCacheService) {
     this.quickCommentService = quickCommentService;
+    this.reportCacheService = reportCacheService;
   }
 
   @Serdeable
@@ -50,6 +54,7 @@ public class QuickCommentApi {
         result.add(new QuickCommentPostResult(record, false, e.getMessage()));
       }
     }
+    reportCacheService.invalidateByPrefix("team-summary:");
     return result;
   }
 
