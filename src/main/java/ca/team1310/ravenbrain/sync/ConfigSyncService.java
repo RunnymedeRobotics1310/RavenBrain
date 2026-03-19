@@ -292,7 +292,7 @@ public class ConfigSyncService {
         ps.setInt(8, e.get("teamNumber").asInt());
         ps.setString(9, e.get("eventType").asText());
         ps.setDouble(10, e.get("amount").asDouble());
-        ps.setString(11, e.has("note") ? e.get("note").asText(null) : null);
+        ps.setString(11, e.has("note") && !e.get("note").isNull() ? e.get("note").asText() : "");
         ps.addBatch();
         count++;
       }
