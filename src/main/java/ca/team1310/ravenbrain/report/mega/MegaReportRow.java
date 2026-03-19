@@ -8,4 +8,5 @@ import java.util.Map;
 public record MegaReportRow(
     int matchId,
     TournamentLevel level,
-    Map<String, Double> values) {}
+    Map<String, Double> values,
+    Map<String, Integer> counts) {}

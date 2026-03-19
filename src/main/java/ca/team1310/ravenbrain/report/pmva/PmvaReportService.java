@@ -82,11 +82,12 @@ public class PmvaReportService {
     var hopper = buildHopperSection(eventsByMatch, matchCount);
     var swi = buildSwiSection(eventsByMatch, matchCount);
 
-    return new PmvaReport(matchCount, general, hopper, swi);
+    return new PmvaReport(teamNumber, matchCount, general, hopper, swi);
   }
 
   private PmvaReport emptyReport() {
     return new PmvaReport(
+        teamNumber,
         0,
         new GeneralSection(
             0,

@@ -87,24 +87,25 @@ public class MegaReportService {
       var matchRecords = entry.getValue();
 
       Map<String, Double> values = new LinkedHashMap<>();
+      Map<String, Integer> counts = new LinkedHashMap<>();
       for (var col : columns) {
-        double value;
+        var matching =
+            matchRecords.stream()
+                .filter(r -> r.eventType().equals(col.eventtype()))
+                .toList();
+        counts.put(col.eventtype(), matching.size());
         if (col.isQuantity()) {
           // Sum the amounts for quantity-based event types
-          value =
-              matchRecords.stream()
-                  .filter(r -> r.eventType().equals(col.eventtype()))
-                  .mapToDouble(EventLogRecord::amount)
-                  .sum();
+          values.put(
+              col.eventtype(),
+              matching.stream().mapToDouble(EventLogRecord::amount).sum());
         } else {
           // Count occurrences for non-quantity event types
-          value =
-              matchRecords.stream().filter(r -> r.eventType().equals(col.eventtype())).count();
+          values.put(col.eventtype(), (double) matching.size());
         }
-        values.put(col.eventtype(), value);
       }
 
-      rows.add(new MegaReportRow(key.matchId(), key.level(), values));
+      rows.add(new MegaReportRow(key.matchId(), key.level(), values, counts));
     }
 
     return new MegaReport(columns, rows);

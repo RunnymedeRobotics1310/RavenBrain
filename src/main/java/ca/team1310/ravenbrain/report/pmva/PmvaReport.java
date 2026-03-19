@@ -11,7 +11,7 @@ import java.util.List;
  */
 @Serdeable
 public record PmvaReport(
-    int matchCount, GeneralSection general, HopperSection hopper, SwiSection swi) {
+    int teamNumber, int matchCount, GeneralSection general, HopperSection hopper, SwiSection swi) {
 
   @Serdeable
   public record GeneralSection(
