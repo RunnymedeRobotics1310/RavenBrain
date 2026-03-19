@@ -19,14 +19,17 @@ public record PmvaReport(
       int noBreakdownCount,
       double breakdownPercentage,
       List<MatchBreakdown> breakdownMatches,
-      List<String> breakdownNotes,
-      List<String> intakeComments,
-      List<String> shooterComments,
-      List<String> generalComments,
-      List<String> suggestions) {}
+      List<MatchComment> breakdownNotes,
+      List<MatchComment> intakeComments,
+      List<MatchComment> shooterComments,
+      List<MatchComment> generalComments,
+      List<MatchComment> suggestions) {}
 
   @Serdeable
   public record MatchBreakdown(int matchId, String level, String note, String videoLink) {}
+
+  @Serdeable
+  public record MatchComment(int matchId, String level, String note) {}
 
   @Serdeable
   public record HopperSection(
@@ -43,7 +46,7 @@ public record PmvaReport(
       double maxFillCount,
       double hopperFilledPercentage,
       double avgLoadRating,
-      List<String> loadComments) {}
+      List<MatchComment> loadComments) {}
 
   @Serdeable
   public record ShootingStats(
@@ -56,8 +59,8 @@ public record PmvaReport(
       double shotsPerSecond,
       double scoresPerSecond,
       double avgStuckPerSequence,
-      List<String> stuckComments,
-      List<String> generalComments) {}
+      List<MatchComment> stuckComments,
+      List<MatchComment> generalComments) {}
 
   @Serdeable
   public record MatchShootingData(
@@ -76,9 +79,9 @@ public record PmvaReport(
       double avgStuckPerSequence,
       double avgDurationSeconds,
       List<MatchSwiData> perMatch,
-      List<String> stuckComments,
-      List<String> generalComments,
-      List<String> positionComments) {}
+      List<MatchComment> stuckComments,
+      List<MatchComment> generalComments,
+      List<MatchComment> positionComments) {}
 
   @Serdeable
   public record MatchSwiData(
