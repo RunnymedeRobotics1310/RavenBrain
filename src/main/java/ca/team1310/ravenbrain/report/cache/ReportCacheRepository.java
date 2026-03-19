@@ -19,4 +19,7 @@ public interface ReportCacheRepository extends CrudRepository<ReportCacheRecord,
 
   @Query("DELETE FROM RB_REPORT_CACHE WHERE cachekey LIKE CONCAT('%:', :tournamentId)")
   void deleteByTournamentId(String tournamentId);
+
+  @Query("DELETE FROM RB_REPORT_CACHE WHERE cachekey LIKE CONCAT(:prefix, '%')")
+  void deleteByPrefix(String prefix);
 }

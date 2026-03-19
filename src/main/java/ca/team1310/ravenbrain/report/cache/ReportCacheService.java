@@ -61,6 +61,16 @@ public class ReportCacheService {
     log.debug("Invalidated report cache for tournament: {}", tournamentId);
   }
 
+  /**
+   * Invalidate all cached reports matching a given prefix.
+   *
+   * @param prefix the cache key prefix (e.g. "team-summary:")
+   */
+  public void invalidateByPrefix(String prefix) {
+    repository.deleteByPrefix(prefix);
+    log.debug("Invalidated report cache for prefix: {}", prefix);
+  }
+
   /** Clear all cached reports. Called by admin/superuser via the cache clear endpoint. */
   public void clearAll() {
     repository.deleteAll();

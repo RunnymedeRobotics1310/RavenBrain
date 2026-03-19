@@ -134,8 +134,22 @@ public class ReportApi {
   @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
   public TeamReportResponse getTeamReport(@PathVariable int teamId) {
     try {
+      String cacheKey = "team-summary:" + teamId;
+      var cached = reportCacheService.get(cacheKey);
+      if (cached.isPresent()) {
+        var report = objectMapper.readValue(cached.get(), TeamReportService.TeamReport.class);
+        return new TeamReportResponse(report, true, null);
+      }
       var report = teamReportService.getTeamReport(teamId);
+      reportCacheService.put(cacheKey, objectMapper.writeValueAsString(report));
       return new TeamReportResponse(report, true, null);
+    } catch (IOException e) {
+      try {
+        var report = teamReportService.getTeamReport(teamId);
+        return new TeamReportResponse(report, true, null);
+      } catch (Exception e2) {
+        return new TeamReportResponse(null, false, e2.getMessage());
+      }
     } catch (Exception e) {
       return new TeamReportResponse(null, false, e.getMessage());
     }
@@ -303,8 +317,26 @@ public class ReportApi {
   @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
   public CustomTournamentStatsResponse getCustomTournamentStats(@QueryValue int team) {
     try {
+      String cacheKey = "custom-stats:" + team;
+      var cached = reportCacheService.get(cacheKey);
+      if (cached.isPresent()) {
+        var stats =
+            objectMapper.readValue(
+                cached.get(),
+                io.micronaut.core.type.Argument.listOf(
+                    CustomTournamentStatsService.CustomTournamentStats.class));
+        return new CustomTournamentStatsResponse(stats, true, null);
+      }
       var stats = customTournamentStatsService.getStatsForTeam(team);
+      reportCacheService.put(cacheKey, objectMapper.writeValueAsString(stats));
       return new CustomTournamentStatsResponse(stats, true, null);
+    } catch (IOException e) {
+      try {
+        var stats = customTournamentStatsService.getStatsForTeam(team);
+        return new CustomTournamentStatsResponse(stats, true, null);
+      } catch (Exception e2) {
+        return new CustomTournamentStatsResponse(null, false, e2.getMessage());
+      }
     } catch (Exception e) {
       return new CustomTournamentStatsResponse(null, false, e.getMessage());
     }

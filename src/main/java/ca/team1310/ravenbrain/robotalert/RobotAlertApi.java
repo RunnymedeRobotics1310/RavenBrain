@@ -2,6 +2,7 @@ package ca.team1310.ravenbrain.robotalert;
 
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
+import ca.team1310.ravenbrain.report.cache.ReportCacheService;
 import io.micronaut.data.exceptions.DataAccessException;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
@@ -15,9 +16,12 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class RobotAlertApi {
   private final RobotAlertService robotAlertService;
+  private final ReportCacheService reportCacheService;
 
-  public RobotAlertApi(RobotAlertService robotAlertService) {
+  public RobotAlertApi(
+      RobotAlertService robotAlertService, ReportCacheService reportCacheService) {
     this.robotAlertService = robotAlertService;
+    this.reportCacheService = reportCacheService;
   }
 
   @Serdeable
@@ -46,6 +50,7 @@ public class RobotAlertApi {
         result.add(new RobotAlertPostResult(record, false, e.getMessage()));
       }
     }
+    reportCacheService.invalidateByPrefix("team-summary:");
     return result;
   }
 

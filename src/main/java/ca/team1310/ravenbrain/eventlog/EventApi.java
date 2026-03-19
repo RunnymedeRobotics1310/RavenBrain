@@ -65,6 +65,10 @@ public class EventApi {
       customTournamentStatsService.invalidate(tournamentId);
       reportCacheService.invalidateForTournament(tournamentId);
     }
+    if (!invalidatedTournaments.isEmpty()) {
+      reportCacheService.invalidateByPrefix("team-summary:");
+      reportCacheService.invalidateByPrefix("custom-stats:");
+    }
     return result;
   }
 }
