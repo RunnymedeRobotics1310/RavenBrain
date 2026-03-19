@@ -1,5 +1,6 @@
 package ca.team1310.ravenbrain.sync;
 
+import ca.team1310.ravenbrain.Application;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micronaut.context.annotation.Property;
@@ -38,6 +39,16 @@ public class ConfigSyncService {
     String baseUrl = request.sourceUrl().replaceAll("/+$", "");
     log.info("Starting config sync from {}", baseUrl);
 
+    // Check source server version matches (skip for development builds)
+    String localVersion = Application.getVersion();
+    String sourceVersion = remoteClient.getVersion(baseUrl);
+    boolean devBuild = "Development Build".equals(localVersion) || "Development Build".equals(sourceVersion);
+    if (!devBuild && !localVersion.equals(sourceVersion)) {
+      throw new RuntimeException(
+          "Source server version (" + sourceVersion + ") does not match local version ("
+              + localVersion + ") — deploy the same version to both servers before syncing");
+    }
+
     // Authenticate to source
     String token = remoteClient.authenticate(baseUrl, request.sourceUser(), request.sourcePassword());
 
@@ -45,34 +56,47 @@ public class ConfigSyncService {
     String strategyAreasJson = remoteClient.fetchJson(baseUrl, token, "/api/strategy-areas");
     String eventTypesJson = remoteClient.fetchJson(baseUrl, token, "/api/event-types");
     String sequenceTypesJson = remoteClient.fetchJson(baseUrl, token, "/api/sequence-types");
-    String tournamentsJson = remoteClient.fetchJson(baseUrl, token, "/api/tournament");
-    String teamTournamentIdsJson = remoteClient.fetchJson(baseUrl, token, "/api/tournament/team-ids");
+
+    // Optionally fetch scouting data from source
+    String scoutingDataJson = null;
+    if (request.syncScoutingData()) {
+      try {
+        scoutingDataJson = remoteClient.fetchJson(baseUrl, token, "/api/config-sync/scouting-data");
+      } catch (RuntimeException e) {
+        String msg = e.getMessage() != null ? e.getMessage() : "";
+        if (msg.contains("HTTP 404")) {
+          throw new RuntimeException(
+              "Source server does not support scouting data sync — upgrade it first");
+        }
+        if (msg.contains("HTTP 401")) {
+          throw new RuntimeException(
+              "Authentication failed on source server — check source credentials");
+        }
+        if (msg.contains("HTTP 403")) {
+          throw new RuntimeException(
+              "Source server denied access to scouting data sync — either upgrade the source server or ensure the source user has superuser privileges");
+        }
+        throw e;
+      }
+    }
 
     try {
       JsonNode strategyAreas = objectMapper.readTree(strategyAreasJson);
       JsonNode eventTypes = objectMapper.readTree(eventTypesJson);
       JsonNode sequenceTypes = objectMapper.readTree(sequenceTypesJson);
-      JsonNode tournaments = objectMapper.readTree(tournamentsJson);
-      JsonNode teamTournamentIds = objectMapper.readTree(teamTournamentIdsJson);
 
-      // Fetch schedules per tournament
-      JsonNode[] schedules = new JsonNode[tournaments.size()];
-      for (int i = 0; i < tournaments.size(); i++) {
-        String tournamentId = tournaments.get(i).get("id").asText();
-        String schedulesJson =
-            remoteClient.fetchJson(baseUrl, token, "/api/schedule/" + tournamentId);
-        schedules[i] = objectMapper.readTree(schedulesJson);
-      }
+      JsonNode scoutingData = scoutingDataJson != null ? objectMapper.readTree(scoutingDataJson) : null;
 
-      // Execute sync within the Micronaut-managed transaction
       try (Connection conn = dataSource.getConnection()) {
-        int[] counts =
-            writeData(conn, strategyAreas, eventTypes, sequenceTypes, tournaments, schedules, teamTournamentIds);
+        int[] counts = writeData(conn, strategyAreas, eventTypes, sequenceTypes, request, scoutingData);
 
         String message = "Sync completed successfully from " + baseUrl;
         log.info(message);
         return new SyncResult(
-            counts[0], counts[1], counts[2], counts[3], counts[4], counts[5], counts[6], message);
+            counts[0], counts[1], counts[2], counts[3],
+            counts[4], counts[5], counts[6],
+            request.clearTournaments(),
+            message);
       }
 
     } catch (RuntimeException e) {
@@ -87,58 +111,67 @@ public class ConfigSyncService {
       JsonNode strategyAreas,
       JsonNode eventTypes,
       JsonNode sequenceTypes,
-      JsonNode tournaments,
-      JsonNode[] schedules,
-      JsonNode teamTournamentIds)
+      SyncRequest request,
+      JsonNode scoutingData)
       throws Exception {
 
     try (Statement stmt = conn.createStatement()) {
       // Disable FK checks
       stmt.execute("SET FOREIGN_KEY_CHECKS=0");
 
-      // Truncate all tables
-      stmt.execute("TRUNCATE TABLE RB_TEAM_TOURNAMENT");
+      // Always truncate config tables
       stmt.execute("TRUNCATE TABLE RB_SEQUENCEEVENT");
-      stmt.execute("TRUNCATE TABLE RB_SCHEDULE");
-      stmt.execute("TRUNCATE TABLE RB_EVENT");
-      stmt.execute("TRUNCATE TABLE RB_COMMENT");
       stmt.execute("TRUNCATE TABLE RB_EVENTTYPE");
       stmt.execute("TRUNCATE TABLE RB_SEQUENCETYPE");
-      stmt.execute("TRUNCATE TABLE RB_TOURNAMENT");
       stmt.execute("TRUNCATE TABLE RB_STRATEGYAREA");
 
-      // Insert strategy areas
-      int saCount = insertStrategyAreas(conn, strategyAreas);
-
-      // Insert event types
-      int etCount = insertEventTypes(conn, eventTypes);
-
-      // Insert sequence types and their events
-      int stCount = insertSequenceTypes(conn, sequenceTypes);
-      int seCount = insertSequenceEvents(conn, sequenceTypes);
-
-      // Insert tournaments
-      int tCount = insertTournaments(conn, tournaments);
-
-      // Insert schedules
-      int schCount = 0;
-      for (JsonNode schedule : schedules) {
-        schCount += insertSchedules(conn, schedule);
+      // Conditionally clear tournaments
+      if (request.clearTournaments()) {
+        stmt.execute("TRUNCATE TABLE RB_TEAM_TOURNAMENT");
+        stmt.execute("TRUNCATE TABLE RB_SCHEDULE");
+        stmt.execute("TRUNCATE TABLE RB_TOURNAMENT");
+        log.info("Cleared tournaments, schedules, and team-tournament data");
       }
 
-      // Insert team tournaments
-      int ttCount = insertTeamTournaments(conn, teamTournamentIds);
+      // Handle scouting data tables
+      int eventCount = 0;
+      int commentCount = 0;
+      int alertCount = 0;
+
+      if (request.syncScoutingData()) {
+        if (request.clearExistingScoutingData()) {
+          stmt.execute("TRUNCATE TABLE RB_EVENT");
+          stmt.execute("TRUNCATE TABLE RB_COMMENT");
+          stmt.execute("TRUNCATE TABLE RB_ROBOT_ALERT");
+          log.info("Cleared existing scouting data before import");
+        }
+
+        if (scoutingData != null) {
+          eventCount = insertEvents(conn, scoutingData.get("events"));
+          commentCount = insertComments(conn, scoutingData.get("comments"));
+          alertCount = insertAlerts(conn, scoutingData.get("alerts"));
+        }
+      } else {
+        // Existing behavior: clear orphaned scouting data when not syncing it
+        stmt.execute("TRUNCATE TABLE RB_EVENT");
+        stmt.execute("TRUNCATE TABLE RB_COMMENT");
+      }
+
+      // Insert config data
+      int saCount = insertStrategyAreas(conn, strategyAreas);
+      int etCount = insertEventTypes(conn, eventTypes);
+      int stCount = insertSequenceTypes(conn, sequenceTypes);
+      int seCount = insertSequenceEvents(conn, sequenceTypes);
 
       // Reset auto-increment counters
       resetAutoIncrement(stmt, "RB_STRATEGYAREA");
       resetAutoIncrement(stmt, "RB_SEQUENCETYPE");
       resetAutoIncrement(stmt, "RB_SEQUENCEEVENT");
-      resetAutoIncrement(stmt, "RB_SCHEDULE");
 
       // Re-enable FK checks
       stmt.execute("SET FOREIGN_KEY_CHECKS=1");
 
-      return new int[] {saCount, etCount, stCount, seCount, tCount, schCount, ttCount};
+      return new int[] {saCount, etCount, stCount, seCount, eventCount, commentCount, alertCount};
     }
   }
 
@@ -242,90 +275,76 @@ public class ConfigSyncService {
     }
   }
 
-  private int insertTournaments(Connection conn, JsonNode tournaments) throws Exception {
+  private int insertEvents(Connection conn, JsonNode events) throws Exception {
+    if (events == null || !events.isArray()) return 0;
     String sql =
-        "INSERT INTO RB_TOURNAMENT (id, code, season, tournamentname, starttime, endtime, weeknumber) VALUES (?,?,?,?,?,?,?)";
+        "INSERT INTO RB_EVENT (id, eventtimestamp, userid, tournamentid, level, matchid, alliance, teamnumber, eventtype, amount, note) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
     try (PreparedStatement ps = conn.prepareStatement(sql)) {
       int count = 0;
-      for (JsonNode t : tournaments) {
-        ps.setString(1, t.get("id").asText());
-        ps.setString(2, t.has("code") ? t.get("code").asText(null) : null);
-        ps.setInt(3, t.get("season").asInt());
-        ps.setString(4, t.get("name").asText());
-        ps.setTimestamp(5, parseTimestamp(t.get("startTime")));
-        ps.setTimestamp(6, parseTimestamp(t.get("endTime")));
-        ps.setInt(7, t.has("weekNumber") ? t.get("weekNumber").asInt() : 0);
+      for (JsonNode e : events) {
+        ps.setLong(1, e.get("id").asLong());
+        ps.setTimestamp(2, parseTimestamp(e.get("timestamp")));
+        ps.setLong(3, e.get("userId").asLong());
+        ps.setString(4, e.get("tournamentId").asText());
+        ps.setString(5, e.get("level").asText());
+        ps.setInt(6, e.get("matchId").asInt());
+        ps.setString(7, e.get("alliance").asText());
+        ps.setInt(8, e.get("teamNumber").asInt());
+        ps.setString(9, e.get("eventType").asText());
+        ps.setDouble(10, e.get("amount").asDouble());
+        ps.setString(11, e.has("note") ? e.get("note").asText(null) : null);
         ps.addBatch();
         count++;
       }
       ps.executeBatch();
-      log.info("Inserted {} tournaments", count);
+      log.info("Inserted {} events", count);
+      resetAutoIncrement(conn.createStatement(), "RB_EVENT");
       return count;
     }
   }
 
-  private int insertSchedules(Connection conn, JsonNode schedules) throws Exception {
+  private int insertComments(Connection conn, JsonNode comments) throws Exception {
+    if (comments == null || !comments.isArray()) return 0;
     String sql =
-        "INSERT INTO RB_SCHEDULE (id, tournamentid, level, matchnum, starttime, red1, red2, red3, red4, blue1, blue2, blue3, blue4, redscore, bluescore, redrp, bluerp, winningalliance) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        "INSERT INTO RB_COMMENT (id, userid, scoutrole, teamnumber, commenttimestamp, comment) VALUES (?,?,?,?,?,?)";
     try (PreparedStatement ps = conn.prepareStatement(sql)) {
       int count = 0;
-      for (JsonNode s : schedules) {
-        ps.setLong(1, s.get("id").asLong());
-        ps.setString(2, s.get("tournamentId").asText());
-        ps.setString(3, s.get("level").asText());
-        ps.setInt(4, s.get("match").asInt());
-        ps.setString(5, s.has("startTime") ? s.get("startTime").asText(null) : null);
-        ps.setInt(6, s.get("red1").asInt());
-        ps.setInt(7, s.get("red2").asInt());
-        ps.setInt(8, s.get("red3").asInt());
-        ps.setInt(9, s.has("red4") ? s.get("red4").asInt() : 0);
-        ps.setInt(10, s.get("blue1").asInt());
-        ps.setInt(11, s.get("blue2").asInt());
-        ps.setInt(12, s.get("blue3").asInt());
-        ps.setInt(13, s.has("blue4") ? s.get("blue4").asInt() : 0);
-        if (s.has("redScore") && !s.get("redScore").isNull()) {
-          ps.setInt(14, s.get("redScore").asInt());
-        } else {
-          ps.setNull(14, java.sql.Types.INTEGER);
-        }
-        if (s.has("blueScore") && !s.get("blueScore").isNull()) {
-          ps.setInt(15, s.get("blueScore").asInt());
-        } else {
-          ps.setNull(15, java.sql.Types.INTEGER);
-        }
-        if (s.has("redRp") && !s.get("redRp").isNull()) {
-          ps.setInt(16, s.get("redRp").asInt());
-        } else {
-          ps.setNull(16, java.sql.Types.INTEGER);
-        }
-        if (s.has("blueRp") && !s.get("blueRp").isNull()) {
-          ps.setInt(17, s.get("blueRp").asInt());
-        } else {
-          ps.setNull(17, java.sql.Types.INTEGER);
-        }
-        ps.setInt(18, s.has("winningAlliance") ? s.get("winningAlliance").asInt() : 0);
+      for (JsonNode c : comments) {
+        ps.setLong(1, c.get("id").asLong());
+        ps.setLong(2, c.get("userId").asLong());
+        ps.setString(3, c.get("role").asText());
+        ps.setInt(4, c.get("team").asInt());
+        ps.setTimestamp(5, parseTimestamp(c.get("timestamp")));
+        ps.setString(6, c.get("quickComment").asText());
         ps.addBatch();
         count++;
       }
       ps.executeBatch();
-      log.info("Inserted {} schedule entries", count);
+      log.info("Inserted {} comments", count);
+      resetAutoIncrement(conn.createStatement(), "RB_COMMENT");
       return count;
     }
   }
 
-  private int insertTeamTournaments(Connection conn, JsonNode teamTournamentIds) throws Exception {
+  private int insertAlerts(Connection conn, JsonNode alerts) throws Exception {
+    if (alerts == null || !alerts.isArray()) return 0;
     String sql =
-        "INSERT INTO RB_TEAM_TOURNAMENT (tournament_id, team_number) VALUES (?, ?)";
+        "INSERT INTO RB_ROBOT_ALERT (id, tournament_id, team_number, user_id, created_at, alert) VALUES (?,?,?,?,?,?)";
     try (PreparedStatement ps = conn.prepareStatement(sql)) {
       int count = 0;
-      for (JsonNode id : teamTournamentIds) {
-        ps.setString(1, id.asText());
-        ps.setInt(2, teamNumber);
+      for (JsonNode a : alerts) {
+        ps.setLong(1, a.get("id").asLong());
+        ps.setString(2, a.get("tournamentId").asText());
+        ps.setInt(3, a.get("teamNumber").asInt());
+        ps.setLong(4, a.get("userId").asLong());
+        ps.setTimestamp(5, parseTimestamp(a.get("createdAt")));
+        ps.setString(6, a.get("alert").asText());
         ps.addBatch();
         count++;
       }
       ps.executeBatch();
-      log.info("Inserted {} team tournament entries", count);
+      log.info("Inserted {} alerts", count);
+      resetAutoIncrement(conn.createStatement(), "RB_ROBOT_ALERT");
       return count;
     }
   }

@@ -8,7 +8,8 @@ public record SyncResult(
     int eventTypes,
     int sequenceTypes,
     int sequenceEvents,
-    int tournaments,
-    int schedules,
-    int teamTournaments,
+    int events,
+    int comments,
+    int alerts,
+    boolean tournamentsCleared,
     String message) {}

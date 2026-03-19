@@ -16,6 +16,45 @@ public class RemoteRavenBrainClient {
   private static final ObjectMapper objectMapper = new ObjectMapper();
 
   /**
+   * Get the version of a remote RavenBrain instance via its /api/ping endpoint.
+   *
+   * @return the version string from the X-RavenBrain-Version header
+   */
+  public String getVersion(String baseUrl) {
+    try {
+      String url = baseUrl.replaceAll("/+$", "") + "/api/ping";
+
+      HttpRequest request =
+          HttpRequest.newBuilder()
+              .uri(new URI(url))
+              .GET()
+              .build();
+
+      log.debug("Pinging {}", url);
+      HttpClient client = HttpClient.newHttpClient();
+      HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+      if (response.statusCode() != 200) {
+        throw new RuntimeException(
+            "Could not reach source server at " + baseUrl + " (HTTP " + response.statusCode() + ")");
+      }
+
+      String version = response.headers().firstValue("X-RavenBrain-Version").orElse(null);
+      if (version == null) {
+        throw new RuntimeException(
+            "Source server did not report a version — it may be too old to support config sync");
+      }
+
+      log.debug("Source server version: {}", version);
+      return version;
+    } catch (RuntimeException e) {
+      throw e;
+    } catch (Exception e) {
+      throw new RuntimeException("Could not connect to source server at " + baseUrl + ": " + e.getMessage(), e);
+    }
+  }
+
+  /**
    * Authenticate against a remote RavenBrain instance using its /login endpoint.
    *
    * @return the JWT access_token
@@ -43,9 +82,13 @@ public class RemoteRavenBrainClient {
       HttpClient client = HttpClient.newHttpClient();
       HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
+      if (response.statusCode() == 401) {
+        throw new RuntimeException(
+            "Source server credentials do not match — check username and password");
+      }
       if (response.statusCode() != 200) {
         throw new RuntimeException(
-            "Authentication failed (HTTP " + response.statusCode() + "): " + response.body());
+            "Source server authentication failed (HTTP " + response.statusCode() + ")");
       }
 
       JsonNode json = objectMapper.readTree(response.body());
