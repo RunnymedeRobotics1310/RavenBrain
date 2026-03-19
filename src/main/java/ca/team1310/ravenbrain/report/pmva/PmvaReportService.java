@@ -112,11 +112,11 @@ public class PmvaReportService {
     int breakdownCount = 0;
     int noBreakdownCount = 0;
     var breakdownMatches = new ArrayList<MatchBreakdown>();
-    var breakdownNotes = new ArrayList<String>();
-    var intakeComments = new ArrayList<String>();
-    var shooterComments = new ArrayList<String>();
-    var generalComments = new ArrayList<String>();
-    var suggestions = new ArrayList<String>();
+    var breakdownNotes = new ArrayList<PmvaReport.MatchComment>();
+    var intakeComments = new ArrayList<PmvaReport.MatchComment>();
+    var shooterComments = new ArrayList<PmvaReport.MatchComment>();
+    var generalComments = new ArrayList<PmvaReport.MatchComment>();
+    var suggestions = new ArrayList<PmvaReport.MatchComment>();
 
     // Build a map of video links per match for cross-referencing
     var videoLinksByMatch = new HashMap<String, String>();
@@ -139,21 +139,21 @@ public class PmvaReportService {
                   hasNote(event) ? event.note() : "",
                   videoLinksByMatch.get(matchKey)));
           if (hasNote(event)) {
-            breakdownNotes.add(event.note());
+            breakdownNotes.add(toComment(event));
           }
         }
         case "pmva-no-breakdown" -> noBreakdownCount++;
         case "pmva-intake-comments" -> {
-          if (hasNote(event)) intakeComments.add(event.note());
+          if (hasNote(event)) intakeComments.add(toComment(event));
         }
         case "pmva-shooter-comments" -> {
-          if (hasNote(event)) shooterComments.add(event.note());
+          if (hasNote(event)) shooterComments.add(toComment(event));
         }
         case "pmva-general-comments" -> {
-          if (hasNote(event)) generalComments.add(event.note());
+          if (hasNote(event)) generalComments.add(toComment(event));
         }
         case "pmva-look-into-suggestion" -> {
-          if (hasNote(event)) suggestions.add(event.note());
+          if (hasNote(event)) suggestions.add(toComment(event));
         }
         default -> {
           // skip non-general events
@@ -184,14 +184,14 @@ public class PmvaReportService {
     var allUnloadSequences = extractUnloadSequences(eventsByMatch);
 
     // Collect hopper shooting comments from the event stream
-    var stuckComments = new ArrayList<String>();
-    var unloadGeneralComments = new ArrayList<String>();
+    var stuckComments = new ArrayList<PmvaReport.MatchComment>();
+    var unloadGeneralComments = new ArrayList<PmvaReport.MatchComment>();
     for (var matchEvents : eventsByMatch.values()) {
       for (var event : matchEvents) {
         if ("pmva-stuck-comments".equals(event.eventType()) && hasNote(event)) {
-          stuckComments.add(event.note());
+          stuckComments.add(toComment(event));
         } else if ("pmva-unload-general-comments".equals(event.eventType()) && hasNote(event)) {
-          unloadGeneralComments.add(event.note());
+          unloadGeneralComments.add(toComment(event));
         }
       }
     }
@@ -220,15 +220,18 @@ public class PmvaReportService {
     var ratings = new ArrayList<Double>();
     int hopperFullCount = 0;
     int hopperNotFullCount = 0;
-    var loadComments = new ArrayList<String>();
+    var loadComments = new ArrayList<PmvaReport.MatchComment>();
 
-    for (var matchEvents : eventsByMatch.values()) {
+    for (var entry : eventsByMatch.entrySet()) {
       boolean inSequence = false;
       double currentFillCount = 0;
 
-      for (var event : matchEvents) {
+      for (var event : entry.getValue()) {
         switch (event.eventType()) {
           case "pmva-start-load" -> {
+            if (inSequence) {
+              log.debug("Discarding unclosed load sequence in match {}", entry.getKey());
+            }
             inSequence = true;
             currentFillCount = 0;
           }
@@ -239,7 +242,7 @@ public class PmvaReportService {
             if (inSequence) ratings.add(event.amount());
           }
           case "pmva-load-comments" -> {
-            if (hasNote(event)) loadComments.add(event.note());
+            if (hasNote(event)) loadComments.add(toComment(event));
           }
           case "pmva-hopper-full" -> {
             if (inSequence) {
@@ -259,6 +262,9 @@ public class PmvaReportService {
             // skip
           }
         }
+      }
+      if (inSequence) {
+        log.debug("Discarding unclosed load sequence at end of match {}", entry.getKey());
       }
     }
 
@@ -333,6 +339,9 @@ public class PmvaReportService {
           }
         }
       }
+      if (inSequence) {
+        log.debug("Discarding unclosed unload sequence at end of match {}", entry.getKey());
+      }
     }
     return sequences;
   }
@@ -347,8 +356,8 @@ public class PmvaReportService {
       String position,
       List<UnloadSequence> sequences,
       int matchCount,
-      List<String> stuckComments,
-      List<String> generalComments) {
+      List<PmvaReport.MatchComment> stuckComments,
+      List<PmvaReport.MatchComment> generalComments) {
     if (sequences.isEmpty()) {
       return new ShootingStats(
           position, 0, List.of(), 0, 0, 0, 0, 0, 0, stuckComments, generalComments);
@@ -362,7 +371,7 @@ public class PmvaReportService {
     double totalStuck = sequences.stream().mapToDouble(UnloadSequence::stuckCount).sum();
 
     double avgScorePerMatch = safeDivide(totalScores, matchCount);
-    double avgHitRate = safeDivide(totalScores, totalShots);
+    double avgHitRate = safeDivide(totalScores, totalShots) * 100.0;
     double avgUnloadSeconds = safeDivide(totalUnloadSeconds, sequences.size());
     double shotsPerSecond = safeDivide(totalShots, totalUnloadSeconds);
     double scoresPerSecond = safeDivide(totalScores, totalUnloadSeconds);
@@ -389,7 +398,7 @@ public class PmvaReportService {
               matchSeqs.size(),
               matchScores,
               matchShots,
-              round2(safeDivide(matchScores, matchShots))));
+              round2(safeDivide(matchScores, matchShots) * 100.0)));
     }
 
     return new ShootingStats(
@@ -412,9 +421,9 @@ public class PmvaReportService {
       Map<String, List<EventLogRecord>> eventsByMatch, int matchCount) {
 
     var swiSequences = new ArrayList<SwiSequenceData>();
-    var stuckComments = new ArrayList<String>();
-    var generalComments = new ArrayList<String>();
-    var positionComments = new ArrayList<String>();
+    var stuckComments = new ArrayList<PmvaReport.MatchComment>();
+    var generalComments = new ArrayList<PmvaReport.MatchComment>();
+    var positionComments = new ArrayList<PmvaReport.MatchComment>();
 
     for (var matchEvents : eventsByMatch.values()) {
       boolean inSequence = false;
@@ -428,7 +437,7 @@ public class PmvaReportService {
         switch (event.eventType()) {
           case "pmva-swi-start" -> {
             if (inSequence) {
-              log.debug("Discarding unclosed SWI sequence in match {}", currentMatchId);
+              log.debug("Discarding unclosed SWI sequence in match {} {}", currentLevel, currentMatchId);
             }
             inSequence = true;
             scoreCount = 0;
@@ -447,13 +456,13 @@ public class PmvaReportService {
             if (inSequence) stuckCount += event.amount();
           }
           case "pmva-swi-stuck-comments" -> {
-            if (hasNote(event)) stuckComments.add(event.note());
+            if (hasNote(event)) stuckComments.add(toComment(event));
           }
           case "pmva-swi-general-comments" -> {
-            if (hasNote(event)) generalComments.add(event.note());
+            if (hasNote(event)) generalComments.add(toComment(event));
           }
           case "pmva-swi-position-comments" -> {
-            if (hasNote(event)) positionComments.add(event.note());
+            if (hasNote(event)) positionComments.add(toComment(event));
           }
           case "pmva-swi-duration-seconds" -> {
             if (inSequence) {
@@ -472,6 +481,9 @@ public class PmvaReportService {
             // skip
           }
         }
+      }
+      if (inSequence) {
+        log.debug("Discarding unclosed SWI sequence at end of match {} {}", currentLevel, currentMatchId);
       }
     }
 
@@ -516,7 +528,7 @@ public class PmvaReportService {
               matchSeqs.size(),
               mScores,
               mMisses,
-              round2(safeDivide(mScores, mTotal)),
+              round2(safeDivide(mScores, mTotal) * 100.0),
               round2(safeDivide(mDuration, matchSeqs.size()))));
     }
 
@@ -544,6 +556,10 @@ public class PmvaReportService {
 
   private static boolean hasNote(EventLogRecord event) {
     return event.note() != null && !event.note().isBlank();
+  }
+
+  private static PmvaReport.MatchComment toComment(EventLogRecord event) {
+    return new PmvaReport.MatchComment(event.matchId(), event.level().name(), event.note());
   }
 
   private static double safeDivide(double numerator, double denominator) {
