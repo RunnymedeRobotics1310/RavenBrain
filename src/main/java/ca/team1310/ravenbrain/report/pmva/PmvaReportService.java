@@ -78,7 +78,7 @@ public class PmvaReportService {
       eventsByMatch.computeIfAbsent(key, k -> new ArrayList<>()).add(event);
     }
 
-    var general = buildGeneralSection(pmvaEvents, eventsByMatch);
+    var general = buildGeneralSection(pmvaEvents, eventsByMatch, matchCount);
     var hopper = buildHopperSection(eventsByMatch, matchCount);
     var swi = buildSwiSection(eventsByMatch, matchCount);
 
@@ -107,7 +107,7 @@ public class PmvaReportService {
   // ── General Section ──────────────────────────────────────────────────────
 
   private GeneralSection buildGeneralSection(
-      List<EventLogRecord> allEvents, Map<String, List<EventLogRecord>> eventsByMatch) {
+      List<EventLogRecord> allEvents, Map<String, List<EventLogRecord>> eventsByMatch, int matchCount) {
 
     int breakdownCount = 0;
     int noBreakdownCount = 0;
@@ -161,8 +161,7 @@ public class PmvaReportService {
       }
     }
 
-    int total = breakdownCount + noBreakdownCount;
-    double breakdownPct = safeDivide(breakdownCount, total) * 100.0;
+    double breakdownPct = safeDivide(breakdownCount, matchCount) * 100.0;
 
     return new GeneralSection(
         breakdownCount,
