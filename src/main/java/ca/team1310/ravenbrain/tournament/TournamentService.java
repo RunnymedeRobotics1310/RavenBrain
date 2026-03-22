@@ -19,20 +19,20 @@ public abstract class TournamentService implements CrudRepository<TournamentReco
   public abstract List<TournamentRecord> findAllSortByStartTime();
 
   /**
-   * Find tournaments that are currently active or ended within the last 36 hours. This captures
+   * Find tournaments that are currently active or ended within the last 4 hours. This captures
    * tournaments still in progress as well as those that recently concluded, allowing background
    * tasks and schedule syncs to continue processing shortly after the event ends.
    */
   @Query(
-      "SELECT * FROM RB_TOURNAMENT WHERE starttime < NOW() AND DATE_ADD(endtime, INTERVAL 36 HOUR) > NOW()")
+      "SELECT * FROM RB_TOURNAMENT WHERE starttime < NOW() AND DATE_ADD(endtime, INTERVAL 4 HOUR) > NOW()")
   public abstract List<TournamentRecord> findActiveTournaments();
 
   /**
-   * Find tournaments starting within 24 hours or that ended within the last 36 hours. This
+   * Find tournaments starting within 24 hours or that ended within the last 4 hours. This
    * captures upcoming, in-progress, and recently concluded tournaments for display purposes.
    */
   @Query(
-      "SELECT * FROM RB_TOURNAMENT WHERE DATE_SUB(starttime, INTERVAL 24 HOUR) < NOW() AND DATE_ADD(endtime, INTERVAL 36 HOUR) > NOW()")
+      "SELECT * FROM RB_TOURNAMENT WHERE DATE_SUB(starttime, INTERVAL 24 HOUR) < NOW() AND DATE_ADD(endtime, INTERVAL 4 HOUR) > NOW()")
   public abstract List<TournamentRecord> findUpcomingAndActiveTournaments();
 
   @Query("SELECT season FROM RB_TOURNAMENT WHERE id = :tournamentId")
