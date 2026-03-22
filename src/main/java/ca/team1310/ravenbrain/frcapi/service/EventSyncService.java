@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.time.Year;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -275,6 +276,11 @@ class EventSyncService {
       for (TournamentLevel level : TournamentLevel.values()) {
         if (level == TournamentLevel.None || level == TournamentLevel.Practice) continue;
 
+        if (isLevelScoreSyncComplete(tournament, level)) {
+          log.debug("Skipping {} score sync for {} — level complete", level, tournament.id());
+          continue;
+        }
+
         MatchScores2025 scoresResp =
             frcClientService.peekScores(tournament.season(), tournament.code(), level);
         if (scoresResp == null || scoresResp.scores() == null) continue;
@@ -345,6 +351,36 @@ class EventSyncService {
   }
 
   /**
+   * Check if score syncing is complete for a tournament level. Qualification is complete when all
+   * scheduled matches have scores. Playoff is complete when (a) the last scheduled match has a
+   * score, or (b) the second-to-last match has a score and 2+ hours have passed since the
+   * tournament's scheduled end time (the final 3 playoff matches are best-of-3, so the last match
+   * may be skipped).
+   */
+  private boolean isLevelScoreSyncComplete(TournamentRecord tournament, TournamentLevel level) {
+    if (level == TournamentLevel.Qualification) {
+      long unscored =
+          scheduleService.countUnscoredByTournamentIdAndLevel(tournament.id(), level);
+      return unscored == 0
+          && scheduleService.countScoredQualificationByTournamentId(tournament.id()) > 0;
+    }
+    if (level == TournamentLevel.Playoff) {
+      List<ScheduleRecord> lastTwo = scheduleService.findLastTwoPlayoffMatches(tournament.id());
+      if (lastTwo.isEmpty()) return false;
+      // Last match has a score — playoffs are fully complete
+      if (lastTwo.get(0).redScore() != null) return true;
+      // Second-to-last match is scored and 2+ hours past tournament end — final was skipped
+      if (lastTwo.size() >= 2
+          && lastTwo.get(1).redScore() != null
+          && Instant.now().isAfter(tournament.endTime().plus(2, ChronoUnit.HOURS))) {
+        return true;
+      }
+      return false;
+    }
+    return false;
+  }
+
+  /**
    * Fetch and persist the schedule for a single tournament on demand. Uses the caching client, so
    * repeated calls within the TTL window will not hit the FRC API again.
    *
@@ -363,8 +399,17 @@ class EventSyncService {
   }
 
   private void _populateScheduleForTournament(TournamentRecord tournamentRecord) {
+    // Once qualification scores exist, Practice schedule is static — skip fetching it
+    boolean qualsHaveScores =
+        scheduleService.countScoredQualificationByTournamentId(tournamentRecord.id()) > 0;
+
     for (var level : TournamentLevel.values()) {
       if (level == TournamentLevel.None) continue;
+      if (level == TournamentLevel.Practice && qualsHaveScores) {
+        log.debug("Skipping Practice schedule fetch for {} — quals have scores",
+            tournamentRecord.id());
+        continue;
+      }
       ScheduleResponse scheduleData =
           frcClientService.peekSchedule(
               tournamentRecord.season(), tournamentRecord.code(), level);
