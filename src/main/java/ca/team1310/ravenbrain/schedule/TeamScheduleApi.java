@@ -3,6 +3,7 @@ package ca.team1310.ravenbrain.schedule;
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
 import ca.team1310.ravenbrain.tournament.WatchedTournamentService;
+import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.PathVariable;
@@ -32,9 +33,9 @@ public class TeamScheduleApi {
   @Get("/{tournamentId}")
   @Produces(APPLICATION_JSON)
   @Secured(SecurityRule.IS_ANONYMOUS)
-  public TeamScheduleService.TeamScheduleResponse getTeamSchedule(
+  public HttpResponse<TeamScheduleService.TeamScheduleResponse> getTeamSchedule(
       @PathVariable String tournamentId) {
     watchedTournamentService.watch(tournamentId);
-    return teamScheduleService.getTeamSchedule(tournamentId);
+    return HttpResponse.ok(teamScheduleService.getTeamSchedule(tournamentId));
   }
 }
