@@ -52,11 +52,13 @@ public class TeamScheduleService {
   }
 
   private TeamScheduleResponse buildAndCacheResponse(String tournamentId) {
-    TournamentRecord tournament =
-        tournamentService
-            .findById(tournamentId)
-            .orElseThrow(
-                () -> new IllegalArgumentException("Tournament not found: " + tournamentId));
+    var opt = tournamentService.findById(tournamentId);
+    if (opt.isEmpty()) {
+      log.debug("Tournament {} not found in DB, returning empty response", tournamentId);
+      return new TeamScheduleResponse(
+          tournamentId, "Loading...", teamNumber, false, false, false, List.of(), List.of());
+    }
+    TournamentRecord tournament = opt.get();
 
     List<ScheduleRecord> scheduleRecords =
         scheduleService.findAllByTournamentIdOrderByMatch(tournamentId);

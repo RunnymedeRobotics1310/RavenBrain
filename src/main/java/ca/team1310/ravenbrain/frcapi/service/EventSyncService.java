@@ -18,6 +18,7 @@ import ca.team1310.ravenbrain.schedule.TeamScheduleService;
 import ca.team1310.ravenbrain.tournament.TeamTournamentService;
 import ca.team1310.ravenbrain.tournament.TournamentRecord;
 import ca.team1310.ravenbrain.tournament.TournamentService;
+import ca.team1310.ravenbrain.tournament.WatchedTournamentService;
 import io.micronaut.context.annotation.Property;
 import io.micronaut.data.exceptions.DataAccessException;
 import io.micronaut.scheduling.annotation.Scheduled;
@@ -51,6 +52,7 @@ class EventSyncService {
   private final FrcClientService frcClientService;
   private final TournamentService tournamentService;
   private final TeamTournamentService teamTournamentService;
+  private final WatchedTournamentService watchedTournamentService;
   private final int teamNumber;
   private final ScheduleService scheduleService;
   private final TeamScheduleService teamScheduleService;
@@ -59,12 +61,14 @@ class EventSyncService {
       FrcClientService frcClientService,
       TournamentService tournamentService,
       TeamTournamentService teamTournamentService,
+      WatchedTournamentService watchedTournamentService,
       @Property(name = "raven-eye.team") int teamNumber,
       ScheduleService scheduleService,
       TeamScheduleService teamScheduleService) {
     this.frcClientService = frcClientService;
     this.tournamentService = tournamentService;
     this.teamTournamentService = teamTournamentService;
+    this.watchedTournamentService = watchedTournamentService;
     this.teamNumber = teamNumber;
     this.scheduleService = scheduleService;
     this.teamScheduleService = teamScheduleService;
@@ -113,6 +117,7 @@ class EventSyncService {
     }
     if (gotFreshTeamData) {
       teamTournamentService.replaceTeamTournaments(teamNumber, allTeamTournamentIds);
+      watchedTournamentService.watchAll(allTeamTournamentIds);
     } else {
       log.info("No fresh team event data from FRC API — preserving existing team tournament IDs");
     }
@@ -227,11 +232,27 @@ class EventSyncService {
         .toList();
   }
 
-  /** Every three minutes, load the tournament schedule for the owner team's active tournaments. */
+  /**
+   * Returns active tournaments that should be synced: owner team tournaments plus any watched
+   * tournaments.
+   */
+  private List<TournamentRecord> getActiveTournamentsToSync() {
+    Set<String> ownerIds =
+        Set.copyOf(teamTournamentService.findTournamentIdsForTeam(teamNumber));
+    Set<String> watchedIds = watchedTournamentService.getWatchedTournamentIds();
+    return tournamentService.findUpcomingAndActiveTournaments().stream()
+        .filter(t -> ownerIds.contains(t.id()) || watchedIds.contains(t.id()))
+        .toList();
+  }
+
+  /**
+   * Every three minutes, load the tournament schedule for active tournaments (owner team +
+   * watched).
+   */
   @Scheduled(fixedDelay = "3m")
   void loadScheduleForCurrentTournament() {
-    log.info("Loading tournament schedule for owner team's active tournaments");
-    for (TournamentRecord tournamentRecord : getOwnerTeamActiveTournaments()) {
+    log.info("Loading tournament schedule for active tournaments (owner team + watched)");
+    for (TournamentRecord tournamentRecord : getActiveTournamentsToSync()) {
       log.info("Syncing schedule for tournament {} (season={}, code={})",
           tournamentRecord.id(), tournamentRecord.season(), tournamentRecord.code());
       try {
@@ -246,10 +267,10 @@ class EventSyncService {
     }
   }
 
-  /** Every 30 seconds, sync scores for the owner team's active tournaments. */
+  /** Every 30 seconds, sync scores for active tournaments (owner team + watched). */
   @Scheduled(fixedDelay = "30s")
   void syncScoresForActiveTournaments() {
-    for (TournamentRecord tournament : getOwnerTeamActiveTournaments()) {
+    for (TournamentRecord tournament : getActiveTournamentsToSync()) {
       boolean updated = false;
       for (TournamentLevel level : TournamentLevel.values()) {
         if (level == TournamentLevel.None || level == TournamentLevel.Practice) continue;

@@ -2,6 +2,7 @@ package ca.team1310.ravenbrain.schedule;
 
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
+import ca.team1310.ravenbrain.tournament.WatchedTournamentService;
 import io.micronaut.http.annotation.Controller;
 import io.micronaut.http.annotation.Get;
 import io.micronaut.http.annotation.PathVariable;
@@ -19,9 +20,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TeamScheduleApi {
   private final TeamScheduleService teamScheduleService;
+  private final WatchedTournamentService watchedTournamentService;
 
-  TeamScheduleApi(TeamScheduleService teamScheduleService) {
+  TeamScheduleApi(
+      TeamScheduleService teamScheduleService,
+      WatchedTournamentService watchedTournamentService) {
     this.teamScheduleService = teamScheduleService;
+    this.watchedTournamentService = watchedTournamentService;
   }
 
   @Get("/{tournamentId}")
@@ -29,6 +34,7 @@ public class TeamScheduleApi {
   @Secured(SecurityRule.IS_ANONYMOUS)
   public TeamScheduleService.TeamScheduleResponse getTeamSchedule(
       @PathVariable String tournamentId) {
+    watchedTournamentService.watch(tournamentId);
     return teamScheduleService.getTeamSchedule(tournamentId);
   }
 }

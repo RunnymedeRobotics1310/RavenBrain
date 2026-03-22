@@ -127,6 +127,7 @@ public class ConfigSyncService {
 
       // Conditionally clear tournaments
       if (request.clearTournaments()) {
+        stmt.execute("TRUNCATE TABLE RB_WATCHED_TOURNAMENT");
         stmt.execute("TRUNCATE TABLE RB_TEAM_TOURNAMENT");
         stmt.execute("TRUNCATE TABLE RB_SCHEDULE");
         stmt.execute("TRUNCATE TABLE RB_TOURNAMENT");

@@ -32,7 +32,7 @@ public class ConfigSyncApiTest {
 
   @Test
   void testSyncAsSuperuser() {
-    SyncRequest body = new SyncRequest("http://invalid-source:9999", "user", "pass");
+    SyncRequest body = new SyncRequest("http://invalid-source:9999", "user", "pass", false, false, false);
     HttpRequest<?> request =
         HttpRequest.POST("/api/config-sync", body).basicAuth("superuser", config.superuser());
     // Expect a server error (source is unreachable), NOT a 401/403
@@ -47,7 +47,7 @@ public class ConfigSyncApiTest {
     String adminLogin = "sync-admin-testuser-" + System.currentTimeMillis();
     testUserHelper.createTestUser(adminLogin, "password", "ROLE_ADMIN");
 
-    SyncRequest body = new SyncRequest("http://invalid-source:9999", "user", "pass");
+    SyncRequest body = new SyncRequest("http://invalid-source:9999", "user", "pass", false, false, false);
     HttpRequest<?> request =
         HttpRequest.POST("/api/config-sync", body).basicAuth(adminLogin, "password");
     HttpClientResponseException e =
@@ -61,7 +61,7 @@ public class ConfigSyncApiTest {
     String memberLogin = "sync-member-testuser-" + System.currentTimeMillis();
     testUserHelper.createTestUser(memberLogin, "password", "ROLE_MEMBER");
 
-    SyncRequest body = new SyncRequest("http://invalid-source:9999", "user", "pass");
+    SyncRequest body = new SyncRequest("http://invalid-source:9999", "user", "pass", false, false, false);
     HttpRequest<?> request =
         HttpRequest.POST("/api/config-sync", body).basicAuth(memberLogin, "password");
     HttpClientResponseException e =
@@ -72,7 +72,7 @@ public class ConfigSyncApiTest {
 
   @Test
   void testSyncUnauthorized() {
-    SyncRequest body = new SyncRequest("http://invalid-source:9999", "user", "pass");
+    SyncRequest body = new SyncRequest("http://invalid-source:9999", "user", "pass", false, false, false);
     HttpRequest<?> request = HttpRequest.POST("/api/config-sync", body);
     HttpClientResponseException e =
         assertThrows(
