@@ -6,12 +6,9 @@ import static org.mockito.Mockito.*;
 
 import ca.team1310.ravenbrain.eventtype.EventType;
 import ca.team1310.ravenbrain.eventtype.EventTypeService;
-import ca.team1310.ravenbrain.schedule.ScheduleService;
 import ca.team1310.ravenbrain.sequencetype.SequenceTypeService;
 import ca.team1310.ravenbrain.strategyarea.StrategyArea;
 import ca.team1310.ravenbrain.strategyarea.StrategyAreaService;
-import ca.team1310.ravenbrain.tournament.TournamentRecord;
-import ca.team1310.ravenbrain.tournament.TournamentService;
 import io.micronaut.test.annotation.MockBean;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
@@ -28,8 +25,6 @@ public class ConfigSyncServiceTest {
   @Inject StrategyAreaService strategyAreaService;
   @Inject EventTypeService eventTypeService;
   @Inject SequenceTypeService sequenceTypeService;
-  @Inject TournamentService tournamentService;
-  @Inject ScheduleService scheduleService;
 
   @MockBean(RemoteRavenBrainClient.class)
   RemoteRavenBrainClient mockRemoteClient() {
@@ -121,7 +116,8 @@ public class ConfigSyncServiceTest {
         .thenReturn("[\"2026onham\"]");
 
     // Execute sync
-    SyncRequest request = new SyncRequest("http://source:8888", "user", "pass");
+    SyncRequest request =
+        new SyncRequest("http://source:8888", "user", "pass", true, false, false);
     SyncResult result = configSyncService.syncFromSource(request);
 
     // Verify counts
@@ -129,9 +125,6 @@ public class ConfigSyncServiceTest {
     assertEquals(3, result.eventTypes());
     assertEquals(1, result.sequenceTypes());
     assertEquals(2, result.sequenceEvents());
-    assertEquals(1, result.tournaments());
-    assertEquals(2, result.schedules());
-    assertEquals(1, result.teamTournaments());
     assertTrue(result.message().contains("http://source:8888"));
 
     // Verify old data is gone and new data is present
@@ -164,18 +157,6 @@ public class ConfigSyncServiceTest {
     assertEquals(2, seqEvents.size());
     assertTrue(seqEvents.stream().anyMatch(e -> e.id() == 200 && e.startOfSequence()));
     assertTrue(seqEvents.stream().anyMatch(e -> e.id() == 201 && e.endOfSequence()));
-
-    // Verify tournaments
-    List<TournamentRecord> tList = tournamentService.findAllSortByStartTime();
-    assertEquals(1, tList.size());
-    assertEquals("2026onham", tList.getFirst().id());
-    assertEquals("Hamilton District", tList.getFirst().name());
-
-    // Verify schedules
-    var scheduleList = scheduleService.findAllByTournamentIdOrderByMatch("2026onham");
-    assertEquals(2, scheduleList.size());
-    assertTrue(scheduleList.stream().anyMatch(s -> s.id() == 500 && s.match() == 1));
-    assertTrue(scheduleList.stream().anyMatch(s -> s.id() == 501 && s.match() == 2));
 
     // Verify auto-increment is set correctly
     // Creating a new strategy area should get an ID > 20 (max synced ID)

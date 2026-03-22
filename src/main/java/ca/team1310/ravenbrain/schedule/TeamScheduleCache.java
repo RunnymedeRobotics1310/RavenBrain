@@ -3,30 +3,25 @@ package ca.team1310.ravenbrain.schedule;
 import ca.team1310.ravenbrain.schedule.TeamScheduleService.TeamScheduleResponse;
 import io.micronaut.core.annotation.Nullable;
 import jakarta.inject.Singleton;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Simple in-memory cache for the team schedule response. Only one tournament is cached at a time
- * since the team is only at one tournament at a time.
+ * In-memory cache for team schedule responses. Supports multiple tournaments simultaneously since
+ * watched tournaments may be queried concurrently.
  */
 @Singleton
 public class TeamScheduleCache {
-  private volatile TeamScheduleResponse cachedResponse;
-  private volatile String cachedTournamentId;
+  private final ConcurrentHashMap<String, TeamScheduleResponse> cache = new ConcurrentHashMap<>();
 
   public @Nullable TeamScheduleResponse get(String tournamentId) {
-    if (tournamentId != null && tournamentId.equals(cachedTournamentId)) {
-      return cachedResponse;
-    }
-    return null;
+    return cache.get(tournamentId);
   }
 
   public void put(String tournamentId, TeamScheduleResponse response) {
-    this.cachedTournamentId = tournamentId;
-    this.cachedResponse = response;
+    cache.put(tournamentId, response);
   }
 
   public void invalidate() {
-    this.cachedResponse = null;
-    this.cachedTournamentId = null;
+    cache.clear();
   }
 }
