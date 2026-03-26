@@ -52,17 +52,23 @@ public class ConfigSyncService {
 
     // Authenticate to source
     String token = remoteClient.authenticate(baseUrl, request.sourceUser(), request.sourcePassword());
+    log.info("Authenticated");
 
     // Fetch config data from source
     String strategyAreasJson = remoteClient.fetchJson(baseUrl, token, "/api/strategy-areas");
+    log.info("Fetched strategy areas");
     String eventTypesJson = remoteClient.fetchJson(baseUrl, token, "/api/event-types");
+    log.info("Fetched event types");
     String sequenceTypesJson = remoteClient.fetchJson(baseUrl, token, "/api/sequence-types");
+    log.info("Fetched sequence types");
 
     // Optionally fetch scouting data from source
     String scoutingDataJson = null;
     if (request.syncScoutingData()) {
       try {
+        log.info("Fetching scouting data");
         scoutingDataJson = remoteClient.fetchJson(baseUrl, token, "/api/config-sync/scouting-data");
+        log.info("Fetched scouting data");
       } catch (RuntimeException e) {
         String msg = e.getMessage() != null ? e.getMessage() : "";
         if (msg.contains("HTTP 404")) {
@@ -82,6 +88,7 @@ public class ConfigSyncService {
     }
 
     try {
+      log.info("Writing data to database");
       JsonNode strategyAreas = objectMapper.readTree(strategyAreasJson);
       JsonNode eventTypes = objectMapper.readTree(eventTypesJson);
       JsonNode sequenceTypes = objectMapper.readTree(sequenceTypesJson);
@@ -101,8 +108,10 @@ public class ConfigSyncService {
       }
 
     } catch (RuntimeException e) {
+      log.info("Unexpected runtime exception syncFromSource: "+e.getMessage());
       throw e;
     } catch (Exception e) {
+      log.info("Unexpected checked exception syncFromSource: "+e.getMessage());
       throw new RuntimeException("Config sync failed: " + e.getMessage(), e);
     }
   }
