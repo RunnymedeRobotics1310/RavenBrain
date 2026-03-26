@@ -78,7 +78,7 @@ public class RemoteRavenBrainClient {
               .header("Content-Type", "application/json")
               .build();
 
-      log.debug("Authenticating to {}", loginUrl);
+      log.info("Authenticating to {}", loginUrl);
       HttpClient client = HttpClient.newHttpClient();
       HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
@@ -87,6 +87,7 @@ public class RemoteRavenBrainClient {
             "Source server credentials do not match — check username and password");
       }
       if (response.statusCode() != 200) {
+        log.error("Failed to authenticate with source server at {}: {}", loginUrl, response.statusCode());
         throw new RuntimeException(
             "Source server authentication failed (HTTP " + response.statusCode() + ")");
       }
