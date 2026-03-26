@@ -169,7 +169,9 @@ public class TeamReportService {
     for (var tournament : tournamentService.findAllSortByStartTime()) {
       var tournamentReport = tournamentReportService.getTournamentReport(tournament.id(), team);
       if (tournamentReport != null && tournamentReport.success()) {
-        tournamentReports.add(tournamentReport.report());
+        if (tournamentReport.report().dataRows().length > 0) {
+          tournamentReports.add(tournamentReport.report());
+        }
       }
     }
     return new TeamReport(
