@@ -39,10 +39,15 @@ public class TeamReportService {
       String sequenceTypeCode, String sequenceTypeName, String tournamentId, boolean drill) {}
 
   @Serdeable
+  public record DefenceNote(
+      String timestamp, String displayName, String tournamentId, int matchId, String note) {}
+
+  @Serdeable
   public record TeamReport(
       List<TeamReportComment> comments,
       List<TeamReportRobotAlert> robotAlerts,
       List<SequenceReportLink> sequenceReportLinks,
+      List<DefenceNote> defenceNotes,
       TournamentReportService.TournamentReportTable[] tournamentReports) {}
 
   private final QuickCommentService quickCommentService;
@@ -143,6 +148,23 @@ public class TeamReportService {
       }
     }
 
+    // Build defence-strat notes
+    var rawDefenceEvents = eventLogService.listEventsByTeamAndEventTypeWithNotes(team, "defence-strat");
+    for (var e : rawDefenceEvents) {
+      userNameMap.computeIfAbsent(e.userId(), this::resolveDisplayName);
+    }
+    List<DefenceNote> defenceNotes =
+        rawDefenceEvents.stream()
+            .map(
+                e ->
+                    new DefenceNote(
+                        e.timestamp().toString(),
+                        userNameMap.getOrDefault(e.userId(), "Unknown"),
+                        e.tournamentId(),
+                        e.matchId(),
+                        e.note()))
+            .toList();
+
     var tournamentReports = new ArrayList<TournamentReportService.TournamentReportTable>();
     for (var tournament : tournamentService.findAllSortByStartTime()) {
       var tournamentReport = tournamentReportService.getTournamentReport(tournament.id(), team);
@@ -154,6 +176,7 @@ public class TeamReportService {
         comments,
         robotAlerts,
         sequenceLinks,
+        defenceNotes,
         tournamentReports.toArray(new TournamentReportService.TournamentReportTable[0]));
   }
 

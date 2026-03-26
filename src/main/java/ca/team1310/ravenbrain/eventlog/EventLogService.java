@@ -63,6 +63,14 @@ public class EventLogService {
     return eventLogRepository.findDistinctTournamentAndEventTypeByTeamNumber(team);
   }
 
+  public List<EventLogRecord> listEventsByTeamAndEventTypeWithNotes(int team, String eventType) {
+    return eventLogRepository
+        .findAllByTeamNumberAndEventTypeAndNoteIsNotNullOrderByTimestampAsc(team, eventType)
+        .stream()
+        .filter(e -> e.note() != null && !e.note().isBlank())
+        .toList();
+  }
+
   public EventLogRecord save(EventLogRecord record) {
     if (!eventTypeRepository.existsById(record.eventType())) {
       throw new IllegalArgumentException("Invalid event type: " + record.eventType());

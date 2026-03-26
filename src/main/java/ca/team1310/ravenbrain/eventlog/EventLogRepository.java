@@ -59,4 +59,7 @@ public interface EventLogRepository extends CrudRepository<EventLogRecord, Long>
           + " AND eventtype LIKE 'pmva-%' AND tournamentid NOT LIKE 'DRILL-%'"
           + " ORDER BY tournamentid")
   List<String> findDistinctPmvaTournamentIds(int team);
+
+  List<EventLogRecord> findAllByTeamNumberAndEventTypeAndNoteIsNotNullOrderByTimestampAsc(
+      int teamNumber, String eventType);
 }
