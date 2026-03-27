@@ -40,13 +40,7 @@ public class ReportCacheService {
    * @param jsonBody the serialized report JSON
    */
   public void put(String cacheKey, String jsonBody) {
-    var existing = repository.findByCachekey(cacheKey);
-    if (existing.isPresent()) {
-      repository.update(
-          new ReportCacheRecord(existing.get().id(), cacheKey, jsonBody, Instant.now()));
-    } else {
-      repository.save(new ReportCacheRecord(null, cacheKey, jsonBody, Instant.now()));
-    }
+    repository.upsert(cacheKey, jsonBody, Instant.now());
     log.debug("Cached report for key: {}", cacheKey);
   }
 
