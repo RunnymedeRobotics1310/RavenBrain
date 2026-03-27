@@ -5,8 +5,10 @@ import ca.team1310.ravenbrain.sequencetype.SequenceEventRepository;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.exceptions.HttpStatusException;
 import jakarta.inject.Singleton;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * @author Junie
@@ -50,6 +52,12 @@ public class EventTypeService {
 
   public EventType update(EventType eventType) {
     return eventTypeRepository.update(eventType);
+  }
+
+  public Set<String> findInUseEventTypeIds() {
+    Set<String> inUse = new HashSet<>(eventLogRepository.findDistinctEventTypes());
+    inUse.addAll(sequenceEventRepository.findDistinctEventtypeIds());
+    return inUse;
   }
 
   public void delete(String eventtype) {

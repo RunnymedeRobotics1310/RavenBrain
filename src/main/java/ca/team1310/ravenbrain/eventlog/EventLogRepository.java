@@ -65,4 +65,7 @@ public interface EventLogRepository extends CrudRepository<EventLogRecord, Long>
 
   List<EventLogRecord> findAllByTeamNumberAndEventTypeOrderByTimestampAsc(
       int teamNumber, String eventType);
+
+  @Query("SELECT DISTINCT eventtype FROM RB_EVENT")
+  List<String> findDistinctEventTypes();
 }

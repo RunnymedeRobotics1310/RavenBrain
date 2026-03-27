@@ -4,6 +4,7 @@ import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Junie
@@ -27,6 +28,12 @@ public class SequenceTypeApi {
   @Get("/year/{year}")
   public List<SequenceType> findByFrcyear(int year) {
     return sequenceTypeService.findByFrcyear(year);
+  }
+
+  @Get("/in-use")
+  @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public Set<Long> findInUse() {
+    return sequenceTypeService.findInUseIds();
   }
 
   @Get("/{id}")

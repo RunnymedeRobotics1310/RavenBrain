@@ -4,6 +4,7 @@ import io.micronaut.data.annotation.Query;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
+import java.util.List;
 
 /**
  * @author Junie
@@ -15,4 +16,7 @@ public interface SequenceEventRepository extends CrudRepository<SequenceEvent, L
 
   @Query("SELECT COUNT(*) > 0 FROM RB_SEQUENCEEVENT WHERE eventtype_id = :eventtype")
   boolean existsByEventtypeId(String eventtype);
+
+  @Query("SELECT DISTINCT eventtype_id FROM RB_SEQUENCEEVENT")
+  List<String> findDistinctEventtypeIds();
 }
