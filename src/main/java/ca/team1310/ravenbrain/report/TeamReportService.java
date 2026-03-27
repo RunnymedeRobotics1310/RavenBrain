@@ -49,12 +49,17 @@ public class TeamReportService {
       String tournamentId, double averageCountPerMatch, int matchCount, int totalCount) {}
 
   @Serdeable
+  public record FuelPickupStats(
+      String tournamentId, int ballPitCount, int homeCount, int outpostCount) {}
+
+  @Serdeable
   public record TeamReport(
       List<TeamReportComment> comments,
       List<TeamReportRobotAlert> robotAlerts,
       List<SequenceReportLink> sequenceReportLinks,
       List<DefenceNote> defenceNotes,
       List<CountPerMatchStat> shootToHomeStats,
+      List<FuelPickupStats> fuelPickupStats,
       TournamentReportService.TournamentReportTable[] tournamentReports) {}
 
   private final QuickCommentService quickCommentService;
@@ -195,6 +200,33 @@ public class TeamReportService {
       shootToHomeStats.add(new CountPerMatchStat(entry.getKey(), avg, numMatches, total));
     }
 
+    // Build fuel pickup counts by tournament
+    var ballPitEvents = eventLogService.listEventsByTeamAndEventType(team, "pickup-ball-pit");
+    var homeEvents = eventLogService.listEventsByTeamAndEventType(team, "pickup-home");
+    var outpostEvents = eventLogService.listEventsByTeamAndEventType(team, "pickup-outpost");
+
+    Map<String, int[]> fuelCounts = new LinkedHashMap<>();
+    for (var e : ballPitEvents) {
+      if (!e.tournamentId().startsWith("DRILL-")) {
+        fuelCounts.computeIfAbsent(e.tournamentId(), k -> new int[3])[0]++;
+      }
+    }
+    for (var e : homeEvents) {
+      if (!e.tournamentId().startsWith("DRILL-")) {
+        fuelCounts.computeIfAbsent(e.tournamentId(), k -> new int[3])[1]++;
+      }
+    }
+    for (var e : outpostEvents) {
+      if (!e.tournamentId().startsWith("DRILL-")) {
+        fuelCounts.computeIfAbsent(e.tournamentId(), k -> new int[3])[2]++;
+      }
+    }
+    List<FuelPickupStats> fuelPickupStats = new ArrayList<>();
+    for (var entry : fuelCounts.entrySet()) {
+      int[] c = entry.getValue();
+      fuelPickupStats.add(new FuelPickupStats(entry.getKey(), c[0], c[1], c[2]));
+    }
+
     var tournamentReports = new ArrayList<TournamentReportService.TournamentReportTable>();
     for (var tournament : tournamentService.findAllSortByStartTime()) {
       var tournamentReport = tournamentReportService.getTournamentReport(tournament.id(), team);
@@ -210,6 +242,7 @@ public class TeamReportService {
         sequenceLinks,
         defenceNotes,
         shootToHomeStats,
+        fuelPickupStats,
         tournamentReports.toArray(new TournamentReportService.TournamentReportTable[0]));
   }
 
