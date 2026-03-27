@@ -62,4 +62,7 @@ public interface EventLogRepository extends CrudRepository<EventLogRecord, Long>
 
   List<EventLogRecord> findAllByTeamNumberAndEventTypeAndNoteIsNotNullOrderByTimestampAsc(
       int teamNumber, String eventType);
+
+  List<EventLogRecord> findAllByTeamNumberAndEventTypeOrderByTimestampAsc(
+      int teamNumber, String eventType);
 }

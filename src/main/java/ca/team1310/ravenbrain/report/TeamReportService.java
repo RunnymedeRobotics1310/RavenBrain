@@ -13,6 +13,8 @@ import ca.team1310.ravenbrain.sequencetype.SequenceTypeService;
 import ca.team1310.ravenbrain.tournament.TournamentService;
 import io.micronaut.serde.annotation.Serdeable;
 import jakarta.inject.Singleton;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -43,11 +45,16 @@ public class TeamReportService {
       String timestamp, String displayName, String tournamentId, int matchId, String note) {}
 
   @Serdeable
+  public record CountPerMatchStat(
+      String tournamentId, double averageCountPerMatch, int matchCount, int totalCount) {}
+
+  @Serdeable
   public record TeamReport(
       List<TeamReportComment> comments,
       List<TeamReportRobotAlert> robotAlerts,
       List<SequenceReportLink> sequenceReportLinks,
       List<DefenceNote> defenceNotes,
+      List<CountPerMatchStat> shootToHomeStats,
       TournamentReportService.TournamentReportTable[] tournamentReports) {}
 
   private final QuickCommentService quickCommentService;
@@ -165,6 +172,29 @@ public class TeamReportService {
                         e.note()))
             .toList();
 
+    // Build shoot-to-home count-per-match averages by tournament
+    var shootToHomeEvents = eventLogService.listEventsByTeamAndEventType(team, "shoot-to-home");
+    // Group by non-drill tournament, then count per match
+    Map<String, Map<Integer, Integer>> shootByTournamentMatch = new LinkedHashMap<>();
+    for (var e : shootToHomeEvents) {
+      if (!e.tournamentId().startsWith("DRILL-")) {
+        shootByTournamentMatch
+            .computeIfAbsent(e.tournamentId(), k -> new LinkedHashMap<>())
+            .merge(e.matchId(), 1, Integer::sum);
+      }
+    }
+    List<CountPerMatchStat> shootToHomeStats = new ArrayList<>();
+    for (var entry : shootByTournamentMatch.entrySet()) {
+      var matchCounts = entry.getValue().values();
+      int total = matchCounts.stream().mapToInt(Integer::intValue).sum();
+      int numMatches = matchCounts.size();
+      double avg =
+          BigDecimal.valueOf((double) total / numMatches)
+              .setScale(2, RoundingMode.HALF_UP)
+              .doubleValue();
+      shootToHomeStats.add(new CountPerMatchStat(entry.getKey(), avg, numMatches, total));
+    }
+
     var tournamentReports = new ArrayList<TournamentReportService.TournamentReportTable>();
     for (var tournament : tournamentService.findAllSortByStartTime()) {
       var tournamentReport = tournamentReportService.getTournamentReport(tournament.id(), team);
@@ -179,6 +209,7 @@ public class TeamReportService {
         robotAlerts,
         sequenceLinks,
         defenceNotes,
+        shootToHomeStats,
         tournamentReports.toArray(new TournamentReportService.TournamentReportTable[0]));
   }
 

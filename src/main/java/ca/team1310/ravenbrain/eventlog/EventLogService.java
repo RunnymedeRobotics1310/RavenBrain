@@ -63,6 +63,10 @@ public class EventLogService {
     return eventLogRepository.findDistinctTournamentAndEventTypeByTeamNumber(team);
   }
 
+  public List<EventLogRecord> listEventsByTeamAndEventType(int team, String eventType) {
+    return eventLogRepository.findAllByTeamNumberAndEventTypeOrderByTimestampAsc(team, eventType);
+  }
+
   public List<EventLogRecord> listEventsByTeamAndEventTypeWithNotes(int team, String eventType) {
     return eventLogRepository
         .findAllByTeamNumberAndEventTypeAndNoteIsNotNullOrderByTimestampAsc(team, eventType)
