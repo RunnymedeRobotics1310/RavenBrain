@@ -25,14 +25,6 @@ public class PmvaReportService {
   private static final Set<TournamentLevel> MATCH_LEVELS =
       Set.of(TournamentLevel.Qualification, TournamentLevel.Playoff);
 
-  // Shooting position end events
-  private static final Map<String, String> POSITION_END_EVENTS =
-      Map.of(
-          "pmva-shoot-position-close", "close",
-          "pmva-shoot-position-mid", "mid",
-          "pmva-shoot-position-far", "far",
-          "pmva-shoot-position-varied", "varied");
-
   private final EventLogRepository eventLogRepository;
   private final int teamNumber;
 
@@ -100,7 +92,8 @@ public class PmvaReportService {
             List.of(),
             List.of()),
         new HopperSection(
-            new LoadingStats(0, 0, 0, 0, List.of()), null, null, null, null, null),
+            new LoadingStats(0, 0, 0, 0, List.of(), List.of()),
+            null, null, null, null, null, null),
         new SwiSection(0, 0, 0, 0, 0, List.of(), List.of(), List.of(), List.of()));
   }
 
@@ -177,241 +170,221 @@ public class PmvaReportService {
 
   // ── Hopper Section ────────────────────────────────────────────────────────
 
-  private HopperSection buildHopperSection(
-      Map<String, List<EventLogRecord>> eventsByMatch, int matchCount) {
-    var loading = buildLoadingStats(eventsByMatch);
-    var allUnloadSequences = extractUnloadSequences(eventsByMatch);
-
-    // Collect hopper shooting comments from the event stream
-    var stuckComments = new ArrayList<PmvaReport.MatchComment>();
-    var unloadGeneralComments = new ArrayList<PmvaReport.MatchComment>();
-    for (var matchEvents : eventsByMatch.values()) {
-      for (var event : matchEvents) {
-        if ("pmva-stuck-comments".equals(event.eventType()) && hasNote(event)) {
-          stuckComments.add(toComment(event));
-        } else if ("pmva-unload-general-comments".equals(event.eventType()) && hasNote(event)) {
-          unloadGeneralComments.add(toComment(event));
-        }
-      }
-    }
-
-    var shootingAll =
-        buildShootingStats("all", allUnloadSequences, matchCount, stuckComments, unloadGeneralComments);
-
-    // Per-position
-    var byPosition =
-        allUnloadSequences.stream().collect(Collectors.groupingBy(UnloadSequence::position));
-    var shootingClose =
-        buildShootingStatsOrNull("close", byPosition.get("close"), matchCount);
-    var shootingMid =
-        buildShootingStatsOrNull("mid", byPosition.get("mid"), matchCount);
-    var shootingFar =
-        buildShootingStatsOrNull("far", byPosition.get("far"), matchCount);
-    var shootingVaried =
-        buildShootingStatsOrNull("varied", byPosition.get("varied"), matchCount);
-
-    return new HopperSection(
-        loading, shootingAll, shootingClose, shootingMid, shootingFar, shootingVaried);
-  }
-
-  private LoadingStats buildLoadingStats(Map<String, List<EventLogRecord>> eventsByMatch) {
-    var fillCounts = new ArrayList<Double>();
-    var ratings = new ArrayList<Double>();
-    int hopperFullCount = 0;
-    int hopperNotFullCount = 0;
-    var loadComments = new ArrayList<PmvaReport.MatchComment>();
-
-    for (var entry : eventsByMatch.entrySet()) {
-      boolean inSequence = false;
-      double currentFillCount = 0;
-
-      for (var event : entry.getValue()) {
-        switch (event.eventType()) {
-          case "pmva-start-load" -> {
-            if (inSequence) {
-              log.debug("Discarding unclosed load sequence in match {}", entry.getKey());
-            }
-            inSequence = true;
-            currentFillCount = 0;
-          }
-          case "pmva-load-count" -> {
-            if (inSequence) currentFillCount += event.amount();
-          }
-          case "pmva-load-rating" -> {
-            if (inSequence) ratings.add(event.amount());
-          }
-          case "pmva-load-comments" -> {
-            if (hasNote(event)) loadComments.add(toComment(event));
-          }
-          case "pmva-hopper-full" -> {
-            if (inSequence) {
-              fillCounts.add(currentFillCount);
-              hopperFullCount++;
-              inSequence = false;
-            }
-          }
-          case "pmva-hopper-not-full" -> {
-            if (inSequence) {
-              fillCounts.add(currentFillCount);
-              hopperNotFullCount++;
-              inSequence = false;
-            }
-          }
-          default -> {
-            // skip
-          }
-        }
-      }
-      if (inSequence) {
-        log.debug("Discarding unclosed load sequence at end of match {}", entry.getKey());
-      }
-    }
-
-    double avgFill = average(fillCounts);
-    double maxFill = fillCounts.stream().mapToDouble(Double::doubleValue).max().orElse(0);
-    int totalHopperEnd = hopperFullCount + hopperNotFullCount;
-    double hopperFilledPct = safeDivide(hopperFullCount, totalHopperEnd) * 100.0;
-    double avgRating = average(ratings);
-
-    return new LoadingStats(
-        round2(avgFill), round2(maxFill), round2(hopperFilledPct), round2(avgRating), loadComments);
-  }
-
-  /** Internal representation of a detected unload sequence. */
-  private record UnloadSequence(
+  /** Internal representation of a detected hopper sequence (load + shoot cycle). */
+  private record HopperSequence(
       int matchId,
       String level,
-      String position,
-      int scoreCount,
-      int missCount,
+      int sequenceIndex,
+      int loadAmount,
+      boolean hopperFull,
+      int shots,
+      int scores,
+      int misses,
+      int stuck,
       double unloadSeconds,
-      double stuckCount) {}
+      String position,
+      boolean moving,
+      boolean intaking) {}
 
-  private List<UnloadSequence> extractUnloadSequences(
+  private HopperSection buildHopperSection(
+      Map<String, List<EventLogRecord>> eventsByMatch, int matchCount) {
+    var allSequences = extractHopperSequences(eventsByMatch);
+    var loading = buildLoadingStats(allSequences, eventsByMatch);
+
+    var shootingAll = buildShootingView("all", allSequences, matchCount);
+
+    // Per-position (overlapping filters)
+    var shootingClose =
+        buildShootingViewOrNull("close", filterBy(allSequences, s -> "close".equals(s.position())), matchCount);
+    var shootingMid =
+        buildShootingViewOrNull("mid", filterBy(allSequences, s -> "mid".equals(s.position())), matchCount);
+    var shootingFar =
+        buildShootingViewOrNull("far", filterBy(allSequences, s -> "far".equals(s.position())), matchCount);
+    var shootingMoving =
+        buildShootingViewOrNull("moving", filterBy(allSequences, HopperSequence::moving), matchCount);
+    var shootingIntaking =
+        buildShootingViewOrNull("intaking", filterBy(allSequences, HopperSequence::intaking), matchCount);
+
+    return new HopperSection(
+        loading, shootingAll, shootingClose, shootingMid, shootingFar, shootingMoving, shootingIntaking);
+  }
+
+  private static List<HopperSequence> filterBy(
+      List<HopperSequence> sequences, java.util.function.Predicate<HopperSequence> predicate) {
+    return sequences.stream().filter(predicate).toList();
+  }
+
+  private List<HopperSequence> extractHopperSequences(
       Map<String, List<EventLogRecord>> eventsByMatch) {
-    var sequences = new ArrayList<UnloadSequence>();
+    var sequences = new ArrayList<HopperSequence>();
 
     for (var entry : eventsByMatch.entrySet()) {
-      boolean inSequence = false;
-      int scoreCount = 0;
-      int missCount = 0;
+      int sequenceIndex = 0;
+      // Accumulator state
+      int loadAmount = 0;
+      boolean hopperFull = false;
+      int shots = 0;
+      int scores = 0;
+      int misses = 0;
+      int stuck = 0;
       double unloadSeconds = 0;
-      double stuckCount = 0;
+      String position = "";
+      boolean moving = false;
+      boolean intaking = false;
       int currentMatchId = 0;
       String currentLevel = "";
 
       for (var event : entry.getValue()) {
-        if ("pmva-shoot-one".equals(event.eventType())) {
-          if (inSequence) {
-            // Previous sequence never closed — discard it
-            log.debug("Discarding unclosed unload sequence in match {}", currentMatchId);
+        currentMatchId = event.matchId();
+        currentLevel = event.level().name();
+
+        switch (event.eventType()) {
+          case "pmva-load" -> loadAmount = (int) event.amount();
+          case "pmva-load-hopper-full" -> hopperFull = true;
+          case "pmva-load-hopper-not-full" -> hopperFull = false;
+          case "pmva-shoot" -> shots = (int) event.amount();
+          case "pmva-shoot-score" -> scores = (int) event.amount();
+          case "pmva-shoot-miss" -> misses = (int) event.amount();
+          case "pmva-shoot-time" -> unloadSeconds = event.amount();
+          case "pmva-shoot-stuck-in-hopper" -> stuck = (int) event.amount();
+          case "pmva-shoot-close" -> position = "close";
+          case "pmva-shoot-mid" -> position = "mid";
+          case "pmva-shoot-far" -> position = "far";
+          case "pmva-shoot-moving" -> moving = true;
+          case "pmva-shoot-intaking" -> intaking = true;
+          case "pmva-shoot-end" -> {
+            sequenceIndex++;
+            sequences.add(
+                new HopperSequence(
+                    currentMatchId, currentLevel, sequenceIndex,
+                    loadAmount, hopperFull, shots, scores, misses, stuck,
+                    unloadSeconds, position, moving, intaking));
+            // Reset accumulator
+            loadAmount = 0;
+            hopperFull = false;
+            shots = 0;
+            scores = 0;
+            misses = 0;
+            stuck = 0;
+            unloadSeconds = 0;
+            position = "";
+            moving = false;
+            intaking = false;
           }
-          inSequence = true;
-          scoreCount = 1; // pmva-shoot-one counts as the first shot
-          missCount = 0;
-          unloadSeconds = 0;
-          stuckCount = 0;
-          currentMatchId = event.matchId();
-          currentLevel = event.level().name();
-        } else if (inSequence) {
-          switch (event.eventType()) {
-            case "pmva-score-one" -> scoreCount++;
-            case "pmva-miss-one" -> missCount++;
-            case "pmva-unload-seconds" -> unloadSeconds = event.amount();
-            case "pmva-count-stuck-in-hopper" -> stuckCount = event.amount();
-            default -> {
-              // Check if this is a position end event
-              String position = POSITION_END_EVENTS.get(event.eventType());
-              if (position != null) {
-                sequences.add(
-                    new UnloadSequence(
-                        currentMatchId,
-                        currentLevel,
-                        position,
-                        scoreCount,
-                        missCount,
-                        unloadSeconds,
-                        stuckCount));
-                inSequence = false;
-              }
-            }
+          default -> {
+            // skip non-hopper events
           }
         }
-      }
-      if (inSequence) {
-        log.debug("Discarding unclosed unload sequence at end of match {}", entry.getKey());
       }
     }
     return sequences;
   }
 
-  private ShootingStats buildShootingStatsOrNull(
-      String position, List<UnloadSequence> sequences, int matchCount) {
-    if (sequences == null || sequences.isEmpty()) return null;
-    return buildShootingStats(position, sequences, matchCount, List.of(), List.of());
-  }
-
-  private ShootingStats buildShootingStats(
-      String position,
-      List<UnloadSequence> sequences,
-      int matchCount,
-      List<PmvaReport.MatchComment> stuckComments,
-      List<PmvaReport.MatchComment> generalComments) {
-    if (sequences.isEmpty()) {
-      return new ShootingStats(
-          position, 0, List.of(), 0, 0, 0, 0, 0, 0, stuckComments, generalComments);
+  private LoadingStats buildLoadingStats(
+      List<HopperSequence> allSequences,
+      Map<String, List<EventLogRecord>> eventsByMatch) {
+    if (allSequences.isEmpty()) {
+      return new LoadingStats(0, 0, 0, 0, List.of(), List.of());
     }
 
-    int totalScores = sequences.stream().mapToInt(UnloadSequence::scoreCount).sum();
-    int totalShots =
-        sequences.stream().mapToInt(s -> s.scoreCount() + s.missCount()).sum();
-    double totalUnloadSeconds =
-        sequences.stream().mapToDouble(UnloadSequence::unloadSeconds).sum();
-    double totalStuck = sequences.stream().mapToDouble(UnloadSequence::stuckCount).sum();
+    double avgFillCount =
+        allSequences.stream().mapToInt(HopperSequence::loadAmount).average().orElse(0);
 
-    double avgScorePerMatch = safeDivide(totalScores, matchCount);
-    double avgHitRate = safeDivide(totalScores, totalShots) * 100.0;
-    double avgUnloadSeconds = safeDivide(totalUnloadSeconds, sequences.size());
-    double shotsPerSecond = safeDivide(totalShots, totalUnloadSeconds);
-    double scoresPerSecond = safeDivide(totalScores, totalUnloadSeconds);
-    double avgStuck = safeDivide(totalStuck, sequences.size());
+    int hopperFullCount = (int) allSequences.stream().filter(HopperSequence::hopperFull).count();
+    double hopperFilledPct = safeDivide(hopperFullCount, allSequences.size()) * 100.0;
 
-    // Per-match data
+    // Exclude intaking sequences for max and rating
+    var nonIntaking = allSequences.stream().filter(s -> !s.intaking()).toList();
+    double maxFillExcluding =
+        nonIntaking.stream().mapToInt(HopperSequence::loadAmount).max().orElse(0);
+    double avgFillExcluding =
+        nonIntaking.stream().mapToInt(HopperSequence::loadAmount).average().orElse(0);
+    double rating = Math.min(5.0, safeDivide(avgFillExcluding, maxFillExcluding) * 5.0);
+
+    // Collect comments from event stream
+    var loadComments = new ArrayList<PmvaReport.MatchComment>();
+    var shootComments = new ArrayList<PmvaReport.MatchComment>();
+    for (var matchEvents : eventsByMatch.values()) {
+      for (var event : matchEvents) {
+        if ("pmva-load-comments".equals(event.eventType()) && hasNote(event)) {
+          loadComments.add(toComment(event));
+        } else if ("pmva-shoot-note".equals(event.eventType()) && hasNote(event)) {
+          shootComments.add(toComment(event));
+        }
+      }
+    }
+
+    return new LoadingStats(
+        round2(avgFillCount),
+        round2(hopperFilledPct),
+        round2(maxFillExcluding),
+        round2(rating),
+        loadComments,
+        shootComments);
+  }
+
+  private ShootingView buildShootingViewOrNull(
+      String filter, List<HopperSequence> sequences, int matchCount) {
+    if (sequences == null || sequences.isEmpty()) return null;
+    return buildShootingView(filter, sequences, matchCount);
+  }
+
+  private ShootingView buildShootingView(
+      String filter, List<HopperSequence> sequences, int matchCount) {
+    if (sequences.isEmpty()) {
+      return new ShootingView(filter, 0, List.of(), List.of(), 0, 0);
+    }
+
+    // Per-match cycle data
     var byMatch =
         sequences.stream()
             .collect(
                 Collectors.groupingBy(
                     s -> s.level() + ":" + s.matchId(), LinkedHashMap::new, Collectors.toList()));
 
-    var perMatch = new ArrayList<MatchShootingData>();
+    var matchCycles = new ArrayList<MatchCycleData>();
     for (var entry : byMatch.entrySet()) {
       var matchSeqs = entry.getValue();
       var first = matchSeqs.get(0);
-      int matchScores = matchSeqs.stream().mapToInt(UnloadSequence::scoreCount).sum();
-      int matchShots =
-          matchSeqs.stream().mapToInt(s -> s.scoreCount() + s.missCount()).sum();
-      perMatch.add(
-          new MatchShootingData(
+      matchCycles.add(
+          new MatchCycleData(
               first.matchId(),
               first.level(),
               matchSeqs.size(),
-              matchScores,
-              matchShots,
-              round2(safeDivide(matchScores, matchShots) * 100.0)));
+              matchSeqs.stream().mapToInt(HopperSequence::shots).sum(),
+              matchSeqs.stream().mapToInt(HopperSequence::scores).sum(),
+              matchSeqs.stream().mapToInt(HopperSequence::misses).sum(),
+              matchSeqs.stream().mapToInt(HopperSequence::stuck).sum()));
     }
 
-    return new ShootingStats(
-        position,
+    // Per-sequence shot data
+    var sequenceShots = new ArrayList<SequenceShotData>();
+    for (var s : sequences) {
+      sequenceShots.add(
+          new SequenceShotData(
+              s.matchId(),
+              s.level(),
+              s.sequenceIndex(),
+              s.shots(),
+              s.scores(),
+              s.misses(),
+              s.stuck(),
+              round2(s.unloadSeconds()),
+              round2(safeDivide(s.shots(), s.unloadSeconds())),
+              round2(safeDivide(s.scores(), s.unloadSeconds()))));
+    }
+
+    // Aggregate stats
+    double avgCycles = safeDivide(sequences.size(), matchCount);
+    int maxCycles = matchCycles.stream().mapToInt(MatchCycleData::cycleCount).max().orElse(0);
+
+    return new ShootingView(
+        filter,
         sequences.size(),
-        perMatch,
-        round2(avgScorePerMatch),
-        round2(avgHitRate),
-        round2(avgUnloadSeconds),
-        round2(shotsPerSecond),
-        round2(scoresPerSecond),
-        round2(avgStuck),
-        stuckComments,
-        generalComments);
+        matchCycles,
+        sequenceShots,
+        round2(avgCycles),
+        maxCycles);
   }
 
   // ── SWI Section ───────────────────────────────────────────────────────────

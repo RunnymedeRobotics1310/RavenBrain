@@ -34,42 +34,53 @@ public record PmvaReport(
   @Serdeable
   public record HopperSection(
       LoadingStats loading,
-      ShootingStats shootingAll,
-      ShootingStats shootingClose,
-      ShootingStats shootingMid,
-      ShootingStats shootingFar,
-      ShootingStats shootingVaried) {}
+      ShootingView shootingAll,
+      ShootingView shootingClose,
+      ShootingView shootingMid,
+      ShootingView shootingFar,
+      ShootingView shootingMoving,
+      ShootingView shootingIntaking) {}
 
   @Serdeable
   public record LoadingStats(
       double avgFillCount,
-      double maxFillCount,
       double hopperFilledPercentage,
-      double avgLoadRating,
-      List<MatchComment> loadComments) {}
+      double maxFillExcludingIntaking,
+      double hopperFilledRating,
+      List<MatchComment> loadComments,
+      List<MatchComment> shootComments) {}
 
   @Serdeable
-  public record ShootingStats(
-      String position,
+  public record ShootingView(
+      String filter,
       int sequenceCount,
-      List<MatchShootingData> perMatch,
-      double avgScorePerMatch,
-      double avgHitRate,
-      double avgUnloadSeconds,
-      double shotsPerSecond,
-      double scoresPerSecond,
-      double avgStuckPerSequence,
-      List<MatchComment> stuckComments,
-      List<MatchComment> generalComments) {}
+      List<MatchCycleData> matchCycles,
+      List<SequenceShotData> sequenceShots,
+      double avgCyclesPerMatch,
+      int maxCyclesPerMatch) {}
 
   @Serdeable
-  public record MatchShootingData(
+  public record MatchCycleData(
       int matchId,
       String level,
-      int unloadRuns,
-      double totalScores,
+      int cycleCount,
       double totalShots,
-      double hitRate) {}
+      double totalScores,
+      double totalMisses,
+      double totalStuck) {}
+
+  @Serdeable
+  public record SequenceShotData(
+      int matchId,
+      String level,
+      int sequenceIndex,
+      int shots,
+      int scores,
+      int misses,
+      int stuck,
+      double unloadSeconds,
+      double shotsPerSecond,
+      double scoresPerSecond) {}
 
   @Serdeable
   public record SwiSection(
