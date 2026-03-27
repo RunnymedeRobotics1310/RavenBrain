@@ -31,6 +31,14 @@ public class EventLogService {
     eventLogRepository.delete(record);
   }
 
+  public java.util.Optional<EventLogRecord> findById(long id) {
+    return eventLogRepository.findById(id);
+  }
+
+  public void deleteById(long id) {
+    eventLogRepository.deleteById(id);
+  }
+
   public List<EventLogRecord> listEventsForTournament(
       int team, String tournamentId, List<TournamentLevel> levels) {
     return eventLogRepository

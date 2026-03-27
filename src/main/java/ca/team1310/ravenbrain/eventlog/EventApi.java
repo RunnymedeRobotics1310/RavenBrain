@@ -5,7 +5,9 @@ import static io.micronaut.http.MediaType.APPLICATION_JSON;
 import ca.team1310.ravenbrain.report.CustomTournamentStatsService;
 import ca.team1310.ravenbrain.report.cache.ReportCacheService;
 import io.micronaut.data.exceptions.DataAccessException;
+import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.*;
+import io.micronaut.http.exceptions.HttpStatusException;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.serde.annotation.Serdeable;
 import java.util.ArrayList;
@@ -70,5 +72,22 @@ public class EventApi {
       reportCacheService.invalidateByPrefix("custom-stats:");
     }
     return result;
+  }
+
+  @Delete("/{id}")
+  @Secured({"ROLE_SUPERUSER"})
+  public void deleteEventLog(@PathVariable long id) {
+    var record =
+        eventLogService
+            .findById(id)
+            .orElseThrow(
+                () -> new HttpStatusException(HttpStatus.NOT_FOUND, "Event log not found"));
+    String tournamentId = record.tournamentId();
+    eventLogService.deleteById(id);
+    log.info("Deleted event log record id={} tournament={}", id, tournamentId);
+    customTournamentStatsService.invalidate(tournamentId);
+    reportCacheService.invalidateForTournament(tournamentId);
+    reportCacheService.invalidateByPrefix("team-summary:");
+    reportCacheService.invalidateByPrefix("custom-stats:");
   }
 }

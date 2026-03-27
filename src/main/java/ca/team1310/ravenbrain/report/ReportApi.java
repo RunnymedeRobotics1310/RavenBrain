@@ -103,6 +103,7 @@ public class ReportApi {
 
   @Serdeable
   public record ChronoReportRow(
+      long id,
       String timestamp,
       String level,
       int matchId,
@@ -295,6 +296,7 @@ public class ReportApi {
                   r -> {
                     var et = eventTypeMap.get(r.eventType());
                     return new ChronoReportRow(
+                        r.id(),
                         r.timestamp().toString(),
                         r.level().name(),
                         r.matchId(),
