@@ -7,6 +7,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import javax.sql.DataSource;
 import lombok.extern.slf4j.Slf4j;
 
@@ -66,6 +67,12 @@ public class TeamTournamentService {
 
   @Transactional
   public void replaceTeamsForTournament(String tournamentId, List<Integer> teamNumbers) {
+    replaceTeamsForTournament(tournamentId, teamNumbers, Map.of());
+  }
+
+  @Transactional
+  public void replaceTeamsForTournament(
+      String tournamentId, List<Integer> teamNumbers, Map<Integer, String> teamNames) {
     try (Connection conn = dataSource.getConnection()) {
       try (PreparedStatement ps =
           conn.prepareStatement("DELETE FROM RB_TEAM_TOURNAMENT WHERE tournament_id = ?")) {
@@ -75,10 +82,16 @@ public class TeamTournamentService {
       if (!teamNumbers.isEmpty()) {
         try (PreparedStatement ps =
             conn.prepareStatement(
-                "INSERT INTO RB_TEAM_TOURNAMENT (tournament_id, team_number) VALUES (?, ?)")) {
+                "INSERT INTO RB_TEAM_TOURNAMENT (tournament_id, team_number, team_name) VALUES (?, ?, ?)")) {
           for (int teamNumber : teamNumbers) {
             ps.setString(1, tournamentId);
             ps.setInt(2, teamNumber);
+            String name = teamNames.get(teamNumber);
+            if (name != null) {
+              ps.setString(3, name);
+            } else {
+              ps.setNull(3, java.sql.Types.VARCHAR);
+            }
             ps.addBatch();
           }
           ps.executeBatch();
@@ -108,5 +121,28 @@ public class TeamTournamentService {
           "Failed to find teams for tournament: " + e.getMessage(), e);
     }
     return teamNumbers;
+  }
+
+  @Transactional
+  public Map<Integer, String> findTeamNamesForTournament(String tournamentId) {
+    String sql =
+        "SELECT team_number, team_name FROM RB_TEAM_TOURNAMENT WHERE tournament_id = ?";
+    Map<Integer, String> names = new java.util.HashMap<>();
+    try (Connection conn = dataSource.getConnection();
+        PreparedStatement ps = conn.prepareStatement(sql)) {
+      ps.setString(1, tournamentId);
+      try (ResultSet rs = ps.executeQuery()) {
+        while (rs.next()) {
+          String name = rs.getString("team_name");
+          if (name != null) {
+            names.put(rs.getInt("team_number"), name);
+          }
+        }
+      }
+    } catch (Exception e) {
+      throw new RuntimeException(
+          "Failed to find team names for tournament: " + e.getMessage(), e);
+    }
+    return names;
   }
 }

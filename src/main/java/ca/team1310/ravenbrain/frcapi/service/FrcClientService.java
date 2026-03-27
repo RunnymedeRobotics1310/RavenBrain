@@ -223,6 +223,24 @@ public class FrcClientService {
     return new ServiceResponse<>(response.id(), parsedResponse);
   }
 
+  /**
+   * Read team listings from the cached FRC response without requiring the response to be
+   * unprocessed. Returns null if no cached data exists.
+   */
+  public @Nullable TeamListingResponse peekTeamListingsForEvent(int season, String eventCode) {
+    String uri = season + "/teams?eventCode=" + eventCode;
+    FrcRawResponse response = client.fetch(uri);
+    if (response == null || response.body() == null || response.body().isBlank()) {
+      return null;
+    }
+    try {
+      return parse(response.body(), TeamListingResponse.class);
+    } catch (Exception e) {
+      log.warn("Failed to parse cached team listings for {}: {}", uri, e.getMessage());
+      return null;
+    }
+  }
+
   // todo: Implement get2026Scores in a manner that is consistent with get2025Scores including defining model types
 
   /**

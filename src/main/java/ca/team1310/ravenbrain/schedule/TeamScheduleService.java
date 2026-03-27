@@ -1,5 +1,9 @@
 package ca.team1310.ravenbrain.schedule;
 
+import ca.team1310.ravenbrain.frcapi.model.TeamListing;
+import ca.team1310.ravenbrain.frcapi.model.TeamListingResponse;
+import ca.team1310.ravenbrain.frcapi.service.FrcClientService;
+import ca.team1310.ravenbrain.tournament.TeamTournamentService;
 import ca.team1310.ravenbrain.tournament.TournamentRecord;
 import ca.team1310.ravenbrain.tournament.TournamentService;
 import io.micronaut.context.annotation.Property;
@@ -21,16 +25,22 @@ import lombok.extern.slf4j.Slf4j;
 public class TeamScheduleService {
   private final ScheduleService scheduleService;
   private final TournamentService tournamentService;
+  private final TeamTournamentService teamTournamentService;
+  private final FrcClientService frcClientService;
   private final TeamScheduleCache cache;
   private final int teamNumber;
 
   TeamScheduleService(
       ScheduleService scheduleService,
       TournamentService tournamentService,
+      TeamTournamentService teamTournamentService,
+      FrcClientService frcClientService,
       TeamScheduleCache cache,
       @Property(name = "raven-eye.team") int teamNumber) {
     this.scheduleService = scheduleService;
     this.tournamentService = tournamentService;
+    this.teamTournamentService = teamTournamentService;
+    this.frcClientService = frcClientService;
     this.cache = cache;
     this.teamNumber = teamNumber;
   }
@@ -89,7 +99,11 @@ public class TeamScheduleService {
     boolean hasQualification = matches.stream().anyMatch(m -> "Qualification".equals(m.level()));
     boolean hasPlayoff = matches.stream().anyMatch(m -> "Playoff".equals(m.level()));
 
-    List<TeamRanking> rankings = buildRankings(matches);
+    Map<Integer, String> teamNames = teamTournamentService.findTeamNamesForTournament(tournamentId);
+    if (teamNames.isEmpty()) {
+      teamNames = peekTeamNamesFromFrcCache(tournament);
+    }
+    List<TeamRanking> rankings = buildRankings(matches, teamNames);
 
     TeamScheduleResponse response =
         new TeamScheduleResponse(
@@ -106,8 +120,22 @@ public class TeamScheduleService {
     return response;
   }
 
+  private Map<Integer, String> peekTeamNamesFromFrcCache(TournamentRecord tournament) {
+    TeamListingResponse resp =
+        frcClientService.peekTeamListingsForEvent(tournament.season(), tournament.code());
+    if (resp == null || resp.teams() == null) return Map.of();
+    Map<Integer, String> names = new HashMap<>();
+    for (TeamListing t : resp.teams()) {
+      if (t.nameShort() != null) {
+        names.put(t.teamNumber(), t.nameShort());
+      }
+    }
+    return names;
+  }
+
   /** Build rankings from qualification matches by summing RP per team. */
-  private List<TeamRanking> buildRankings(List<TeamScheduleMatch> matches) {
+  private List<TeamRanking> buildRankings(
+      List<TeamScheduleMatch> matches, Map<Integer, String> teamNames) {
     Map<Integer, Integer> rpByTeam = new HashMap<>();
     Map<Integer, Integer> matchesByTeam = new HashMap<>();
 
@@ -140,7 +168,8 @@ public class TeamScheduleService {
               int rp = e.getValue();
               int played = matchesByTeam.getOrDefault(team, 1);
               double rs = (double) rp / played;
-              return new TeamRanking(team, rp, played, Math.round(rs * 100.0) / 100.0);
+              String name = teamNames.getOrDefault(team, "");
+              return new TeamRanking(team, name, rp, played, Math.round(rs * 100.0) / 100.0);
             })
         .sorted(
             Comparator.comparingDouble(TeamRanking::rs)
@@ -150,7 +179,7 @@ public class TeamScheduleService {
   }
 
   @Serdeable
-  public record TeamRanking(int teamNumber, int rp, int matchesPlayed, double rs) {}
+  public record TeamRanking(int teamNumber, String teamName, int rp, int matchesPlayed, double rs) {}
 
   @Serdeable
   public record TeamScheduleMatch(

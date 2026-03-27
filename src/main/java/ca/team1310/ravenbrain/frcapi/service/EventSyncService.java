@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import lombok.extern.slf4j.Slf4j;
@@ -155,11 +156,16 @@ class EventSyncService {
     }
     List<Integer> teamNumbers =
         teamsResponse.teams().stream().map(TeamListing::teamNumber).toList();
+    Map<Integer, String> teamNames =
+        teamsResponse.teams().stream()
+            .filter(t -> t.nameShort() != null)
+            .collect(java.util.stream.Collectors.toMap(
+                TeamListing::teamNumber, TeamListing::nameShort, (a, b) -> a));
     log.info(
         "Tournament {}: saving {} teams from FRC API",
         tournament.id(),
         teamNumbers.size());
-    teamTournamentService.replaceTeamsForTournament(tournament.id(), teamNumbers);
+    teamTournamentService.replaceTeamsForTournament(tournament.id(), teamNumbers, teamNames);
     frcClientService.markProcessed(teamsResp.getId());
   }
 
