@@ -35,6 +35,10 @@ class NexusClient {
     return apiKey.length();
   }
 
+  String getApiKey() {
+    return apiKey;
+  }
+
   ProbeResult probe(String path) {
     if (!enabled) {
       return new ProbeResult(false, 0, 0, "Nexus API client is not enabled");

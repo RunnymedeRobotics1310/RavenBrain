@@ -5,7 +5,7 @@ import io.micronaut.serde.annotation.Serdeable;
 @Serdeable
 public record NexusDebugResponse(
     boolean enabled,
-    int apiKeyLength,
+    String apiKey,
     long ttlSeconds,
     int cacheEntryCount,
     CacheEntryInfo cacheEntry,

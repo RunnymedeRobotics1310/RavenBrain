@@ -33,6 +33,10 @@ public class NexusCachingClient {
     return client.getApiKeyLength();
   }
 
+  public String getApiKey() {
+    return client.getApiKey();
+  }
+
   public long getTtlSeconds() {
     return ttlSeconds;
   }
