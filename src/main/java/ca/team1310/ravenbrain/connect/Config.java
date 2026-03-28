@@ -6,7 +6,6 @@ import io.micronaut.serde.annotation.Serdeable;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- *
  * @author Tony Field
  * @since 2025-03-29 23:58
  */
