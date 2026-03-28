@@ -22,6 +22,7 @@ public class NexusApi {
 
   @Get("/queue-status/{tournamentId}")
   @Produces(APPLICATION_JSON)
+  @Secured(SecurityRule.IS_ANONYMOUS)
   public HttpResponse<NexusQueueStatus> getQueueStatus(@Parameter String tournamentId) {
     Optional<NexusQueueStatus> status = nexusService.getQueueStatus(tournamentId);
     return status.map(HttpResponse::ok).orElseGet(HttpResponse::noContent);
