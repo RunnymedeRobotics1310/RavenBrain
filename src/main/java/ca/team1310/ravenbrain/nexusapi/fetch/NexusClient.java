@@ -35,6 +35,39 @@ class NexusClient {
     return apiKey.length();
   }
 
+  ProbeResult probe(String path) {
+    if (!enabled) {
+      return new ProbeResult(false, 0, 0, "Nexus API client is not enabled");
+    }
+    if (path == null) path = "";
+    if (path.startsWith("/")) path = path.substring(1);
+    long start = System.currentTimeMillis();
+    try {
+      String url = ENDPOINT + "/" + path;
+      HttpRequest request =
+          HttpRequest.newBuilder()
+              .uri(new URI(url))
+              .GET()
+              .header("Nexus-Api-Key", apiKey)
+              .build();
+      HttpClient client = HttpClient.newHttpClient();
+      HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+      long latency = System.currentTimeMillis() - start;
+      int code = response.statusCode();
+      if (code == 200) {
+        return new ProbeResult(true, code, latency, null);
+      } else {
+        return new ProbeResult(false, code, latency, response.body());
+      }
+    } catch (Exception e) {
+      long latency = System.currentTimeMillis() - start;
+      String detail = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+      return new ProbeResult(false, 0, latency, detail);
+    }
+  }
+
+  record ProbeResult(boolean success, int statusCode, long latencyMs, String error) {}
+
   String get(String path) {
     if (!enabled) {
       throw new NexusClientException("Nexus API client is not enabled");

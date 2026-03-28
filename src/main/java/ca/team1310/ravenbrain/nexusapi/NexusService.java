@@ -47,6 +47,11 @@ public class NexusService {
 
     NexusQueueStatus queueStatus = getQueueStatus(tournamentId).orElse(null);
 
+    var probe = cachingClient.probe(cachePath);
+    var liveFetch =
+        new NexusDebugResponse.LiveFetchResult(
+            probe.success(), probe.statusCode(), probe.latencyMs(), probe.error());
+
     return new NexusDebugResponse(
         cachingClient.isEnabled(),
         cachingClient.getApiKeyLength(),
@@ -55,7 +60,10 @@ public class NexusService {
         cacheEntry,
         queueStatus,
         teamNumber,
-        eventKey);
+        eventKey,
+        cachingClient.getLastError(),
+        cachingClient.getLastErrorTime(),
+        liveFetch);
   }
 
   public Optional<NexusQueueStatus> getQueueStatus(String tournamentId) {

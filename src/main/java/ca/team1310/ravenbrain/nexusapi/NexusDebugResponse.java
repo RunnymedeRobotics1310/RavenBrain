@@ -11,9 +11,15 @@ public record NexusDebugResponse(
     CacheEntryInfo cacheEntry,
     NexusQueueStatus queueStatus,
     int teamNumber,
-    String nexusEventKey) {
+    String nexusEventKey,
+    String lastError,
+    String lastErrorTime,
+    LiveFetchResult liveFetch) {
 
   @Serdeable
   public record CacheEntryInfo(
       boolean present, String fetchedAt, long ageSeconds, boolean stale, String body) {}
+
+  @Serdeable
+  public record LiveFetchResult(boolean success, int statusCode, long latencyMs, String error) {}
 }

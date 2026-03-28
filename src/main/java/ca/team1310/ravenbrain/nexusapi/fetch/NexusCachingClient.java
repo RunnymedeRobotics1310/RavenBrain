@@ -13,6 +13,8 @@ public class NexusCachingClient {
   private final NexusClient client;
   private final long ttlSeconds;
   private final ConcurrentHashMap<String, CachedResponse> cache = new ConcurrentHashMap<>();
+  private volatile String lastError;
+  private volatile Instant lastErrorTime;
 
   record CachedResponse(String body, Instant fetchedAt) {}
 
@@ -51,6 +53,21 @@ public class NexusCachingClient {
 
   public record CacheEntryDebug(String fetchedAt, long ageSeconds, boolean stale, String body) {}
 
+  public ProbeResult probe(String path) {
+    var result = client.probe(path);
+    return new ProbeResult(result.success(), result.statusCode(), result.latencyMs(), result.error());
+  }
+
+  public record ProbeResult(boolean success, int statusCode, long latencyMs, String error) {}
+
+  public String getLastError() {
+    return lastError;
+  }
+
+  public String getLastErrorTime() {
+    return lastErrorTime != null ? lastErrorTime.toString() : null;
+  }
+
   public Optional<String> fetch(String path) {
     if (!client.isEnabled()) {
       return Optional.empty();
@@ -68,6 +85,8 @@ public class NexusCachingClient {
       cache.put(path, new CachedResponse(body, Instant.now()));
       return Optional.of(body);
     } catch (NexusClientException e) {
+      lastError = e.getMessage();
+      lastErrorTime = Instant.now();
       log.warn("Nexus API error for {}: {}", path, e.getMessage());
       if (cached != null) {
         log.debug("Returning stale cache for: {}", path);
