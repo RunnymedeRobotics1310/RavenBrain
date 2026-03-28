@@ -54,7 +54,7 @@ public class NexusService {
 
     return new NexusDebugResponse(
         cachingClient.isEnabled(),
-        cachingClient.getApiKey(),
+        "REDACTED",
         cachingClient.getTtlSeconds(),
         cachingClient.getCacheEntryCount(),
         cacheEntry,
