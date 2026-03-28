@@ -27,4 +27,11 @@ public class NexusApi {
     Optional<NexusQueueStatus> status = nexusService.getQueueStatus(tournamentId);
     return status.map(HttpResponse::ok).orElseGet(HttpResponse::noContent);
   }
+
+  @Get("/debug/{tournamentId}")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_SUPERUSER"})
+  public NexusDebugResponse getDebugInfo(@Parameter String tournamentId) {
+    return nexusService.getDebugInfo(tournamentId);
+  }
 }

@@ -31,6 +31,10 @@ class NexusClient {
     return enabled;
   }
 
+  int getApiKeyLength() {
+    return apiKey.length();
+  }
+
   String get(String path) {
     if (!enabled) {
       throw new NexusClientException("Nexus API client is not enabled");

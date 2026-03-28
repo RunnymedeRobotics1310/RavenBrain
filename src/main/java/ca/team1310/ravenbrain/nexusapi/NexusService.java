@@ -11,6 +11,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
+import ca.team1310.ravenbrain.nexusapi.NexusDebugResponse.CacheEntryInfo;
 
 @Singleton
 @Slf4j
@@ -29,6 +30,32 @@ public class NexusService {
     this.cachingClient = cachingClient;
     this.objectMapper = objectMapper;
     this.teamNumber = teamNumber;
+  }
+
+  public NexusDebugResponse getDebugInfo(String tournamentId) {
+    String eventKey = toNexusEventKey(tournamentId);
+    String cachePath = "event/" + eventKey;
+
+    CacheEntryInfo cacheEntry;
+    var entryDebug = cachingClient.getCacheEntryDebug(cachePath);
+    if (entryDebug.isPresent()) {
+      var e = entryDebug.get();
+      cacheEntry = new CacheEntryInfo(true, e.fetchedAt(), e.ageSeconds(), e.stale(), e.body());
+    } else {
+      cacheEntry = new CacheEntryInfo(false, null, 0, false, null);
+    }
+
+    NexusQueueStatus queueStatus = getQueueStatus(tournamentId).orElse(null);
+
+    return new NexusDebugResponse(
+        cachingClient.isEnabled(),
+        cachingClient.getApiKeyLength(),
+        cachingClient.getTtlSeconds(),
+        cachingClient.getCacheEntryCount(),
+        cacheEntry,
+        queueStatus,
+        teamNumber,
+        eventKey);
   }
 
   public Optional<NexusQueueStatus> getQueueStatus(String tournamentId) {

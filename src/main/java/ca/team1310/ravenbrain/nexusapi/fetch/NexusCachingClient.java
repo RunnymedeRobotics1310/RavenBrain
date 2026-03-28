@@ -27,6 +27,30 @@ public class NexusCachingClient {
     return client.isEnabled();
   }
 
+  public int getApiKeyLength() {
+    return client.getApiKeyLength();
+  }
+
+  public long getTtlSeconds() {
+    return ttlSeconds;
+  }
+
+  public int getCacheEntryCount() {
+    return cache.size();
+  }
+
+  public Optional<CacheEntryDebug> getCacheEntryDebug(String path) {
+    CachedResponse cached = cache.get(path);
+    if (cached == null) {
+      return Optional.empty();
+    }
+    long ageSeconds = java.time.Duration.between(cached.fetchedAt(), Instant.now()).getSeconds();
+    boolean stale = ageSeconds > ttlSeconds;
+    return Optional.of(new CacheEntryDebug(cached.fetchedAt().toString(), ageSeconds, stale, cached.body()));
+  }
+
+  public record CacheEntryDebug(String fetchedAt, long ageSeconds, boolean stale, String body) {}
+
   public Optional<String> fetch(String path) {
     if (!client.isEnabled()) {
       return Optional.empty();
