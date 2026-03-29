@@ -30,6 +30,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -207,6 +208,10 @@ class EventSyncService {
     for (Event event : resp.getResponse().events()) {
       Instant start = event.dateStart().atZone(ZoneId.of("America/New_York")).toInstant();
       Instant end = event.dateEnd().atZone(ZoneId.of("America/New_York")).toInstant();
+      String webcasts =
+          event.webcasts() != null && event.webcasts().length > 0
+              ? "[" + Arrays.stream(event.webcasts()).map(w -> "\"" + w + "\"").reduce((a, b) -> a + "," + b).orElse("") + "]"
+              : null;
       TournamentRecord tournamentRecord =
           new TournamentRecord(
               year + event.code(),
@@ -215,7 +220,8 @@ class EventSyncService {
               event.name(),
               start,
               end,
-              event.weekNumber());
+              event.weekNumber(),
+              webcasts);
       log.trace("Saving tournament {}", tournamentRecord);
       try {
         tournamentService.save(tournamentRecord);

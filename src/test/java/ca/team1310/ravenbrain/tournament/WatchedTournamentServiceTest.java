@@ -44,7 +44,8 @@ public class WatchedTournamentServiceTest {
             "Test Watched Tournament",
             Instant.parse("2026-03-20T00:00:00Z"),
             Instant.parse("2026-03-22T00:00:00Z"),
-            10);
+            10,
+            null);
     tournamentService.save(tournament);
 
     // Initially not watched

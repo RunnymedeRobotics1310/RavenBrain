@@ -1,5 +1,6 @@
 package ca.team1310.ravenbrain.tournament;
 
+import io.micronaut.core.annotation.Nullable;
 import io.micronaut.data.annotation.Id;
 import io.micronaut.data.annotation.MappedEntity;
 import io.micronaut.data.annotation.MappedProperty;
@@ -19,4 +20,5 @@ public record TournamentRecord(
     @MappedProperty("tournamentname") String name,
     @MappedProperty("starttime") Instant startTime,
     @MappedProperty("endtime") Instant endTime,
-    @MappedProperty("weeknumber") int weekNumber) {}
+    @MappedProperty("weeknumber") int weekNumber,
+    @Nullable @MappedProperty("webcasts") String webcasts) {}
