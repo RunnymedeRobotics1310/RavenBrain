@@ -11,5 +11,7 @@ public record SyncResult(
     int events,
     int comments,
     int alerts,
+    int matchStrategyPlans,
+    int matchStrategyDrawings,
     boolean tournamentsCleared,
     String message) {}

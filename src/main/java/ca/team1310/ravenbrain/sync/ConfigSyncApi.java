@@ -1,6 +1,8 @@
 package ca.team1310.ravenbrain.sync;
 
 import ca.team1310.ravenbrain.eventlog.EventLogService;
+import ca.team1310.ravenbrain.matchstrategy.MatchStrategyDrawingService;
+import ca.team1310.ravenbrain.matchstrategy.MatchStrategyPlanService;
 import ca.team1310.ravenbrain.quickcomment.QuickCommentService;
 import ca.team1310.ravenbrain.robotalert.RobotAlertService;
 import io.micronaut.http.annotation.Body;
@@ -19,16 +21,22 @@ public class ConfigSyncApi {
   private final EventLogService eventLogService;
   private final QuickCommentService quickCommentService;
   private final RobotAlertService robotAlertService;
+  private final MatchStrategyPlanService matchStrategyPlanService;
+  private final MatchStrategyDrawingService matchStrategyDrawingService;
 
   ConfigSyncApi(
       ConfigSyncService configSyncService,
       EventLogService eventLogService,
       QuickCommentService quickCommentService,
-      RobotAlertService robotAlertService) {
+      RobotAlertService robotAlertService,
+      MatchStrategyPlanService matchStrategyPlanService,
+      MatchStrategyDrawingService matchStrategyDrawingService) {
     this.configSyncService = configSyncService;
     this.eventLogService = eventLogService;
     this.quickCommentService = quickCommentService;
     this.robotAlertService = robotAlertService;
+    this.matchStrategyPlanService = matchStrategyPlanService;
+    this.matchStrategyDrawingService = matchStrategyDrawingService;
   }
 
   @Post
@@ -43,6 +51,8 @@ public class ConfigSyncApi {
     return new ScoutingDataResult(
         eventLogService.findAll(),
         quickCommentService.findAllOrderByTeamAndTimestamp(),
-        List.copyOf(robotAlertService.findAll()));
+        List.copyOf(robotAlertService.findAll()),
+        List.copyOf(matchStrategyPlanService.findAll()),
+        List.copyOf(matchStrategyDrawingService.findAll()));
   }
 }

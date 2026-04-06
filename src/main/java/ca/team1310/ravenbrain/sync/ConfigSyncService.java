@@ -103,6 +103,7 @@ public class ConfigSyncService {
         return new SyncResult(
             counts[0], counts[1], counts[2], counts[3],
             counts[4], counts[5], counts[6],
+            counts[7], counts[8],
             request.clearTournaments(),
             message);
       }
@@ -139,6 +140,8 @@ public class ConfigSyncService {
       if (request.clearTournaments()) {
         stmt.execute("TRUNCATE TABLE RB_WATCHED_TOURNAMENT");
         stmt.execute("TRUNCATE TABLE RB_TEAM_TOURNAMENT");
+        stmt.execute("TRUNCATE TABLE RB_MATCH_STRATEGY_DRAWING");
+        stmt.execute("TRUNCATE TABLE RB_MATCH_STRATEGY_PLAN");
         stmt.execute("TRUNCATE TABLE RB_SCHEDULE");
         stmt.execute("TRUNCATE TABLE RB_TOURNAMENT");
         log.info("Cleared tournaments, schedules, and team-tournament data");
@@ -148,12 +151,16 @@ public class ConfigSyncService {
       int eventCount = 0;
       int commentCount = 0;
       int alertCount = 0;
+      int planCount = 0;
+      int drawingCount = 0;
 
       if (request.syncScoutingData()) {
         if (request.clearExistingScoutingData()) {
           stmt.execute("TRUNCATE TABLE RB_EVENT");
           stmt.execute("TRUNCATE TABLE RB_COMMENT");
           stmt.execute("TRUNCATE TABLE RB_ROBOT_ALERT");
+          stmt.execute("TRUNCATE TABLE RB_MATCH_STRATEGY_DRAWING");
+          stmt.execute("TRUNCATE TABLE RB_MATCH_STRATEGY_PLAN");
           log.info("Cleared existing scouting data before import");
         }
 
@@ -161,6 +168,10 @@ public class ConfigSyncService {
           eventCount = insertEvents(conn, scoutingData.get("events"));
           commentCount = insertComments(conn, scoutingData.get("comments"));
           alertCount = insertAlerts(conn, scoutingData.get("alerts"));
+          // Plans before drawings — drawings have an FK on plans.
+          planCount = insertMatchStrategyPlans(conn, scoutingData.get("plans"));
+          drawingCount =
+              insertMatchStrategyDrawings(conn, scoutingData.get("drawings"));
         }
       } else {
         // Existing behavior: clear orphaned scouting data when not syncing it
@@ -182,7 +193,10 @@ public class ConfigSyncService {
       // Re-enable FK checks
       stmt.execute("SET FOREIGN_KEY_CHECKS=1");
 
-      return new int[] {saCount, etCount, stCount, seCount, eventCount, commentCount, alertCount};
+      return new int[] {
+        saCount, etCount, stCount, seCount, eventCount, commentCount, alertCount, planCount,
+        drawingCount
+      };
     }
   }
 
@@ -356,6 +370,64 @@ public class ConfigSyncService {
       ps.executeBatch();
       log.info("Inserted {} alerts", count);
       resetAutoIncrement(conn.createStatement(), "RB_ROBOT_ALERT");
+      return count;
+    }
+  }
+
+  private int insertMatchStrategyPlans(Connection conn, JsonNode plans) throws Exception {
+    if (plans == null || !plans.isArray()) return 0;
+    String sql =
+        "INSERT INTO RB_MATCH_STRATEGY_PLAN (id, tournament_id, match_level, match_number, short_summary, strategy_text, updated_by_user_id, updated_by_display_name, updated_at) VALUES (?,?,?,?,?,?,?,?,?)";
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+      int count = 0;
+      for (JsonNode p : plans) {
+        ps.setLong(1, p.get("id").asLong());
+        ps.setString(2, p.get("tournamentId").asText());
+        ps.setString(3, p.get("matchLevel").asText());
+        ps.setInt(4, p.get("matchNumber").asInt());
+        ps.setString(
+            5, p.has("shortSummary") ? p.get("shortSummary").asText("") : "");
+        ps.setString(
+            6,
+            p.has("strategyText") && !p.get("strategyText").isNull()
+                ? p.get("strategyText").asText()
+                : null);
+        ps.setLong(7, p.get("updatedByUserId").asLong());
+        ps.setString(8, p.get("updatedByDisplayName").asText());
+        ps.setTimestamp(9, parseTimestamp(p.get("updatedAt")));
+        ps.addBatch();
+        count++;
+      }
+      ps.executeBatch();
+      log.info("Inserted {} match strategy plans", count);
+      resetAutoIncrement(conn.createStatement(), "RB_MATCH_STRATEGY_PLAN");
+      return count;
+    }
+  }
+
+  private int insertMatchStrategyDrawings(Connection conn, JsonNode drawings) throws Exception {
+    if (drawings == null || !drawings.isArray()) return 0;
+    String sql =
+        "INSERT INTO RB_MATCH_STRATEGY_DRAWING (id, plan_id, label, strokes, created_by_user_id, created_by_display_name, updated_by_user_id, updated_by_display_name, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)";
+    try (PreparedStatement ps = conn.prepareStatement(sql)) {
+      int count = 0;
+      for (JsonNode d : drawings) {
+        ps.setLong(1, d.get("id").asLong());
+        ps.setLong(2, d.get("planId").asLong());
+        ps.setString(3, d.get("label").asText());
+        ps.setString(4, d.get("strokes").asText());
+        ps.setLong(5, d.get("createdByUserId").asLong());
+        ps.setString(6, d.get("createdByDisplayName").asText());
+        ps.setLong(7, d.get("updatedByUserId").asLong());
+        ps.setString(8, d.get("updatedByDisplayName").asText());
+        ps.setTimestamp(9, parseTimestamp(d.get("createdAt")));
+        ps.setTimestamp(10, parseTimestamp(d.get("updatedAt")));
+        ps.addBatch();
+        count++;
+      }
+      ps.executeBatch();
+      log.info("Inserted {} match strategy drawings", count);
+      resetAutoIncrement(conn.createStatement(), "RB_MATCH_STRATEGY_DRAWING");
       return count;
     }
   }
