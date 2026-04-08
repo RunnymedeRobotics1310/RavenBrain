@@ -59,6 +59,18 @@ public class UserApi {
     userService.deleteUser(id, authentication);
   }
 
+  @Post("/{id}/logout")
+  @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public void forceLogout(long id, Authentication authentication) {
+    userService.forceLogout(id, authentication);
+  }
+
+  @Get("/active-sessions")
+  @Secured({"ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public List<String> activeSessions() {
+    return userService.getUsernamesWithActiveSessions();
+  }
+
   @Post("/forgot-password")
   @Secured(SecurityRule.IS_ANONYMOUS)
   public void forgotPassword(@QueryValue String login) {

@@ -268,6 +268,25 @@ public class UserService {
     userRepository.deleteById(id);
   }
 
+  public void forceLogout(long id, Authentication caller) {
+    User target =
+        userRepository
+            .findById(id)
+            .orElseThrow(() -> new UserNotFoundException("User not found"));
+    Collection<String> callerRoles = caller.getRoles();
+    if (target.roles().contains("ROLE_SUPERUSER") && !callerRoles.contains("ROLE_SUPERUSER")) {
+      throw new UserForbiddenException("Only superuser can force-logout a superuser");
+    }
+    refreshTokenRepository.updateByUsername(target.login(), true);
+  }
+
+  public List<String> getUsernamesWithActiveSessions() {
+    return refreshTokenRepository.findByRevokedFalse().stream()
+        .map(RefreshToken::username)
+        .distinct()
+        .toList();
+  }
+
   public List<User> listUsersWithForgotPassword() {
     return userRepository.findByForgotPasswordTrue();
   }
