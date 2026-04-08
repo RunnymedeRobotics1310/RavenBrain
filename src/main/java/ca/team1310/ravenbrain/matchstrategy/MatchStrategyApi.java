@@ -8,6 +8,7 @@ import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.authentication.Authentication;
+import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.annotation.Serdeable;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -18,7 +19,7 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
 @Controller("/api/match-strategy")
-@Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
+@Secured(SecurityRule.IS_AUTHENTICATED)
 @Slf4j
 public class MatchStrategyApi {
 
@@ -56,6 +57,7 @@ public class MatchStrategyApi {
       String strokes) {}
 
   @Get("/{tournamentId}")
+  @Secured({"ROLE_DRIVE_TEAM", "ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
   @Produces(APPLICATION_JSON)
   public List<PlanWithDrawings> listForTournament(@PathVariable String tournamentId) {
     List<MatchStrategyPlan> plans = planService.findAllForTournament(tournamentId);
@@ -77,6 +79,7 @@ public class MatchStrategyApi {
   }
 
   @Get("/{tournamentId}/{matchLevel}/{matchNumber}")
+  @Secured({"ROLE_DRIVE_TEAM", "ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
   @Produces(APPLICATION_JSON)
   public HttpResponse<PlanWithDrawings> getOne(
       @PathVariable String tournamentId,
@@ -94,6 +97,7 @@ public class MatchStrategyApi {
   }
 
   @Post
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
   @Consumes(APPLICATION_JSON)
   @Produces(APPLICATION_JSON)
   public MatchStrategyPlan upsertPlan(
@@ -123,6 +127,7 @@ public class MatchStrategyApi {
   }
 
   @Post("/drawing")
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
   @Consumes(APPLICATION_JSON)
   @Produces(APPLICATION_JSON)
   public MatchStrategyDrawing upsertDrawing(
@@ -190,6 +195,7 @@ public class MatchStrategyApi {
   }
 
   @Delete("/drawing/{id}")
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
   public HttpResponse<?> deleteDrawing(@PathVariable long id) {
     drawingService.deleteById(id);
     return HttpResponse.noContent();
