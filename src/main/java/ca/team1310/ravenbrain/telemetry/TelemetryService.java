@@ -24,37 +24,58 @@ public class TelemetryService {
 
   public TelemetrySession createSession(
       String sessionId, int teamNumber, String robotIp, Instant startedAt) {
+    Optional<TelemetrySession> existing = sessionRepository.findBySessionId(sessionId);
+    if (existing.isPresent()) {
+      log.info("Telemetry session {} already exists, returning existing", sessionId);
+      return existing.get();
+    }
     var session =
-        new TelemetrySession(null, sessionId, teamNumber, robotIp, startedAt, null, 0, startedAt);
+        new TelemetrySession(
+            null, sessionId, teamNumber, robotIp, startedAt, null, 0, 0, startedAt);
     session = sessionRepository.save(session);
     log.info("Created telemetry session {} for team {}", sessionId, teamNumber);
     return session;
   }
 
   public void bulkInsertEntries(long sessionId, List<TelemetryApi.TelemetryEntryRequest> entries) {
-    String sql =
+    String insertSql =
         "INSERT INTO RB_TELEMETRY_ENTRY (session_id, ts, entry_type, nt_key, nt_type, nt_value, fms_raw)"
             + " VALUES (?,?,?,?,?,?,?)";
-    try (Connection conn = dataSource.getConnection();
-        PreparedStatement ps = conn.prepareStatement(sql)) {
-      int count = 0;
-      for (TelemetryApi.TelemetryEntryRequest entry : entries) {
-        ps.setLong(1, sessionId);
-        ps.setTimestamp(2, Timestamp.from(entry.ts()));
-        ps.setString(3, entry.entryType());
-        ps.setString(4, entry.ntKey());
-        ps.setString(5, entry.ntType());
-        ps.setString(6, entry.ntValue());
-        if (entry.fmsRaw() != null) {
-          ps.setInt(7, entry.fmsRaw());
-        } else {
-          ps.setNull(7, java.sql.Types.INTEGER);
+    String updateCountSql =
+        "UPDATE RB_TELEMETRY_SESSION SET uploaded_count = uploaded_count + ? WHERE id = ?";
+    try (Connection conn = dataSource.getConnection()) {
+      conn.setAutoCommit(false);
+      try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
+        int count = 0;
+        for (TelemetryApi.TelemetryEntryRequest entry : entries) {
+          ps.setLong(1, sessionId);
+          ps.setTimestamp(2, Timestamp.from(entry.ts()));
+          ps.setString(3, entry.entryType());
+          ps.setString(4, entry.ntKey());
+          ps.setString(5, entry.ntType());
+          ps.setString(6, entry.ntValue());
+          if (entry.fmsRaw() != null) {
+            ps.setInt(7, entry.fmsRaw());
+          } else {
+            ps.setNull(7, java.sql.Types.INTEGER);
+          }
+          ps.addBatch();
+          count++;
         }
-        ps.addBatch();
-        count++;
+        ps.executeBatch();
+
+        try (PreparedStatement up = conn.prepareStatement(updateCountSql)) {
+          up.setInt(1, count);
+          up.setLong(2, sessionId);
+          up.executeUpdate();
+        }
+
+        conn.commit();
+        log.info("Inserted {} telemetry entries for session {}", count, sessionId);
+      } catch (Exception e) {
+        conn.rollback();
+        throw e;
       }
-      ps.executeBatch();
-      log.info("Inserted {} telemetry entries for session {}", count, sessionId);
     } catch (Exception e) {
       throw new RuntimeException("Failed to bulk insert telemetry entries: " + e.getMessage(), e);
     }
@@ -75,6 +96,7 @@ public class TelemetryService {
             session.startedAt(),
             endedAt,
             entryCount,
+            session.uploadedCount(),
             session.createdAt());
     sessionRepository.update(updated);
     log.info("Completed telemetry session {} with {} entries", sessionId, entryCount);

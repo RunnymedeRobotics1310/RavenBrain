@@ -18,4 +18,5 @@ public record TelemetrySession(
     @MappedProperty("started_at") Instant startedAt,
     @Nullable @MappedProperty("ended_at") Instant endedAt,
     @MappedProperty("entry_count") int entryCount,
+    @MappedProperty("uploaded_count") int uploadedCount,
     @MappedProperty("created_at") Instant createdAt) {}

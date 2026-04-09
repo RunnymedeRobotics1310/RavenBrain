@@ -51,7 +51,7 @@ public class TelemetryApiTest {
                     .header(API_KEY_HEADER, API_KEY),
                 TelemetrySession.class);
 
-    assertEquals(HttpStatus.CREATED, createResponse.getStatus());
+    assertEquals(HttpStatus.OK, createResponse.getStatus());
     TelemetrySession session = createResponse.body();
     assertNotNull(session);
     assertNotNull(session.id());
@@ -267,5 +267,138 @@ public class TelemetryApiTest {
     TelemetryApi.BatchInsertResult result = response.body();
     assertNotNull(result);
     assertEquals(5, result.count());
+  }
+
+  @Test
+  void testCreateSessionIdempotent() {
+    String sessionId = "test-idempotent-" + UUID.randomUUID();
+    Instant startedAt = Instant.parse("2026-01-15T10:00:00Z");
+
+    TelemetryApi.CreateSessionRequest request =
+        new TelemetryApi.CreateSessionRequest(sessionId, 1310, "10.13.10.2", startedAt);
+
+    // First POST — creates the session
+    HttpResponse<TelemetrySession> firstResponse =
+        client
+            .toBlocking()
+            .exchange(
+                HttpRequest.POST("/api/telemetry/session", request)
+                    .header(API_KEY_HEADER, API_KEY),
+                TelemetrySession.class);
+
+    assertEquals(HttpStatus.OK, firstResponse.getStatus());
+    TelemetrySession first = firstResponse.body();
+    assertNotNull(first);
+    assertEquals(sessionId, first.sessionId());
+
+    // Second POST with same sessionId — should return 200 with the same session
+    HttpResponse<TelemetrySession> secondResponse =
+        client
+            .toBlocking()
+            .exchange(
+                HttpRequest.POST("/api/telemetry/session", request)
+                    .header(API_KEY_HEADER, API_KEY),
+                TelemetrySession.class);
+
+    assertEquals(HttpStatus.OK, secondResponse.getStatus());
+    TelemetrySession second = secondResponse.body();
+    assertNotNull(second);
+    assertEquals(first.id(), second.id());
+    assertEquals(first.sessionId(), second.sessionId());
+    assertEquals(first.teamNumber(), second.teamNumber());
+  }
+
+  @Test
+  void testGetSessionReturnsUploadedCount() {
+    String sessionId = "test-get-" + UUID.randomUUID();
+    Instant startedAt = Instant.parse("2026-01-15T10:00:00Z");
+
+    // Create session
+    TelemetryApi.CreateSessionRequest createRequest =
+        new TelemetryApi.CreateSessionRequest(sessionId, 1310, "10.13.10.2", startedAt);
+
+    client
+        .toBlocking()
+        .exchange(
+            HttpRequest.POST("/api/telemetry/session", createRequest)
+                .header(API_KEY_HEADER, API_KEY),
+            TelemetrySession.class);
+
+    // GET session — uploadedCount should be 0 initially
+    HttpResponse<TelemetrySession> getResponse =
+        client
+            .toBlocking()
+            .exchange(
+                HttpRequest.GET("/api/telemetry/session/" + sessionId),
+                TelemetrySession.class);
+
+    assertEquals(HttpStatus.OK, getResponse.getStatus());
+    TelemetrySession session = getResponse.body();
+    assertNotNull(session);
+    assertEquals(sessionId, session.sessionId());
+    assertEquals(0, session.uploadedCount());
+  }
+
+  @Test
+  void testGetSessionUploadedCountMatchesBatchSize() {
+    String sessionId = "test-count-" + UUID.randomUUID();
+    Instant startedAt = Instant.parse("2026-01-15T10:00:00Z");
+
+    // Create session
+    TelemetryApi.CreateSessionRequest createRequest =
+        new TelemetryApi.CreateSessionRequest(sessionId, 1310, "10.13.10.2", startedAt);
+
+    client
+        .toBlocking()
+        .exchange(
+            HttpRequest.POST("/api/telemetry/session", createRequest)
+                .header(API_KEY_HEADER, API_KEY),
+            TelemetrySession.class);
+
+    // Post a batch of 3 entries
+    Instant baseTs = Instant.parse("2026-01-15T10:00:01Z");
+    List<TelemetryApi.TelemetryEntryRequest> entries =
+        List.of(
+            new TelemetryApi.TelemetryEntryRequest(
+                baseTs, "nt_update", "/robot/speed", "double", "1.0", null),
+            new TelemetryApi.TelemetryEntryRequest(
+                baseTs.plusMillis(100), "nt_update", "/robot/heading", "double", "45.0", null),
+            new TelemetryApi.TelemetryEntryRequest(
+                baseTs.plusMillis(200), "nt_update", "/robot/mode", "string", "teleop", null));
+
+    client
+        .toBlocking()
+        .exchange(
+            HttpRequest.POST("/api/telemetry/session/" + sessionId + "/data", entries)
+                .header(API_KEY_HEADER, API_KEY),
+            TelemetryApi.BatchInsertResult.class);
+
+    // GET session — uploadedCount should now be 3
+    HttpResponse<TelemetrySession> getResponse =
+        client
+            .toBlocking()
+            .exchange(
+                HttpRequest.GET("/api/telemetry/session/" + sessionId),
+                TelemetrySession.class);
+
+    assertEquals(HttpStatus.OK, getResponse.getStatus());
+    TelemetrySession session = getResponse.body();
+    assertNotNull(session);
+    assertEquals(3, session.uploadedCount());
+  }
+
+  @Test
+  void testGetSessionReturns404ForNonExistent() {
+    HttpClientResponseException exception =
+        assertThrows(
+            HttpClientResponseException.class,
+            () ->
+                client
+                    .toBlocking()
+                    .exchange(
+                        HttpRequest.GET("/api/telemetry/session/nonexistent-session-id"),
+                        TelemetrySession.class));
+
+    assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
   }
 }

@@ -42,17 +42,25 @@ public class TelemetryApi {
   @Serdeable
   public record BatchInsertResult(int count) {}
 
+  @Get("/session/{sessionId}")
+  @Produces(APPLICATION_JSON)
+  @Secured(SecurityRule.IS_ANONYMOUS)
+  public HttpResponse<TelemetrySession> getSession(@PathVariable String sessionId) {
+    return telemetryService
+        .findSessionBySessionId(sessionId)
+        .map(HttpResponse::ok)
+        .orElseGet(HttpResponse::notFound);
+  }
+
   @Post("/session")
   @Consumes(APPLICATION_JSON)
   @Produces(APPLICATION_JSON)
   @Secured(SecurityRule.IS_ANONYMOUS)
   public HttpResponse<TelemetrySession> createSession(@Body CreateSessionRequest request) {
-    log.info(
-        "Creating telemetry session {} for team {}", request.sessionId(), request.teamNumber());
     TelemetrySession session =
         telemetryService.createSession(
             request.sessionId(), request.teamNumber(), request.robotIp(), request.startedAt());
-    return HttpResponse.created(session);
+    return HttpResponse.ok(session);
   }
 
   @Post("/session/{sessionId}/data")
