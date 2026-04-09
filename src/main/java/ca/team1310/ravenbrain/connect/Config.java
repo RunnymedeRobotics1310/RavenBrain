@@ -13,12 +13,17 @@ import jakarta.validation.constraints.NotBlank;
 @Introspected
 @Serdeable
 @ConfigurationProperties("raven-eye")
-public record Config(String team, Security security) {
+public record Config(String team, Security security, Telemetry telemetry) {
   @Introspected
   @Serdeable
   @ConfigurationProperties("security")
   public record Security(
       @NotBlank String encryptionSeed, String superuserPassword, String registrationSecret) {}
+
+  @Introspected
+  @Serdeable
+  @ConfigurationProperties("telemetry")
+  public record Telemetry(String agentPassword) {}
 
   public String encryptionSeed() {
     return security != null ? security.encryptionSeed() : null;
@@ -26,6 +31,10 @@ public record Config(String team, Security security) {
 
   public String superuser() {
     return security != null ? security.superuserPassword() : null;
+  }
+
+  public String telemetryAgentPassword() {
+    return telemetry != null ? telemetry.agentPassword() : null;
   }
 
   @Override

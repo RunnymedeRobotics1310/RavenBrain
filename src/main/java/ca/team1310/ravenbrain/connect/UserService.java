@@ -65,6 +65,26 @@ public class UserService {
             List.of("ROLE_SUPERUSER"));
 
     userRepository.update(updated);
+
+    // reset the telemetry-agent password to the prop value
+    final String telemetryPassword = config.telemetryAgentPassword();
+    if (telemetryPassword != null && !telemetryPassword.isBlank()) {
+      userRepository
+          .findByLogin("telemetry-agent")
+          .ifPresent(
+              agent -> {
+                User updatedAgent =
+                    new User(
+                        agent.id(),
+                        agent.login(),
+                        agent.displayName(),
+                        hashPassword(telemetryPassword),
+                        true,
+                        false,
+                        agent.roles());
+                userRepository.update(updatedAgent);
+              });
+    }
   }
 
   public List<User> listUsers() {
