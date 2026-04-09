@@ -2,6 +2,7 @@ package ca.team1310.ravenbrain.telemetry;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ca.team1310.ravenbrain.connect.Config;
 import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
@@ -13,14 +14,12 @@ import jakarta.inject.Inject;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 @MicronautTest
 public class TelemetryApiTest {
 
-  private static final String API_KEY = "default_telemetry_key_change_me";
-  private static final String API_KEY_HEADER = "X-Telemetry-Key";
+  private static final String AGENT_LOGIN = "telemetry-agent";
 
   @Inject
   @Client("/")
@@ -28,10 +27,10 @@ public class TelemetryApiTest {
 
   @Inject TelemetryService telemetryService;
 
-  @AfterEach
-  void tearDown() {
-    // Cleanup sessions created during tests by looking them up via known sessionIds
-    // The service does not expose a findAll, so cleanup is best-effort via individual lookups.
+  @Inject Config config;
+
+  private String agentPassword() {
+    return config.telemetryAgentPassword();
   }
 
   @Test
@@ -48,7 +47,7 @@ public class TelemetryApiTest {
             .toBlocking()
             .exchange(
                 HttpRequest.POST("/api/telemetry/session", createRequest)
-                    .header(API_KEY_HEADER, API_KEY),
+                    .basicAuth(AGENT_LOGIN, agentPassword()),
                 TelemetrySession.class);
 
     assertEquals(HttpStatus.OK, createResponse.getStatus());
@@ -80,7 +79,7 @@ public class TelemetryApiTest {
             .toBlocking()
             .exchange(
                 HttpRequest.POST("/api/telemetry/session/" + sessionId + "/data", entries)
-                    .header(API_KEY_HEADER, API_KEY),
+                    .basicAuth(AGENT_LOGIN, agentPassword()),
                 TelemetryApi.BatchInsertResult.class);
 
     assertEquals(HttpStatus.OK, dataResponse.getStatus());
@@ -98,7 +97,7 @@ public class TelemetryApiTest {
             .toBlocking()
             .exchange(
                 HttpRequest.POST("/api/telemetry/session/" + sessionId + "/complete", completeRequest)
-                    .header(API_KEY_HEADER, API_KEY),
+                    .basicAuth(AGENT_LOGIN, agentPassword()),
                 TelemetrySession.class);
 
     assertEquals(HttpStatus.OK, completeResponse.getStatus());
@@ -110,10 +109,10 @@ public class TelemetryApiTest {
   }
 
   @Test
-  void testCreateSessionReturns401WithoutApiKey() {
+  void testCreateSessionReturns401WithoutAuth() {
     TelemetryApi.CreateSessionRequest request =
         new TelemetryApi.CreateSessionRequest(
-            "no-key-session", 1310, "10.13.10.2", Instant.now());
+            "no-auth-session", 1310, "10.13.10.2", Instant.now());
 
     HttpClientResponseException exception =
         assertThrows(
@@ -127,10 +126,10 @@ public class TelemetryApiTest {
   }
 
   @Test
-  void testCreateSessionReturns401WithWrongApiKey() {
+  void testCreateSessionReturns401WithWrongPassword() {
     TelemetryApi.CreateSessionRequest request =
         new TelemetryApi.CreateSessionRequest(
-            "wrong-key-session", 1310, "10.13.10.2", Instant.now());
+            "wrong-pass-session", 1310, "10.13.10.2", Instant.now());
 
     HttpClientResponseException exception =
         assertThrows(
@@ -140,13 +139,13 @@ public class TelemetryApiTest {
                     .toBlocking()
                     .exchange(
                         HttpRequest.POST("/api/telemetry/session", request)
-                            .header(API_KEY_HEADER, "wrong-api-key")));
+                            .basicAuth(AGENT_LOGIN, "wrong-password")));
 
     assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
   }
 
   @Test
-  void testPostDataReturns401WithoutApiKey() {
+  void testPostDataReturns401WithoutAuth() {
     List<TelemetryApi.TelemetryEntryRequest> entries =
         List.of(
             new TelemetryApi.TelemetryEntryRequest(
@@ -165,7 +164,7 @@ public class TelemetryApiTest {
   }
 
   @Test
-  void testCompleteSessionReturns401WithoutApiKey() {
+  void testCompleteSessionReturns401WithoutAuth() {
     TelemetryApi.CompleteSessionRequest request =
         new TelemetryApi.CompleteSessionRequest(Instant.now(), 0);
 
@@ -198,7 +197,7 @@ public class TelemetryApiTest {
                     .exchange(
                         HttpRequest.POST(
                                 "/api/telemetry/session/nonexistent-session-id/data", entries)
-                            .header(API_KEY_HEADER, API_KEY),
+                            .basicAuth(AGENT_LOGIN, agentPassword()),
                         TelemetryApi.BatchInsertResult.class));
 
     assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
@@ -218,7 +217,7 @@ public class TelemetryApiTest {
                     .exchange(
                         HttpRequest.POST(
                                 "/api/telemetry/session/nonexistent-session-id/complete", request)
-                            .header(API_KEY_HEADER, API_KEY),
+                            .basicAuth(AGENT_LOGIN, agentPassword()),
                         TelemetrySession.class));
 
     assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
@@ -237,7 +236,7 @@ public class TelemetryApiTest {
         .toBlocking()
         .exchange(
             HttpRequest.POST("/api/telemetry/session", createRequest)
-                .header(API_KEY_HEADER, API_KEY),
+                .basicAuth(AGENT_LOGIN, agentPassword()),
             TelemetrySession.class);
 
     // Post a batch of 5 entries with mixed types
@@ -260,7 +259,7 @@ public class TelemetryApiTest {
             .toBlocking()
             .exchange(
                 HttpRequest.POST("/api/telemetry/session/" + sessionId + "/data", entries)
-                    .header(API_KEY_HEADER, API_KEY),
+                    .basicAuth(AGENT_LOGIN, agentPassword()),
                 TelemetryApi.BatchInsertResult.class);
 
     assertEquals(HttpStatus.OK, response.getStatus());
@@ -283,7 +282,7 @@ public class TelemetryApiTest {
             .toBlocking()
             .exchange(
                 HttpRequest.POST("/api/telemetry/session", request)
-                    .header(API_KEY_HEADER, API_KEY),
+                    .basicAuth(AGENT_LOGIN, agentPassword()),
                 TelemetrySession.class);
 
     assertEquals(HttpStatus.OK, firstResponse.getStatus());
@@ -297,7 +296,7 @@ public class TelemetryApiTest {
             .toBlocking()
             .exchange(
                 HttpRequest.POST("/api/telemetry/session", request)
-                    .header(API_KEY_HEADER, API_KEY),
+                    .basicAuth(AGENT_LOGIN, agentPassword()),
                 TelemetrySession.class);
 
     assertEquals(HttpStatus.OK, secondResponse.getStatus());
@@ -321,7 +320,7 @@ public class TelemetryApiTest {
         .toBlocking()
         .exchange(
             HttpRequest.POST("/api/telemetry/session", createRequest)
-                .header(API_KEY_HEADER, API_KEY),
+                .basicAuth(AGENT_LOGIN, agentPassword()),
             TelemetrySession.class);
 
     // GET session — uploadedCount should be 0 initially
@@ -329,7 +328,8 @@ public class TelemetryApiTest {
         client
             .toBlocking()
             .exchange(
-                HttpRequest.GET("/api/telemetry/session/" + sessionId),
+                HttpRequest.GET("/api/telemetry/session/" + sessionId)
+                    .basicAuth(AGENT_LOGIN, agentPassword()),
                 TelemetrySession.class);
 
     assertEquals(HttpStatus.OK, getResponse.getStatus());
@@ -352,7 +352,7 @@ public class TelemetryApiTest {
         .toBlocking()
         .exchange(
             HttpRequest.POST("/api/telemetry/session", createRequest)
-                .header(API_KEY_HEADER, API_KEY),
+                .basicAuth(AGENT_LOGIN, agentPassword()),
             TelemetrySession.class);
 
     // Post a batch of 3 entries
@@ -370,7 +370,7 @@ public class TelemetryApiTest {
         .toBlocking()
         .exchange(
             HttpRequest.POST("/api/telemetry/session/" + sessionId + "/data", entries)
-                .header(API_KEY_HEADER, API_KEY),
+                .basicAuth(AGENT_LOGIN, agentPassword()),
             TelemetryApi.BatchInsertResult.class);
 
     // GET session — uploadedCount should now be 3
@@ -378,7 +378,8 @@ public class TelemetryApiTest {
         client
             .toBlocking()
             .exchange(
-                HttpRequest.GET("/api/telemetry/session/" + sessionId),
+                HttpRequest.GET("/api/telemetry/session/" + sessionId)
+                    .basicAuth(AGENT_LOGIN, agentPassword()),
                 TelemetrySession.class);
 
     assertEquals(HttpStatus.OK, getResponse.getStatus());
@@ -396,9 +397,44 @@ public class TelemetryApiTest {
                 client
                     .toBlocking()
                     .exchange(
-                        HttpRequest.GET("/api/telemetry/session/nonexistent-session-id"),
+                        HttpRequest.GET("/api/telemetry/session/nonexistent-session-id")
+                            .basicAuth(AGENT_LOGIN, agentPassword()),
                         TelemetrySession.class));
 
     assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+  }
+
+  @Test
+  void testGetSessionReturns401WithoutAuth() {
+    HttpClientResponseException exception =
+        assertThrows(
+            HttpClientResponseException.class,
+            () ->
+                client
+                    .toBlocking()
+                    .exchange(
+                        HttpRequest.GET("/api/telemetry/session/any-session"),
+                        TelemetrySession.class));
+
+    assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+  }
+
+  @Test
+  void testMemberRoleCannotAccessTelemetry() {
+    TelemetryApi.CreateSessionRequest request =
+        new TelemetryApi.CreateSessionRequest(
+            "member-session", 1310, "10.13.10.2", Instant.now());
+
+    HttpClientResponseException exception =
+        assertThrows(
+            HttpClientResponseException.class,
+            () ->
+                client
+                    .toBlocking()
+                    .exchange(
+                        HttpRequest.POST("/api/telemetry/session", request)
+                            .basicAuth("superuser", "wrong-password")));
+
+    assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
   }
 }

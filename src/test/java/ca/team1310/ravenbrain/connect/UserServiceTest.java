@@ -30,7 +30,8 @@ class UserServiceTest {
   @BeforeEach
   void setUp() {
     Config.Security security = new Config.Security(SEED, "superpass", "regsecret");
-    Config config = new Config("1310", security);
+    Config.Telemetry telemetry = new Config.Telemetry("test-telemetry-pass");
+    Config config = new Config("1310", security, telemetry);
     userService =
         new UserService(
             userRepository, eventLogRepository, quickCommentService, refreshTokenRepository, config);

@@ -6,7 +6,6 @@ import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
-import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.annotation.Serdeable;
 import java.time.Instant;
 import java.util.List;
@@ -44,7 +43,7 @@ public class TelemetryApi {
 
   @Get("/session/{sessionId}")
   @Produces(APPLICATION_JSON)
-  @Secured(SecurityRule.IS_ANONYMOUS)
+  @Secured({"ROLE_TELEMETRY_AGENT", "ROLE_TELEMETRY_USER", "ROLE_SUPERUSER"})
   public HttpResponse<TelemetrySession> getSession(@PathVariable String sessionId) {
     return telemetryService
         .findSessionBySessionId(sessionId)
@@ -55,7 +54,7 @@ public class TelemetryApi {
   @Post("/session")
   @Consumes(APPLICATION_JSON)
   @Produces(APPLICATION_JSON)
-  @Secured(SecurityRule.IS_ANONYMOUS)
+  @Secured({"ROLE_TELEMETRY_AGENT", "ROLE_SUPERUSER"})
   public HttpResponse<TelemetrySession> createSession(@Body CreateSessionRequest request) {
     TelemetrySession session =
         telemetryService.createSession(
@@ -66,7 +65,7 @@ public class TelemetryApi {
   @Post("/session/{sessionId}/data")
   @Consumes(APPLICATION_JSON)
   @Produces(APPLICATION_JSON)
-  @Secured(SecurityRule.IS_ANONYMOUS)
+  @Secured({"ROLE_TELEMETRY_AGENT", "ROLE_SUPERUSER"})
   public HttpResponse<BatchInsertResult> postEntries(
       @PathVariable String sessionId, @Body List<TelemetryEntryRequest> entries) {
     Optional<TelemetrySession> session = telemetryService.findSessionBySessionId(sessionId);
@@ -80,7 +79,7 @@ public class TelemetryApi {
   @Post("/session/{sessionId}/complete")
   @Consumes(APPLICATION_JSON)
   @Produces(APPLICATION_JSON)
-  @Secured(SecurityRule.IS_ANONYMOUS)
+  @Secured({"ROLE_TELEMETRY_AGENT", "ROLE_SUPERUSER"})
   public HttpResponse<TelemetrySession> completeSession(
       @PathVariable String sessionId, @Body CompleteSessionRequest request) {
     try {

@@ -1,5 +1,6 @@
 package ca.team1310.ravenbrain.telemetry;
 
+import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Singleton;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -37,6 +38,7 @@ public class TelemetryService {
     return session;
   }
 
+  @Transactional
   public void bulkInsertEntries(long sessionId, List<TelemetryApi.TelemetryEntryRequest> entries) {
     String insertSql =
         "INSERT INTO RB_TELEMETRY_ENTRY (session_id, ts, entry_type, nt_key, nt_type, nt_value, fms_raw)"
