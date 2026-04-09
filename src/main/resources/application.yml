@@ -44,6 +44,8 @@ raven-eye:
   nexus-api:
     key: ${NEXUS_KEY:}
     ttl-seconds: 20
+  telemetry:
+    api-key: ${TELEMETRY_API_KEY:default_telemetry_key_change_me}
   frc-api:
     user: ${FRC_USER:frc_api_user_id}
     key: ${FRC_KEY:frc_api_user_key}
