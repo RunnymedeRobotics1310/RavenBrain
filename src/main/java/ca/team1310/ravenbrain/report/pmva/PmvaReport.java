@@ -11,7 +11,7 @@ import java.util.List;
  */
 @Serdeable
 public record PmvaReport(
-    int teamNumber, int matchCount, GeneralSection general, HopperSection hopper, SwiSection swi) {
+    int teamNumber, int matchCount, GeneralSection general, ShootingSection shooting) {
 
   @Serdeable
   public record GeneralSection(
@@ -26,27 +26,34 @@ public record PmvaReport(
       List<MatchComment> suggestions) {}
 
   @Serdeable
-  public record MatchBreakdown(int matchId, String level, String note, String videoLink) {}
+  public record MatchBreakdown(
+      String tournamentId, int matchId, String level, String note, String videoLink) {}
 
   @Serdeable
-  public record MatchComment(int matchId, String level, String note) {}
+  public record MatchComment(String tournamentId, int matchId, String level, String note) {}
 
+  /**
+   * Intaking-and-scoring section, formerly "hopper". The six shooting views are filtered lenses on
+   * the same underlying sequence data. {@code swi} folds in the former top-level SWI section as a
+   * summary — shoot-while-intaking is just hopper sequences tagged with the intaking flag, so it
+   * lives here alongside the other filters.
+   */
   @Serdeable
-  public record HopperSection(
+  public record ShootingSection(
       LoadingStats loading,
       ShootingView shootingAll,
       ShootingView shootingClose,
       ShootingView shootingMid,
       ShootingView shootingFar,
       ShootingView shootingMoving,
-      ShootingView shootingIntaking) {}
+      ShootingView shootingIntaking,
+      SwiSummary swi) {}
 
   @Serdeable
   public record LoadingStats(
       double avgFillCount,
       double hopperFilledPercentage,
       double maxFillExcludingIntaking,
-      double hopperFilledRating,
       List<MatchComment> loadComments,
       List<MatchComment> shootComments) {}
 
@@ -61,16 +68,19 @@ public record PmvaReport(
 
   @Serdeable
   public record MatchCycleData(
+      String tournamentId,
       int matchId,
       String level,
       int cycleCount,
       double totalShots,
       double totalScores,
       double totalMisses,
-      double totalStuck) {}
+      double totalStuck,
+      double avgLoadAmount) {}
 
   @Serdeable
   public record SequenceShotData(
+      String tournamentId,
       int matchId,
       String level,
       int sequenceIndex,
@@ -82,8 +92,12 @@ public record PmvaReport(
       double shotsPerSecond,
       double scoresPerSecond) {}
 
+  /**
+   * Shoot-while-intaking summary. Comments are preserved here for future reporting even though the
+   * current UI doesn't surface them; the aggregate metrics describe SWI-filtered sequences only.
+   */
   @Serdeable
-  public record SwiSection(
+  public record SwiSummary(
       double avgSequencesPerMatch,
       double avgScoresPerSequence,
       double avgScorePercentPerSequence,
@@ -96,6 +110,7 @@ public record PmvaReport(
 
   @Serdeable
   public record MatchSwiData(
+      String tournamentId,
       int matchId,
       String level,
       int sequenceCount,

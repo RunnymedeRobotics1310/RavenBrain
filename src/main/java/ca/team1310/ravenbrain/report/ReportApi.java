@@ -361,7 +361,7 @@ public class ReportApi {
   @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
   public PmvaReportResponse getPmvaReport(@PathVariable String tournamentId) {
     try {
-      String cacheKey = "pmva:" + tournamentId;
+      String cacheKey = "pmva:v5:" + tournamentId;
       var cached = reportCacheService.get(cacheKey);
       if (cached.isPresent()) {
         PmvaReport report = objectMapper.readValue(cached.get(), PmvaReport.class);
@@ -374,6 +374,38 @@ public class ReportApi {
       // Cache deserialization failed — regenerate
       try {
         var report = pmvaReportService.generate(tournamentId);
+        return new PmvaReportResponse(report, true, null);
+      } catch (Exception e2) {
+        return new PmvaReportResponse(null, false, e2.getMessage());
+      }
+    } catch (Exception e) {
+      return new PmvaReportResponse(null, false, e.getMessage());
+    }
+  }
+
+  // ── Robot Performance Report (season-wide PMVA aggregation) ─────────────
+
+  @Get("/robot-performance")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_EXPERTSCOUT", "ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public PmvaReportResponse getRobotPerformanceReport() {
+    try {
+      int season = pmvaReportService.getCurrentSeason();
+      String cacheKey =
+          "robot-perf:v4:" + pmvaReportService.getOwnerTeamNumber() + ":" + season;
+      var cached = reportCacheService.get(cacheKey);
+      if (cached.isPresent()) {
+        var report = objectMapper.readValue(cached.get(), PmvaReport.class);
+        return new PmvaReportResponse(report, true, null);
+      }
+      var report = pmvaReportService.generateForSeason(season);
+      reportCacheService.put(cacheKey, objectMapper.writeValueAsString(report));
+      return new PmvaReportResponse(report, true, null);
+    } catch (IOException e) {
+      // Cache deserialization failed — regenerate
+      try {
+        int season = pmvaReportService.getCurrentSeason();
+        var report = pmvaReportService.generateForSeason(season);
         return new PmvaReportResponse(report, true, null);
       } catch (Exception e2) {
         return new PmvaReportResponse(null, false, e2.getMessage());

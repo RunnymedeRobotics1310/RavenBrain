@@ -4,16 +4,24 @@ import ca.team1310.ravenbrain.eventlog.EventLogRecord;
 import ca.team1310.ravenbrain.eventlog.EventLogRepository;
 import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import ca.team1310.ravenbrain.report.pmva.PmvaReport.*;
+import ca.team1310.ravenbrain.tournament.TournamentRecord;
+import ca.team1310.ravenbrain.tournament.TournamentService;
 import io.micronaut.context.annotation.Property;
 import jakarta.inject.Singleton;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Generates the PMVA (Post Match Video Analysis) report for the owner team at a given tournament.
+ * Generates the PMVA (Post Match Video Analysis) report for the owner team. Supports both
+ * single-tournament reports (see {@link #generate(String)}) and season-wide aggregation (see
+ * {@link #generateForSeason(int)}). Season aggregation runs the same pipeline but keys matches by
+ * a composite {@code tournamentId:level:matchId} so matches from different tournaments with the
+ * same number don't collide.
  *
  * @author Tony Field
  * @since 2026-03-16
@@ -26,13 +34,20 @@ public class PmvaReportService {
       Set.of(TournamentLevel.Qualification, TournamentLevel.Playoff);
 
   private final EventLogRepository eventLogRepository;
+  private final TournamentService tournamentService;
   private final int teamNumber;
 
   public PmvaReportService(
       EventLogRepository eventLogRepository,
+      TournamentService tournamentService,
       @Property(name = "raven-eye.team") int teamNumber) {
     this.eventLogRepository = eventLogRepository;
+    this.tournamentService = tournamentService;
     this.teamNumber = teamNumber;
+  }
+
+  public int getOwnerTeamNumber() {
+    return teamNumber;
   }
 
   /** List tournaments that have PMVA data for the owner team. */
@@ -40,41 +55,91 @@ public class PmvaReportService {
     return eventLogRepository.findDistinctPmvaTournamentIds(teamNumber);
   }
 
-  /** Generate the full PMVA report for a tournament. */
+  /**
+   * Resolve the most recent season that has PMVA data for the owner team, falling back to the
+   * current calendar year if none exist.
+   */
+  public int getCurrentSeason() {
+    return listTournamentsWithData().stream()
+        .map(this::findTournamentOrNull)
+        .filter(Objects::nonNull)
+        .mapToInt(TournamentRecord::season)
+        .max()
+        .orElseGet(() -> Instant.now().atZone(ZoneOffset.UTC).getYear());
+  }
+
+  /** Generate a PMVA report for a single tournament. */
   public PmvaReport generate(String tournamentId) {
-    // Fetch and filter events
     var allEvents =
         eventLogRepository.findAllByTeamNumberAndTournamentIdOrderByTimestampAsc(
             teamNumber, tournamentId);
+    return buildReport(allEvents);
+  }
+
+  /**
+   * Generate a PMVA report aggregating all tournaments in a given season. Events from every
+   * tournament in the season are fed through the same pipeline, keyed by {@code
+   * tournamentId:level:matchId} so per-tournament matches remain distinct.
+   */
+  public PmvaReport generateForSeason(int season) {
+    var tournamentsInSeason =
+        listTournamentsWithData().stream()
+            .map(this::findTournamentOrNull)
+            .filter(Objects::nonNull)
+            .filter(t -> t.season() == season)
+            .sorted(Comparator.comparing(TournamentRecord::startTime))
+            .toList();
+
+    if (tournamentsInSeason.isEmpty()) {
+      return emptyReport();
+    }
+
+    var allEvents = new ArrayList<EventLogRecord>();
+    for (var t : tournamentsInSeason) {
+      allEvents.addAll(
+          eventLogRepository.findAllByTeamNumberAndTournamentIdOrderByTimestampAsc(
+              teamNumber, t.id()));
+    }
+    return buildReport(allEvents);
+  }
+
+  // ── Core pipeline ────────────────────────────────────────────────────────
+
+  /**
+   * Build a PMVA report from a pre-fetched event list. Shared by the single-tournament and
+   * season-wide entry points. The match grouping key is always {@code
+   * tournamentId:level:matchId}, so this works whether the events come from one tournament or
+   * many.
+   */
+  private PmvaReport buildReport(List<EventLogRecord> allEvents) {
     var pmvaEvents =
         allEvents.stream()
             .filter(e -> MATCH_LEVELS.contains(e.level()))
             .filter(e -> e.eventType().startsWith("pmva-"))
             .toList();
 
-    // Group by match
     var matchKeys =
-        pmvaEvents.stream()
-            .map(e -> e.level().name() + ":" + e.matchId())
-            .collect(Collectors.toCollection(LinkedHashSet::new));
+        pmvaEvents.stream().map(PmvaReportService::matchKey).collect(
+            Collectors.toCollection(LinkedHashSet::new));
     int matchCount = matchKeys.size();
 
     if (matchCount == 0) {
       return emptyReport();
     }
 
-    // Group events by match for per-match processing
     var eventsByMatch = new LinkedHashMap<String, List<EventLogRecord>>();
     for (var event : pmvaEvents) {
-      var key = event.level().name() + ":" + event.matchId();
-      eventsByMatch.computeIfAbsent(key, k -> new ArrayList<>()).add(event);
+      eventsByMatch.computeIfAbsent(matchKey(event), k -> new ArrayList<>()).add(event);
     }
 
-    var general = buildGeneralSection(pmvaEvents, eventsByMatch, matchCount);
-    var hopper = buildHopperSection(eventsByMatch, matchCount);
-    var swi = buildSwiSection(eventsByMatch, matchCount);
+    var general = buildGeneralSection(pmvaEvents, matchCount);
+    var shooting = buildShootingSection(eventsByMatch, matchCount);
 
-    return new PmvaReport(teamNumber, matchCount, general, hopper, swi);
+    return new PmvaReport(teamNumber, matchCount, general, shooting);
+  }
+
+  private static String matchKey(EventLogRecord e) {
+    return e.tournamentId() + ":" + e.level().name() + ":" + e.matchId();
   }
 
   private PmvaReport emptyReport() {
@@ -82,25 +147,20 @@ public class PmvaReportService {
         teamNumber,
         0,
         new GeneralSection(
-            0,
-            0,
-            0.0,
-            List.of(),
-            List.of(),
-            List.of(),
-            List.of(),
-            List.of(),
-            List.of()),
-        new HopperSection(
-            new LoadingStats(0, 0, 0, 0, List.of(), List.of()),
-            null, null, null, null, null, null),
-        new SwiSection(0, 0, 0, 0, 0, List.of(), List.of(), List.of(), List.of()));
+            0, 0, 0.0, List.of(), List.of(), List.of(), List.of(), List.of(), List.of()),
+        new ShootingSection(
+            new LoadingStats(0, 0, 0, List.of(), List.of()),
+            null, null, null, null, null, null,
+            emptySwiSummary()));
+  }
+
+  private static SwiSummary emptySwiSummary() {
+    return new SwiSummary(0, 0, 0, 0, 0, List.of(), List.of(), List.of(), List.of());
   }
 
   // ── General Section ──────────────────────────────────────────────────────
 
-  private GeneralSection buildGeneralSection(
-      List<EventLogRecord> allEvents, Map<String, List<EventLogRecord>> eventsByMatch, int matchCount) {
+  private GeneralSection buildGeneralSection(List<EventLogRecord> allEvents, int matchCount) {
 
     int breakdownCount = 0;
     int noBreakdownCount = 0;
@@ -111,12 +171,11 @@ public class PmvaReportService {
     var generalComments = new ArrayList<PmvaReport.MatchComment>();
     var suggestions = new ArrayList<PmvaReport.MatchComment>();
 
-    // Build a map of video links per match for cross-referencing
+    // Video link per (tournament, match) for cross-referencing.
     var videoLinksByMatch = new HashMap<String, String>();
     for (var event : allEvents) {
       if ("pmva-video-link".equals(event.eventType()) && hasNote(event)) {
-        var key = event.level().name() + ":" + event.matchId();
-        videoLinksByMatch.put(key, event.note());
+        videoLinksByMatch.put(matchKey(event), event.note());
       }
     }
 
@@ -124,13 +183,13 @@ public class PmvaReportService {
       switch (event.eventType()) {
         case "pmva-breakdown" -> {
           breakdownCount++;
-          var matchKey = event.level().name() + ":" + event.matchId();
           breakdownMatches.add(
               new MatchBreakdown(
+                  event.tournamentId(),
                   event.matchId(),
                   event.level().name(),
                   hasNote(event) ? event.note() : "",
-                  videoLinksByMatch.get(matchKey)));
+                  videoLinksByMatch.get(matchKey(event))));
           if (hasNote(event)) {
             breakdownNotes.add(toComment(event));
           }
@@ -168,10 +227,11 @@ public class PmvaReportService {
         suggestions);
   }
 
-  // ── Hopper Section ────────────────────────────────────────────────────────
+  // ── Shooting Section ─────────────────────────────────────────────────────
 
   /** Internal representation of a detected hopper sequence (load + shoot cycle). */
   private record HopperSequence(
+      String tournamentId,
       int matchId,
       String level,
       int sequenceIndex,
@@ -186,14 +246,13 @@ public class PmvaReportService {
       boolean moving,
       boolean intaking) {}
 
-  private HopperSection buildHopperSection(
+  private ShootingSection buildShootingSection(
       Map<String, List<EventLogRecord>> eventsByMatch, int matchCount) {
     var allSequences = extractHopperSequences(eventsByMatch);
     var loading = buildLoadingStats(allSequences, eventsByMatch);
 
     var shootingAll = buildShootingView("all", allSequences, matchCount);
 
-    // Per-position (overlapping filters)
     var shootingClose =
         buildShootingViewOrNull("close", filterBy(allSequences, s -> "close".equals(s.position())), matchCount);
     var shootingMid =
@@ -205,8 +264,17 @@ public class PmvaReportService {
     var shootingIntaking =
         buildShootingViewOrNull("intaking", filterBy(allSequences, HopperSequence::intaking), matchCount);
 
-    return new HopperSection(
-        loading, shootingAll, shootingClose, shootingMid, shootingFar, shootingMoving, shootingIntaking);
+    var swi = buildSwiSummary(eventsByMatch, matchCount);
+
+    return new ShootingSection(
+        loading,
+        shootingAll,
+        shootingClose,
+        shootingMid,
+        shootingFar,
+        shootingMoving,
+        shootingIntaking,
+        swi);
   }
 
   private static List<HopperSequence> filterBy(
@@ -219,7 +287,9 @@ public class PmvaReportService {
     var sequences = new ArrayList<HopperSequence>();
 
     for (var entry : eventsByMatch.entrySet()) {
+      // Per-match sequence index resets at the start of each match.
       int sequenceIndex = 0;
+
       // Accumulator state
       int loadAmount = 0;
       boolean hopperFull = false;
@@ -233,10 +303,12 @@ public class PmvaReportService {
       boolean intaking = false;
       int currentMatchId = 0;
       String currentLevel = "";
+      String currentTournamentId = "";
 
       for (var event : entry.getValue()) {
         currentMatchId = event.matchId();
         currentLevel = event.level().name();
+        currentTournamentId = event.tournamentId();
 
         switch (event.eventType()) {
           case "pmva-load" -> loadAmount = (int) event.amount();
@@ -256,10 +328,9 @@ public class PmvaReportService {
             sequenceIndex++;
             sequences.add(
                 new HopperSequence(
-                    currentMatchId, currentLevel, sequenceIndex,
+                    currentTournamentId, currentMatchId, currentLevel, sequenceIndex,
                     loadAmount, hopperFull, shots, scores, misses, stuck,
                     unloadSeconds, position, moving, intaking));
-            // Reset accumulator
             loadAmount = 0;
             hopperFull = false;
             shots = 0;
@@ -284,7 +355,7 @@ public class PmvaReportService {
       List<HopperSequence> allSequences,
       Map<String, List<EventLogRecord>> eventsByMatch) {
     if (allSequences.isEmpty()) {
-      return new LoadingStats(0, 0, 0, 0, List.of(), List.of());
+      return new LoadingStats(0, 0, 0, List.of(), List.of());
     }
 
     double avgFillCount =
@@ -293,15 +364,10 @@ public class PmvaReportService {
     int hopperFullCount = (int) allSequences.stream().filter(HopperSequence::hopperFull).count();
     double hopperFilledPct = safeDivide(hopperFullCount, allSequences.size()) * 100.0;
 
-    // Exclude intaking sequences for max and rating
     var nonIntaking = allSequences.stream().filter(s -> !s.intaking()).toList();
     double maxFillExcluding =
         nonIntaking.stream().mapToInt(HopperSequence::loadAmount).max().orElse(0);
-    double avgFillExcluding =
-        nonIntaking.stream().mapToInt(HopperSequence::loadAmount).average().orElse(0);
-    double rating = Math.min(5.0, safeDivide(avgFillExcluding, maxFillExcluding) * 5.0);
 
-    // Collect comments from event stream
     var loadComments = new ArrayList<PmvaReport.MatchComment>();
     var shootComments = new ArrayList<PmvaReport.MatchComment>();
     for (var matchEvents : eventsByMatch.values()) {
@@ -318,7 +384,6 @@ public class PmvaReportService {
         round2(avgFillCount),
         round2(hopperFilledPct),
         round2(maxFillExcluding),
-        round2(rating),
         loadComments,
         shootComments);
   }
@@ -335,33 +400,39 @@ public class PmvaReportService {
       return new ShootingView(filter, 0, List.of(), List.of(), 0, 0);
     }
 
-    // Per-match cycle data
+    // Group sequences by (tournamentId, level, matchId) for per-match cycle stats.
     var byMatch =
         sequences.stream()
             .collect(
                 Collectors.groupingBy(
-                    s -> s.level() + ":" + s.matchId(), LinkedHashMap::new, Collectors.toList()));
+                    s -> s.tournamentId() + ":" + s.level() + ":" + s.matchId(),
+                    LinkedHashMap::new,
+                    Collectors.toList()));
 
     var matchCycles = new ArrayList<MatchCycleData>();
     for (var entry : byMatch.entrySet()) {
       var matchSeqs = entry.getValue();
       var first = matchSeqs.get(0);
+      double avgLoad =
+          matchSeqs.stream().mapToInt(HopperSequence::loadAmount).average().orElse(0);
       matchCycles.add(
           new MatchCycleData(
+              first.tournamentId(),
               first.matchId(),
               first.level(),
               matchSeqs.size(),
               matchSeqs.stream().mapToInt(HopperSequence::shots).sum(),
               matchSeqs.stream().mapToInt(HopperSequence::scores).sum(),
               matchSeqs.stream().mapToInt(HopperSequence::misses).sum(),
-              matchSeqs.stream().mapToInt(HopperSequence::stuck).sum()));
+              matchSeqs.stream().mapToInt(HopperSequence::stuck).sum(),
+              round2(avgLoad)));
     }
 
-    // Per-sequence shot data
     var sequenceShots = new ArrayList<SequenceShotData>();
     for (var s : sequences) {
       sequenceShots.add(
           new SequenceShotData(
+              s.tournamentId(),
               s.matchId(),
               s.level(),
               s.sequenceIndex(),
@@ -374,7 +445,6 @@ public class PmvaReportService {
               round2(safeDivide(s.scores(), s.unloadSeconds()))));
     }
 
-    // Aggregate stats
     double avgCycles = safeDivide(sequences.size(), matchCount);
     int maxCycles = matchCycles.stream().mapToInt(MatchCycleData::cycleCount).max().orElse(0);
 
@@ -387,9 +457,9 @@ public class PmvaReportService {
         maxCycles);
   }
 
-  // ── SWI Section ───────────────────────────────────────────────────────────
+  // ── SWI Summary ──────────────────────────────────────────────────────────
 
-  private SwiSection buildSwiSection(
+  private SwiSummary buildSwiSummary(
       Map<String, List<EventLogRecord>> eventsByMatch, int matchCount) {
 
     var swiSequences = new ArrayList<SwiSequenceData>();
@@ -404,6 +474,7 @@ public class PmvaReportService {
       double stuckCount = 0;
       int currentMatchId = 0;
       String currentLevel = "";
+      String currentTournamentId = "";
 
       for (var event : matchEvents) {
         switch (event.eventType()) {
@@ -417,6 +488,7 @@ public class PmvaReportService {
             stuckCount = 0;
             currentMatchId = event.matchId();
             currentLevel = event.level().name();
+            currentTournamentId = event.tournamentId();
           }
           case "pmva-swi-score-one" -> {
             if (inSequence) scoreCount++;
@@ -440,6 +512,7 @@ public class PmvaReportService {
             if (inSequence) {
               swiSequences.add(
                   new SwiSequenceData(
+                      currentTournamentId,
                       currentMatchId,
                       currentLevel,
                       scoreCount,
@@ -460,7 +533,7 @@ public class PmvaReportService {
     }
 
     if (swiSequences.isEmpty()) {
-      return new SwiSection(
+      return new SwiSummary(
           0, 0, 0, 0, 0, List.of(), stuckComments, generalComments, positionComments);
     }
 
@@ -477,12 +550,13 @@ public class PmvaReportService {
     double avgStuckPerSeq = safeDivide(totalStuck, totalSequences);
     double avgDuration = safeDivide(totalDuration, totalSequences);
 
-    // Per-match data
     var byMatch =
         swiSequences.stream()
             .collect(
                 Collectors.groupingBy(
-                    s -> s.level() + ":" + s.matchId(), LinkedHashMap::new, Collectors.toList()));
+                    s -> s.tournamentId() + ":" + s.level() + ":" + s.matchId(),
+                    LinkedHashMap::new,
+                    Collectors.toList()));
 
     var perMatch = new ArrayList<MatchSwiData>();
     for (var entry : byMatch.entrySet()) {
@@ -495,6 +569,7 @@ public class PmvaReportService {
           matchSeqs.stream().mapToDouble(SwiSequenceData::durationSeconds).sum();
       perMatch.add(
           new MatchSwiData(
+              first.tournamentId(),
               first.matchId(),
               first.level(),
               matchSeqs.size(),
@@ -504,7 +579,7 @@ public class PmvaReportService {
               round2(safeDivide(mDuration, matchSeqs.size()))));
     }
 
-    return new SwiSection(
+    return new SwiSummary(
         round2(avgSeqPerMatch),
         round2(avgScoresPerSeq),
         round2(avgScorePctPerSeq),
@@ -517,6 +592,7 @@ public class PmvaReportService {
   }
 
   private record SwiSequenceData(
+      String tournamentId,
       int matchId,
       String level,
       int scoreCount,
@@ -531,7 +607,8 @@ public class PmvaReportService {
   }
 
   private static PmvaReport.MatchComment toComment(EventLogRecord event) {
-    return new PmvaReport.MatchComment(event.matchId(), event.level().name(), event.note());
+    return new PmvaReport.MatchComment(
+        event.tournamentId(), event.matchId(), event.level().name(), event.note());
   }
 
   private static double safeDivide(double numerator, double denominator) {
@@ -539,12 +616,16 @@ public class PmvaReportService {
     return numerator / denominator;
   }
 
-  private static double average(List<Double> values) {
-    if (values.isEmpty()) return 0.0;
-    return values.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-  }
-
   private static double round2(double value) {
     return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP).doubleValue();
+  }
+
+  private TournamentRecord findTournamentOrNull(String id) {
+    try {
+      return tournamentService.findById(id).orElse(null);
+    } catch (Exception e) {
+      log.debug("Tournament {} not found while computing PMVA season report", id);
+      return null;
+    }
   }
 }
