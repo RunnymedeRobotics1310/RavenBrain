@@ -112,7 +112,10 @@ public class TeamReportService {
             .toList();
 
     // Build robot alerts with display names
-    List<RobotAlert> rawAlerts = robotAlertService.findAllByTeamNumberOrderByCreatedAtDesc(team);
+    List<RobotAlert> rawAlerts =
+        robotAlertService.findAllByTeamNumberOrderByCreatedAtDesc(team).stream()
+            .filter(a -> !a.tournamentId().startsWith("DRILL-"))
+            .toList();
 
     for (var alert : rawAlerts) {
       userNameMap.computeIfAbsent(alert.userId(), this::resolveDisplayName);
@@ -161,7 +164,10 @@ public class TeamReportService {
     }
 
     // Build defence-strat notes
-    var rawDefenceEvents = eventLogService.listEventsByTeamAndEventTypeWithNotes(team, "defence-strat");
+    var rawDefenceEvents =
+        eventLogService.listEventsByTeamAndEventTypeWithNotes(team, "defence-strat").stream()
+            .filter(e -> !e.tournamentId().startsWith("DRILL-"))
+            .toList();
     for (var e : rawDefenceEvents) {
       userNameMap.computeIfAbsent(e.userId(), this::resolveDisplayName);
     }
