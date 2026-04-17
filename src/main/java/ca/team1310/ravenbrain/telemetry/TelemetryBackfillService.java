@@ -2,6 +2,7 @@ package ca.team1310.ravenbrain.telemetry;
 
 import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import jakarta.inject.Singleton;
+import jakarta.transaction.Transactional;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -31,6 +32,7 @@ public class TelemetryBackfillService {
 
   public record BackfillResult(int examined, int updated, int skipped) {}
 
+  @Transactional
   public BackfillResult backfill(boolean force) {
     int examined = 0;
     int updated = 0;
