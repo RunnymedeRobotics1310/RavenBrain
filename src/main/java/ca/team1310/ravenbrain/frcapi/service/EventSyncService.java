@@ -264,10 +264,9 @@ class EventSyncService {
    */
   @Scheduled(fixedDelay = "3m")
   void loadScheduleForCurrentTournament() {
-    log.info("Loading tournament schedule for active tournaments (owner team + watched)");
+    log.debug("Loading tournament schedule for active tournaments (owner team + watched)");
     for (TournamentRecord tournamentRecord : getActiveTournamentsToSync()) {
-      log.info("Syncing schedule for tournament {} (season={}, code={})",
-          tournamentRecord.id(), tournamentRecord.season(), tournamentRecord.code());
+      log.info("Syncing schedule for tournament {}", tournamentRecord.id());
       try {
         _populateScheduleForTournament(tournamentRecord);
         teamScheduleService.refreshCache(tournamentRecord.id());
@@ -430,7 +429,7 @@ class EventSyncService {
         log.info("No schedule response for {} {}", tournamentRecord.code(), level);
         continue;
       }
-      log.info("Got {} {} matches for {} {}", scheduleData.schedule().size(),
+      log.debug("Got {} {} matches for {} {}", scheduleData.schedule().size(),
           level, tournamentRecord.code(),
           scheduleData.schedule().isEmpty() ? "" :
               "firstStartTime=" + scheduleData.schedule().get(0).startTime());
