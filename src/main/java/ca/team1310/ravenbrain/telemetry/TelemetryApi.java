@@ -2,6 +2,7 @@ package ca.team1310.ravenbrain.telemetry;
 
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
+import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
@@ -17,9 +18,12 @@ import lombok.extern.slf4j.Slf4j;
 public class TelemetryApi {
 
   private final TelemetryService telemetryService;
+  private final TelemetryBackfillService backfillService;
 
-  public TelemetryApi(TelemetryService telemetryService) {
+  public TelemetryApi(
+      TelemetryService telemetryService, TelemetryBackfillService backfillService) {
     this.telemetryService = telemetryService;
+    this.backfillService = backfillService;
   }
 
   @Serdeable
@@ -56,6 +60,16 @@ public class TelemetryApi {
         .findSessionBySessionId(sessionId)
         .map(HttpResponse::ok)
         .orElseGet(HttpResponse::notFound);
+  }
+
+  @Get("/match/{tournamentId}/{matchLevel}/{matchNumber}")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_TELEMETRY_USER", "ROLE_SUPERUSER"})
+  public List<TelemetrySession> listSessionsForMatch(
+      @PathVariable String tournamentId,
+      @PathVariable TournamentLevel matchLevel,
+      @PathVariable int matchNumber) {
+    return telemetryService.findSessionsForMatch(tournamentId, matchLevel, matchNumber);
   }
 
   @Post("/session")
@@ -97,5 +111,15 @@ public class TelemetryApi {
       log.error("Failed to complete session {}: {}", sessionId, e.getMessage());
       return HttpResponse.notFound();
     }
+  }
+
+  @Post("/backfill-match-identity")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_SUPERUSER"})
+  public HttpResponse<TelemetryBackfillService.BackfillResult> backfillMatchIdentity(
+      @Nullable @QueryValue Boolean force) {
+    TelemetryBackfillService.BackfillResult result =
+        backfillService.backfill(Boolean.TRUE.equals(force));
+    return HttpResponse.ok(result);
   }
 }

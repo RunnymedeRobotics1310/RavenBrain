@@ -1,9 +1,11 @@
 package ca.team1310.ravenbrain.telemetry;
 
+import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
 import io.micronaut.transaction.annotation.Transactional;
 import jakarta.inject.Singleton;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
@@ -18,14 +20,17 @@ public class TelemetryService {
   private final TelemetrySessionRepository sessionRepository;
   private final TelemetryEntryRepository entryRepository;
   private final DataSource dataSource;
+  private final MatchIdentityEnricher enricher;
 
   TelemetryService(
       TelemetrySessionRepository sessionRepository,
       TelemetryEntryRepository entryRepository,
-      DataSource dataSource) {
+      DataSource dataSource,
+      MatchIdentityEnricher enricher) {
     this.sessionRepository = sessionRepository;
     this.entryRepository = entryRepository;
     this.dataSource = dataSource;
+    this.enricher = enricher;
   }
 
   public List<String> findDistinctNtKeys() {
@@ -41,7 +46,21 @@ public class TelemetryService {
     }
     var session =
         new TelemetrySession(
-            null, sessionId, teamNumber, robotIp, startedAt, null, 0, 0, startedAt);
+            null,
+            sessionId,
+            teamNumber,
+            robotIp,
+            startedAt,
+            null,
+            0,
+            0,
+            startedAt,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
     session = sessionRepository.save(session);
     log.info("Created telemetry session {} for team {}", sessionId, teamNumber);
     return session;
@@ -81,6 +100,8 @@ public class TelemetryService {
           up.executeUpdate();
         }
 
+        enrichMatchIdentity(conn, sessionId, entries);
+
         conn.commit();
         log.info("Inserted {} telemetry entries for session {}", count, sessionId);
       } catch (Exception e) {
@@ -89,6 +110,89 @@ public class TelemetryService {
       }
     } catch (Exception e) {
       throw new RuntimeException("Failed to bulk insert telemetry entries: " + e.getMessage(), e);
+    }
+  }
+
+  /**
+   * Resolve match identity for the session if not already set. First-write-wins: once {@code
+   * match_label} is non-null we never overwrite it. Failures here are logged but must not abort the
+   * entry insert — the caller has already added enrichment calls inside the same transaction, so a
+   * throw would roll the entries back.
+   */
+  private void enrichMatchIdentity(
+      Connection conn, long sessionId, List<TelemetryApi.TelemetryEntryRequest> entries) {
+    try {
+      String existingLabel = null;
+      Instant startedAt = null;
+      try (PreparedStatement ps =
+          conn.prepareStatement(
+              "SELECT match_label, started_at FROM RB_TELEMETRY_SESSION WHERE id = ?")) {
+        ps.setLong(1, sessionId);
+        try (ResultSet rs = ps.executeQuery()) {
+          if (rs.next()) {
+            existingLabel = rs.getString("match_label");
+            Timestamp ts = rs.getTimestamp("started_at");
+            startedAt = ts == null ? null : ts.toInstant();
+          }
+        }
+      }
+      if (existingLabel != null) {
+        // First-write-wins. If a different value appears now, record it at DEBUG but don't write.
+        for (TelemetryApi.TelemetryEntryRequest e : entries) {
+          if (MatchIdentityEnricher.FMS_MATCH_NUMBER_KEY.equals(e.ntKey())
+              && e.ntValue() != null
+              && !e.ntValue().isBlank()
+              && !e.ntValue().equals(existingLabel)) {
+            log.debug(
+                "Session {} already has match_label={}, ignoring new value {}",
+                sessionId,
+                existingLabel,
+                e.ntValue());
+            break;
+          }
+        }
+        return;
+      }
+      if (startedAt == null) {
+        return;
+      }
+      MatchIdentityEnricher.Result result = enricher.enrich(entries, startedAt);
+      if (result == null || !result.hasAny()) {
+        return;
+      }
+      MatchLabelParser.ParsedMatchLabel parsed = result.parsedLabel();
+      if (parsed == null || parsed.rawLabel() == null) {
+        // Only FMS event name observed, no match label — don't partially populate.
+        return;
+      }
+      try (PreparedStatement ps =
+          conn.prepareStatement(
+              "UPDATE RB_TELEMETRY_SESSION SET tournament_id = ?, match_label = ?, match_level = ?,"
+                  + " match_number = ?, playoff_round = ?, fms_event_name = ? WHERE id = ?"
+                  + " AND match_label IS NULL")) {
+        ps.setString(1, result.tournamentId());
+        ps.setString(2, parsed.rawLabel());
+        TournamentLevel level = parsed.level();
+        ps.setString(3, level == null ? null : level.name());
+        if (parsed.number() == null) {
+          ps.setNull(4, java.sql.Types.INTEGER);
+        } else {
+          ps.setInt(4, parsed.number());
+        }
+        ps.setString(5, parsed.playoffRound());
+        ps.setString(6, result.fmsEventName());
+        ps.setLong(7, sessionId);
+        int updated = ps.executeUpdate();
+        if (updated > 0) {
+          log.info(
+              "Enriched session {} with match_label={}, tournament_id={}",
+              sessionId,
+              parsed.rawLabel(),
+              result.tournamentId());
+        }
+      }
+    } catch (Exception ex) {
+      log.warn("Match identity enrichment failed for session {}: {}", sessionId, ex.getMessage());
     }
   }
 
@@ -108,12 +212,25 @@ public class TelemetryService {
             endedAt,
             entryCount,
             session.uploadedCount(),
-            session.createdAt());
+            session.createdAt(),
+            session.tournamentId(),
+            session.matchLabel(),
+            session.matchLevel(),
+            session.matchNumber(),
+            session.playoffRound(),
+            session.fmsEventName());
     sessionRepository.update(updated);
     log.info("Completed telemetry session {} with {} entries", sessionId, entryCount);
   }
 
   public Optional<TelemetrySession> findSessionBySessionId(String sessionId) {
     return sessionRepository.findBySessionId(sessionId);
+  }
+
+  public List<TelemetrySession> findSessionsForMatch(
+      String tournamentId, TournamentLevel matchLevel, int matchNumber) {
+    return sessionRepository
+        .findAllByTournamentIdAndMatchLevelAndMatchNumberOrderByStartedAtAsc(
+            tournamentId, matchLevel, matchNumber);
   }
 }
