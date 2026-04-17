@@ -16,11 +16,20 @@ import lombok.extern.slf4j.Slf4j;
 public class TelemetryService {
 
   private final TelemetrySessionRepository sessionRepository;
+  private final TelemetryEntryRepository entryRepository;
   private final DataSource dataSource;
 
-  TelemetryService(TelemetrySessionRepository sessionRepository, DataSource dataSource) {
+  TelemetryService(
+      TelemetrySessionRepository sessionRepository,
+      TelemetryEntryRepository entryRepository,
+      DataSource dataSource) {
     this.sessionRepository = sessionRepository;
+    this.entryRepository = entryRepository;
     this.dataSource = dataSource;
+  }
+
+  public List<String> findDistinctNtKeys() {
+    return entryRepository.findDistinctNtKeys();
   }
 
   public TelemetrySession createSession(

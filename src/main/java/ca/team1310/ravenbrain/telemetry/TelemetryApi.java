@@ -41,6 +41,13 @@ public class TelemetryApi {
   @Serdeable
   public record BatchInsertResult(int count) {}
 
+  @Get("/nt-keys")
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_PROGRAMMER", "ROLE_ADMIN", "ROLE_SUPERUSER"})
+  public List<String> getDistinctNtKeys() {
+    return telemetryService.findDistinctNtKeys();
+  }
+
   @Get("/session/{sessionId}")
   @Produces(APPLICATION_JSON)
   @Secured({"ROLE_TELEMETRY_AGENT", "ROLE_TELEMETRY_USER", "ROLE_SUPERUSER"})
