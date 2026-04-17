@@ -1,6 +1,7 @@
 package ca.team1310.ravenbrain.telemetry;
 
 import ca.team1310.ravenbrain.frcapi.model.TournamentLevel;
+import io.micronaut.serde.annotation.Serdeable;
 import jakarta.inject.Singleton;
 import jakarta.transaction.Transactional;
 import java.sql.Connection;
@@ -30,6 +31,7 @@ public class TelemetryBackfillService {
     this.enricher = enricher;
   }
 
+  @Serdeable
   public record BackfillResult(int examined, int updated, int skipped) {}
 
   @Transactional
