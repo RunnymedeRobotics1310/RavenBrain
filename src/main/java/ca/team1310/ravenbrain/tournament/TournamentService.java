@@ -5,7 +5,9 @@ import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
 import jakarta.inject.Singleton;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -37,4 +39,10 @@ public abstract class TournamentService implements CrudRepository<TournamentReco
 
   @Query("SELECT season FROM RB_TOURNAMENT WHERE id = :tournamentId")
   public abstract int findYearForTournament(String tournamentId);
+
+  public abstract Optional<TournamentRecord> findByCodeAndSeason(String code, int season);
+
+  @Query(
+      "SELECT * FROM RB_TOURNAMENT WHERE starttime <= :at AND endtime >= :at ORDER BY starttime ASC")
+  public abstract List<TournamentRecord> findCoveringInstant(Instant at);
 }
