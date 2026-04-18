@@ -5,21 +5,21 @@ package ca.team1310.ravenbrain.tbaapi.fetch;
  * Mirrors FrcClientException.
  */
 public class TbaClientException extends RuntimeException {
-  TbaClientException() {}
+  public TbaClientException() {}
 
-  TbaClientException(Throwable cause) {
+  public TbaClientException(Throwable cause) {
     super(cause);
   }
 
-  TbaClientException(String message) {
+  public TbaClientException(String message) {
     super(message);
   }
 
-  TbaClientException(String message, Throwable cause) {
+  public TbaClientException(String message, Throwable cause) {
     super(message, cause);
   }
 
-  TbaClientException(TbaRawResponse res) {
+  public TbaClientException(TbaRawResponse res) {
     super("Error returned: " + res.statuscode() + " for " + res.url() + ": " + res.body());
   }
 }
