@@ -61,6 +61,7 @@ public class TournamentApi {
             tournamentRecord.startTime().toInstant(ZoneOffset.UTC),
             tournamentRecord.endTime().toInstant(ZoneOffset.UTC),
             tournamentRecord.weekNumber(),
+            null,
             null);
     tournamentService.save(t);
   }
@@ -129,24 +130,32 @@ public class TournamentApi {
         + "]";
   }
 
-  private TournamentRecord withWebcasts(TournamentRecord t, String webcasts) {
+  private TournamentRecord withManualWebcasts(TournamentRecord t, String manualWebcasts) {
     return new TournamentRecord(
-        t.id(), t.code(), t.season(), t.name(), t.startTime(), t.endTime(), t.weekNumber(),
-        webcasts);
+        t.id(),
+        t.code(),
+        t.season(),
+        t.name(),
+        t.startTime(),
+        t.endTime(),
+        t.weekNumber(),
+        manualWebcasts,
+        t.tbaEventKey());
   }
 
   @Put("/{id}/webcast")
   @Consumes(APPLICATION_JSON)
   @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_SUPERUSER", "ROLE_ADMIN"})
   public HttpResponse<?> addWebcast(String id, @Body WebcastRequest request) {
     var existing = tournamentService.findById(id);
     if (existing.isEmpty()) return HttpResponse.notFound();
     var tournament = existing.get();
-    List<String> urls = parseWebcasts(tournament.webcasts());
+    List<String> urls = parseWebcasts(tournament.manualWebcasts());
     if (!urls.contains(request.url())) {
       urls.add(request.url());
     }
-    var updated = withWebcasts(tournament, toWebcastJson(urls));
+    var updated = withManualWebcasts(tournament, toWebcastJson(urls));
     tournamentService.update(updated);
     log.info("Added webcast {} to tournament {}", request.url(), id);
     return HttpResponse.ok(updated);
@@ -155,13 +164,14 @@ public class TournamentApi {
   @Delete("/{id}/webcast")
   @Consumes(APPLICATION_JSON)
   @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_SUPERUSER", "ROLE_ADMIN"})
   public HttpResponse<?> removeWebcast(String id, @Body WebcastRequest request) {
     var existing = tournamentService.findById(id);
     if (existing.isEmpty()) return HttpResponse.notFound();
     var tournament = existing.get();
-    List<String> urls = parseWebcasts(tournament.webcasts());
+    List<String> urls = parseWebcasts(tournament.manualWebcasts());
     urls.remove(request.url());
-    var updated = withWebcasts(tournament, toWebcastJson(urls));
+    var updated = withManualWebcasts(tournament, toWebcastJson(urls));
     tournamentService.update(updated);
     log.info("Removed webcast {} from tournament {}", request.url(), id);
     return HttpResponse.ok(updated);

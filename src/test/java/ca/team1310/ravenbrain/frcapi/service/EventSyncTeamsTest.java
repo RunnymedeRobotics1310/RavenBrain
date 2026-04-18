@@ -35,7 +35,8 @@ public class EventSyncTeamsTest {
     Instant start = Instant.parse("2026-03-20T00:00:00Z");
     Instant end = Instant.parse("2026-03-22T00:00:00Z");
     TournamentRecord tournament =
-        new TournamentRecord("2026ONHAM", "ONHAM", 2026, "Hamilton District", start, end, 3, null);
+        new TournamentRecord(
+            "2026ONHAM", "ONHAM", 2026, "Hamilton District", start, end, 3, null, null);
     tournamentService.save(tournament);
 
     // Mock the FRC API teams response
@@ -78,7 +79,8 @@ public class EventSyncTeamsTest {
     Instant start = Instant.parse("2026-03-20T00:00:00Z");
     Instant end = Instant.parse("2026-03-22T00:00:00Z");
     TournamentRecord tournament =
-        new TournamentRecord("2026ONHAM2", "ONHAM2", 2026, "Hamilton District 2", start, end, 3, null);
+        new TournamentRecord(
+            "2026ONHAM2", "ONHAM2", 2026, "Hamilton District 2", start, end, 3, null, null);
     tournamentService.save(tournament);
 
     // Pre-populate with old team data
@@ -117,7 +119,8 @@ public class EventSyncTeamsTest {
     Instant start = Instant.parse("2026-03-20T00:00:00Z");
     Instant end = Instant.parse("2026-03-22T00:00:00Z");
     TournamentRecord tournament =
-        new TournamentRecord("2026ONHAM3", "ONHAM3", 2026, "Hamilton District 3", start, end, 3, null);
+        new TournamentRecord(
+            "2026ONHAM3", "ONHAM3", 2026, "Hamilton District 3", start, end, 3, null, null);
     tournamentService.save(tournament);
 
     // Pre-populate existing data
@@ -144,7 +147,8 @@ public class EventSyncTeamsTest {
     Instant start = Instant.parse("2026-03-20T00:00:00Z");
     Instant end = Instant.parse("2026-03-22T00:00:00Z");
     TournamentRecord tournament =
-        new TournamentRecord("2026ONHAM4", "ONHAM4", 2026, "Hamilton District 4", start, end, 3, null);
+        new TournamentRecord(
+            "2026ONHAM4", "ONHAM4", 2026, "Hamilton District 4", start, end, 3, null, null);
     tournamentService.save(tournament);
 
     // Mock response with empty teams list

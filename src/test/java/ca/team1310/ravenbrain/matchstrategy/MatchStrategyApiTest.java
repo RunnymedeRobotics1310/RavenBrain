@@ -57,6 +57,7 @@ public class MatchStrategyApiTest {
             Instant.parse("2026-06-01T12:00:00Z"),
             Instant.parse("2026-06-03T12:00:00Z"),
             1,
+            null,
             null));
   }
 

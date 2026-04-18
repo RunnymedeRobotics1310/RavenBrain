@@ -61,6 +61,7 @@ class MatchIdentityEnricherTest {
             Instant.parse("2026-03-01T00:00:00Z"),
             Instant.parse("2026-03-10T00:00:00Z"),
             10,
+            null,
             null);
     when(tournaments.findByCodeAndSeason("ONWAT", 2026)).thenReturn(Optional.of(t));
 
@@ -86,6 +87,7 @@ class MatchIdentityEnricherTest {
             Instant.parse("2026-03-01T00:00:00Z"),
             Instant.parse("2026-03-10T00:00:00Z"),
             10,
+            null,
             null);
     when(tournaments.findCoveringInstant(SESSION_START)).thenReturn(List.of(t));
     when(watched.isWatched("2026ONWAT")).thenReturn(true);
@@ -102,11 +104,11 @@ class MatchIdentityEnricherTest {
     TournamentRecord a =
         new TournamentRecord(
             "2026ONWAT", "ONWAT", 2026, "A", SESSION_START.minusSeconds(60),
-            SESSION_START.plusSeconds(60), 10, null);
+            SESSION_START.plusSeconds(60), 10, null, null);
     TournamentRecord b =
         new TournamentRecord(
             "2026ONTOR", "ONTOR", 2026, "B", SESSION_START.minusSeconds(60),
-            SESSION_START.plusSeconds(60), 10, null);
+            SESSION_START.plusSeconds(60), 10, null, null);
     when(tournaments.findCoveringInstant(SESSION_START)).thenReturn(List.of(a, b));
     when(watched.isWatched(anyString())).thenReturn(true);
 

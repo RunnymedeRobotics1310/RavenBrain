@@ -9,6 +9,7 @@ import io.micronaut.http.HttpResponse;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.client.HttpClient;
 import io.micronaut.http.client.annotation.Client;
+import io.micronaut.http.client.exceptions.HttpClientResponseException;
 import io.micronaut.test.extensions.junit5.annotation.MicronautTest;
 import jakarta.inject.Inject;
 import java.time.LocalDateTime;
@@ -19,6 +20,11 @@ import org.junit.jupiter.api.Test;
 public class TournamentApiTest {
 
   private static final String USER_MEMBER = "tournament-member-testuser";
+  private static final String USER_ADMIN = "tournament-admin-testuser";
+  private static final String USER_SUPERUSER = "tournament-superuser-testuser";
+  private static final String USER_EXPERTSCOUT = "tournament-expertscout-testuser";
+  private static final String USER_DATASCOUT = "tournament-datascout-testuser";
+  private static final String USER_DRIVE_TEAM = "tournament-driveteam-testuser";
 
   @Inject
   @Client("/")
@@ -31,6 +37,11 @@ public class TournamentApiTest {
   @org.junit.jupiter.api.BeforeEach
   void setup() {
     testUserHelper.createTestUser(USER_MEMBER, "password", "ROLE_MEMBER");
+    testUserHelper.createTestUser(USER_ADMIN, "password", "ROLE_ADMIN");
+    testUserHelper.createTestUser(USER_SUPERUSER, "password", "ROLE_SUPERUSER");
+    testUserHelper.createTestUser(USER_EXPERTSCOUT, "password", "ROLE_EXPERTSCOUT");
+    testUserHelper.createTestUser(USER_DATASCOUT, "password", "ROLE_DATASCOUT");
+    testUserHelper.createTestUser(USER_DRIVE_TEAM, "password", "ROLE_DRIVE_TEAM");
   }
 
   @org.junit.jupiter.api.AfterEach
@@ -43,7 +54,8 @@ public class TournamentApiTest {
             tournament -> {
               if (tournament.id().contains("TEST_TOURN")
                   || tournament.id().contains("GET_TOURN_TEST")
-                  || tournament.id().contains("DUPLICATE_ID")) {
+                  || tournament.id().contains("DUPLICATE_ID")
+                  || tournament.id().startsWith("WEBCAST_GATE_")) {
                 tournamentService.delete(tournament);
               }
             });
@@ -190,5 +202,158 @@ public class TournamentApiTest {
         HttpRequest.POST("/api/tournament", dto).basicAuth(USER_MEMBER, "password");
 
     assertThrows(Exception.class, () -> client.toBlocking().exchange(request));
+  }
+
+  /** Seeds a tournament for the webcast role-gating tests (via POST so it survives the transaction boundary). */
+  private String seedWebcastTournament() {
+    String id = "WEBCAST_GATE_" + System.nanoTime();
+    TournamentApi.TournamentDTO dto =
+        new TournamentApi.TournamentDTO(
+            id,
+            2026,
+            "TESTWG",
+            "Webcast Gate Test",
+            LocalDateTime.of(2026, 3, 20, 0, 0),
+            LocalDateTime.of(2026, 3, 22, 0, 0),
+            3);
+    client
+        .toBlocking()
+        .exchange(HttpRequest.POST("/api/tournament", dto).basicAuth(USER_MEMBER, "password"));
+    return id;
+  }
+
+  @Test
+  void addWebcast_memberIsForbidden() {
+    String id = seedWebcastTournament();
+    HttpRequest<?> request =
+        HttpRequest.PUT(
+                "/api/tournament/" + id + "/webcast",
+                new TournamentApi.WebcastRequest("https://twitch.tv/tryme"))
+            .basicAuth(USER_MEMBER, "password");
+
+    HttpClientResponseException thrown =
+        assertThrows(
+            HttpClientResponseException.class, () -> client.toBlocking().exchange(request));
+    assertEquals(HttpStatus.FORBIDDEN, thrown.getStatus());
+  }
+
+  @Test
+  void addWebcast_expertScoutIsForbidden() {
+    String id = seedWebcastTournament();
+    HttpRequest<?> request =
+        HttpRequest.PUT(
+                "/api/tournament/" + id + "/webcast",
+                new TournamentApi.WebcastRequest("https://twitch.tv/tryme"))
+            .basicAuth(USER_EXPERTSCOUT, "password");
+
+    HttpClientResponseException thrown =
+        assertThrows(
+            HttpClientResponseException.class, () -> client.toBlocking().exchange(request));
+    assertEquals(HttpStatus.FORBIDDEN, thrown.getStatus());
+  }
+
+  @Test
+  void addWebcast_dataScoutIsForbidden() {
+    String id = seedWebcastTournament();
+    HttpRequest<?> request =
+        HttpRequest.PUT(
+                "/api/tournament/" + id + "/webcast",
+                new TournamentApi.WebcastRequest("https://twitch.tv/tryme"))
+            .basicAuth(USER_DATASCOUT, "password");
+
+    HttpClientResponseException thrown =
+        assertThrows(
+            HttpClientResponseException.class, () -> client.toBlocking().exchange(request));
+    assertEquals(HttpStatus.FORBIDDEN, thrown.getStatus());
+  }
+
+  @Test
+  void addWebcast_driveTeamIsForbidden() {
+    String id = seedWebcastTournament();
+    HttpRequest<?> request =
+        HttpRequest.PUT(
+                "/api/tournament/" + id + "/webcast",
+                new TournamentApi.WebcastRequest("https://twitch.tv/tryme"))
+            .basicAuth(USER_DRIVE_TEAM, "password");
+
+    HttpClientResponseException thrown =
+        assertThrows(
+            HttpClientResponseException.class, () -> client.toBlocking().exchange(request));
+    assertEquals(HttpStatus.FORBIDDEN, thrown.getStatus());
+  }
+
+  @Test
+  void addWebcast_adminSucceeds() {
+    String id = seedWebcastTournament();
+    HttpRequest<?> request =
+        HttpRequest.PUT(
+                "/api/tournament/" + id + "/webcast",
+                new TournamentApi.WebcastRequest("https://twitch.tv/tryme"))
+            .basicAuth(USER_ADMIN, "password");
+
+    HttpResponse<?> response = client.toBlocking().exchange(request);
+    assertEquals(HttpStatus.OK, response.getStatus());
+
+    TournamentRecord saved = tournamentService.findById(id).orElseThrow();
+    assertNotNull(saved.manualWebcasts());
+    assertTrue(saved.manualWebcasts().contains("https://twitch.tv/tryme"));
+  }
+
+  @Test
+  void addWebcast_superuserSucceeds() {
+    String id = seedWebcastTournament();
+    HttpRequest<?> request =
+        HttpRequest.PUT(
+                "/api/tournament/" + id + "/webcast",
+                new TournamentApi.WebcastRequest("https://twitch.tv/tryme"))
+            .basicAuth(USER_SUPERUSER, "password");
+
+    HttpResponse<?> response = client.toBlocking().exchange(request);
+    assertEquals(HttpStatus.OK, response.getStatus());
+  }
+
+  @Test
+  void removeWebcast_memberIsForbidden() {
+    String id = seedWebcastTournament();
+    // Seed a URL as admin first so there's something to remove.
+    client
+        .toBlocking()
+        .exchange(
+            HttpRequest.PUT(
+                    "/api/tournament/" + id + "/webcast",
+                    new TournamentApi.WebcastRequest("https://twitch.tv/tryme"))
+                .basicAuth(USER_ADMIN, "password"));
+
+    HttpRequest<?> request =
+        HttpRequest.DELETE(
+                "/api/tournament/" + id + "/webcast",
+                new TournamentApi.WebcastRequest("https://twitch.tv/tryme"))
+            .basicAuth(USER_MEMBER, "password");
+
+    HttpClientResponseException thrown =
+        assertThrows(
+            HttpClientResponseException.class, () -> client.toBlocking().exchange(request));
+    assertEquals(HttpStatus.FORBIDDEN, thrown.getStatus());
+  }
+
+  @Test
+  void removeWebcast_adminSucceeds() {
+    String id = seedWebcastTournament();
+    client
+        .toBlocking()
+        .exchange(
+            HttpRequest.PUT(
+                    "/api/tournament/" + id + "/webcast",
+                    new TournamentApi.WebcastRequest("https://twitch.tv/tryme"))
+                .basicAuth(USER_ADMIN, "password"));
+
+    HttpRequest<?> request =
+        HttpRequest.DELETE(
+                "/api/tournament/" + id + "/webcast",
+                new TournamentApi.WebcastRequest("https://twitch.tv/tryme"))
+            .basicAuth(USER_ADMIN, "password");
+
+    HttpResponse<?> response = client.toBlocking().exchange(request);
+    assertEquals(HttpStatus.OK, response.getStatus());
   }
 }
