@@ -21,4 +21,5 @@ public record TournamentRecord(
     @MappedProperty("starttime") Instant startTime,
     @MappedProperty("endtime") Instant endTime,
     @MappedProperty("weeknumber") int weekNumber,
-    @Nullable @MappedProperty("webcasts") String webcasts) {}
+    @Nullable @MappedProperty("manual_webcasts") String manualWebcasts,
+    @Nullable @MappedProperty("tba_event_key") String tbaEventKey) {}

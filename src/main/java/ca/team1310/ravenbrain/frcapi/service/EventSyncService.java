@@ -30,10 +30,8 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -204,24 +202,36 @@ class EventSyncService {
     return teamTournamentIds;
   }
 
-  private void saveEvents(int year, ServiceResponse<EventResponse> resp) {
+  // Package-private for direct testing by EventSyncTournamentsTest. Still only called
+  // from loadTournamentsForYear(...) in production.
+  void saveEvents(int year, ServiceResponse<EventResponse> resp) {
     for (Event event : resp.getResponse().events()) {
       Instant start = event.dateStart().atZone(ZoneId.of("America/New_York")).toInstant();
       Instant end = event.dateEnd().atZone(ZoneId.of("America/New_York")).toInstant();
-      String webcasts =
-          event.webcasts() != null && event.webcasts().length > 0
-              ? "[" + Arrays.stream(event.webcasts()).map(w -> "\"" + w + "\"").reduce((a, b) -> a + "," + b).orElse("") + "]"
-              : null;
+      String id = year + event.code();
+      String autoDerivedTbaKey = year + event.code().toLowerCase();
+      // FRC is no longer a webcast writer (see docs/plans/...tba-data-foundation-plan.md).
+      // Manual webcasts live in RB_TOURNAMENT.manual_webcasts (admin-owned); TBA-sourced
+      // webcasts live in RB_TBA_EVENT.webcasts_json. On insert, auto-derive the TBA event
+      // key; on update, preserve any admin-edited tba_event_key and any existing
+      // manual_webcasts so the FRC cron does not clobber admin state.
+      var existing = tournamentService.findById(id);
+      String preservedManualWebcasts = existing.map(TournamentRecord::manualWebcasts).orElse(null);
+      String preservedTbaEventKey =
+          existing
+              .flatMap(t -> Optional.ofNullable(t.tbaEventKey()))
+              .orElse(autoDerivedTbaKey);
       TournamentRecord tournamentRecord =
           new TournamentRecord(
-              year + event.code(),
+              id,
               event.code(),
               year,
               event.name(),
               start,
               end,
               event.weekNumber(),
-              webcasts);
+              preservedManualWebcasts,
+              preservedTbaEventKey);
       log.trace("Saving tournament {}", tournamentRecord);
       try {
         tournamentService.save(tournamentRecord);

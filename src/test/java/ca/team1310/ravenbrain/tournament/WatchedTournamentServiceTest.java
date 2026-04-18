@@ -45,6 +45,7 @@ public class WatchedTournamentServiceTest {
             Instant.parse("2026-03-20T00:00:00Z"),
             Instant.parse("2026-03-22T00:00:00Z"),
             10,
+            null,
             null);
     tournamentService.save(tournament);
 
