@@ -50,3 +50,7 @@ raven-eye:
     user: ${FRC_USER:frc_api_user_id}
     key: ${FRC_KEY:frc_api_user_key}
     ttl-seconds: 59
+  tba-api:
+    key: ${TBA_KEY:tba_api_key}
+    ttl-seconds: 59
+
