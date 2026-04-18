@@ -4,6 +4,7 @@ import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
 import io.micronaut.context.annotation.Property;
 import io.micronaut.core.annotation.Introspected;
+import io.micronaut.core.annotation.Nullable;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
@@ -14,6 +15,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -163,6 +165,55 @@ public class TournamentApi {
     var updated = withManualWebcasts(tournament, toWebcastJson(urls));
     tournamentService.update(updated);
     log.info("Added webcast {} to tournament {}", request.url(), id);
+    return HttpResponse.ok(enricher.enrich(updated));
+  }
+
+  @Introspected
+  @Serdeable
+  record TbaEventKeyRequest(@Nullable String tbaEventKey) {}
+
+  private static final Pattern TBA_EVENT_KEY_PATTERN =
+      Pattern.compile("^20\\d{2}[a-z][a-z0-9]{1,15}$");
+
+  /**
+   * Set or clear the TBA event key for a tournament. Accepts a JSON body
+   * {@code {"tbaEventKey": "2026onto"}} to set the key, or {@code {"tbaEventKey": null}} (or an
+   * empty string) to clear it. The response body echoes the canonicalized (lowercased) key so the
+   * client can update its displayed value to match what was saved.
+   */
+  @Put("/{id}/tba-event-key")
+  @Consumes(APPLICATION_JSON)
+  @Produces(APPLICATION_JSON)
+  @Secured({"ROLE_SUPERUSER", "ROLE_ADMIN"})
+  public HttpResponse<?> setTbaEventKey(String id, @Body TbaEventKeyRequest request) {
+    var existing = tournamentService.findById(id);
+    if (existing.isEmpty()) return HttpResponse.notFound();
+    String raw = request == null ? null : request.tbaEventKey();
+    String normalized;
+    if (raw == null || raw.isBlank()) {
+      normalized = null; // explicit clear
+    } else {
+      String lower = raw.trim().toLowerCase();
+      if (!TBA_EVENT_KEY_PATTERN.matcher(lower).matches()) {
+        return HttpResponse.badRequest(
+            "Invalid TBA event key. Expected format: 4-digit year + code, e.g. '2026onto'.");
+      }
+      normalized = lower;
+    }
+    var t = existing.get();
+    var updated =
+        new TournamentRecord(
+            t.id(),
+            t.code(),
+            t.season(),
+            t.name(),
+            t.startTime(),
+            t.endTime(),
+            t.weekNumber(),
+            t.manualWebcasts(),
+            normalized);
+    tournamentService.update(updated);
+    log.info("Set tba_event_key for tournament {} to {}", id, normalized);
     return HttpResponse.ok(enricher.enrich(updated));
   }
 

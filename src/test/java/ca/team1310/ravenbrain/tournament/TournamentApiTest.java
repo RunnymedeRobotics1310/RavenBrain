@@ -337,6 +337,92 @@ public class TournamentApiTest {
   }
 
   @Test
+  void setTbaEventKey_memberIsForbidden() {
+    String id = seedWebcastTournament();
+    HttpRequest<?> request =
+        HttpRequest.PUT(
+                "/api/tournament/" + id + "/tba-event-key",
+                new TournamentApi.TbaEventKeyRequest("2026onto"))
+            .basicAuth(USER_MEMBER, "password");
+
+    HttpClientResponseException e =
+        assertThrows(
+            HttpClientResponseException.class, () -> client.toBlocking().exchange(request));
+    assertEquals(HttpStatus.FORBIDDEN, e.getStatus());
+  }
+
+  @Test
+  void setTbaEventKey_adminSavesAndLowercasesKey() {
+    String id = seedWebcastTournament();
+    HttpRequest<?> request =
+        HttpRequest.PUT(
+                "/api/tournament/" + id + "/tba-event-key",
+                new TournamentApi.TbaEventKeyRequest("2026ONTO"))
+            .basicAuth(USER_ADMIN, "password");
+
+    HttpResponse<?> response = client.toBlocking().exchange(request);
+    assertEquals(HttpStatus.OK, response.getStatus());
+    var saved = tournamentService.findById(id).orElseThrow();
+    assertEquals("2026onto", saved.tbaEventKey(), "saved value must be lowercased");
+  }
+
+  @Test
+  void setTbaEventKey_rejectsMalformedKey() {
+    String id = seedWebcastTournament();
+    HttpRequest<?> request =
+        HttpRequest.PUT(
+                "/api/tournament/" + id + "/tba-event-key",
+                new TournamentApi.TbaEventKeyRequest("not a key"))
+            .basicAuth(USER_ADMIN, "password");
+
+    HttpClientResponseException e =
+        assertThrows(
+            HttpClientResponseException.class, () -> client.toBlocking().exchange(request));
+    assertEquals(HttpStatus.BAD_REQUEST, e.getStatus());
+    var saved = tournamentService.findById(id).orElseThrow();
+    assertNull(saved.tbaEventKey(), "malformed key must not mutate the row");
+  }
+
+  @Test
+  void setTbaEventKey_nullValueClearsKey() {
+    String id = seedWebcastTournament();
+    // Seed a key first
+    client
+        .toBlocking()
+        .exchange(
+            HttpRequest.PUT(
+                    "/api/tournament/" + id + "/tba-event-key",
+                    new TournamentApi.TbaEventKeyRequest("2026onto"))
+                .basicAuth(USER_ADMIN, "password"));
+    // Then clear it
+    HttpResponse<?> response =
+        client
+            .toBlocking()
+            .exchange(
+                HttpRequest.PUT(
+                        "/api/tournament/" + id + "/tba-event-key",
+                        new TournamentApi.TbaEventKeyRequest(null))
+                    .basicAuth(USER_ADMIN, "password"));
+    assertEquals(HttpStatus.OK, response.getStatus());
+    var saved = tournamentService.findById(id).orElseThrow();
+    assertNull(saved.tbaEventKey());
+  }
+
+  @Test
+  void setTbaEventKey_nonexistentTournamentReturns404() {
+    HttpRequest<?> request =
+        HttpRequest.PUT(
+                "/api/tournament/NONEXISTENT/tba-event-key",
+                new TournamentApi.TbaEventKeyRequest("2026onto"))
+            .basicAuth(USER_ADMIN, "password");
+
+    HttpClientResponseException e =
+        assertThrows(
+            HttpClientResponseException.class, () -> client.toBlocking().exchange(request));
+    assertEquals(HttpStatus.NOT_FOUND, e.getStatus());
+  }
+
+  @Test
   void removeWebcast_adminSucceeds() {
     String id = seedWebcastTournament();
     client
