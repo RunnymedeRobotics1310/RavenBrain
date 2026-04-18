@@ -53,4 +53,3 @@ raven-eye:
   tba-api:
     key: ${TBA_KEY:tba_api_key}
     ttl-seconds: 59
-
