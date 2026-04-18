@@ -108,8 +108,8 @@ public class TournamentApiTest {
 
     HttpRequest<?> request = HttpRequest.GET("/api/tournament").basicAuth(USER_MEMBER, "password");
 
-    List<TournamentRecord> response =
-        client.toBlocking().retrieve(request, Argument.listOf(TournamentRecord.class));
+    List<TournamentResponse> response =
+        client.toBlocking().retrieve(request, Argument.listOf(TournamentResponse.class));
 
     assertNotNull(response);
     assertTrue(response.stream().anyMatch(t -> t.id().equals(tournId)));

@@ -26,14 +26,17 @@ import lombok.extern.slf4j.Slf4j;
 public class TournamentApi {
   private final TournamentService tournamentService;
   private final TeamTournamentService teamTournamentService;
+  private final TournamentEnricher enricher;
   private final int teamNumber;
 
   public TournamentApi(
       TournamentService tournamentService,
       TeamTournamentService teamTournamentService,
+      TournamentEnricher enricher,
       @Property(name = "raven-eye.team") int teamNumber) {
     this.tournamentService = tournamentService;
     this.teamTournamentService = teamTournamentService;
+    this.enricher = enricher;
     this.teamNumber = teamNumber;
   }
 
@@ -69,8 +72,8 @@ public class TournamentApi {
   @Get
   @Produces(APPLICATION_JSON)
   @Secured(SecurityRule.IS_ANONYMOUS)
-  public List<TournamentRecord> getTournaments() {
-    return tournamentService.findAllSortByStartTime();
+  public List<TournamentResponse> getTournaments() {
+    return enricher.enrich(tournamentService.findAllSortByStartTime());
   }
 
   @Get("/team-ids")
@@ -83,20 +86,22 @@ public class TournamentApi {
   @Get("/active-team")
   @Produces(APPLICATION_JSON)
   @Secured(SecurityRule.IS_ANONYMOUS)
-  public List<TournamentRecord> getActiveTeamTournaments() {
+  public List<TournamentResponse> getActiveTeamTournaments() {
     Set<String> teamIds = Set.copyOf(teamTournamentService.findTournamentIdsForTeam(teamNumber));
-    return tournamentService.findActiveTournaments().stream()
-        .filter(t -> teamIds.contains(t.id()))
-        .toList();
+    return enricher.enrich(
+        tournamentService.findActiveTournaments().stream()
+            .filter(t -> teamIds.contains(t.id()))
+            .toList());
   }
 
   @Get("/team")
   @Produces(APPLICATION_JSON)
-  public List<TournamentRecord> getTeamTournaments() {
+  public List<TournamentResponse> getTeamTournaments() {
     Set<String> teamIds = Set.copyOf(teamTournamentService.findTournamentIdsForTeam(teamNumber));
-    return tournamentService.findUpcomingAndActiveTournaments().stream()
-        .filter(t -> teamIds.contains(t.id()))
-        .toList();
+    return enricher.enrich(
+        tournamentService.findUpcomingAndActiveTournaments().stream()
+            .filter(t -> teamIds.contains(t.id()))
+            .toList());
   }
 
   @Introspected
@@ -158,7 +163,7 @@ public class TournamentApi {
     var updated = withManualWebcasts(tournament, toWebcastJson(urls));
     tournamentService.update(updated);
     log.info("Added webcast {} to tournament {}", request.url(), id);
-    return HttpResponse.ok(updated);
+    return HttpResponse.ok(enricher.enrich(updated));
   }
 
   @Delete("/{id}/webcast")
@@ -174,6 +179,6 @@ public class TournamentApi {
     var updated = withManualWebcasts(tournament, toWebcastJson(urls));
     tournamentService.update(updated);
     log.info("Removed webcast {} from tournament {}", request.url(), id);
-    return HttpResponse.ok(updated);
+    return HttpResponse.ok(enricher.enrich(updated));
   }
 }
