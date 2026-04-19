@@ -2,6 +2,7 @@ package ca.team1310.ravenbrain.tbaapi.service;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import ca.team1310.ravenbrain.tbaapi.model.TbaMatchVideo;
 import ca.team1310.ravenbrain.tbaapi.model.TbaWebcast;
 import java.util.List;
 import java.util.Optional;
@@ -176,5 +177,117 @@ public class WebcastUrlReconstructorTest {
             "https://www.youtube.com/watch?v=aaa",
             "https://www.twitch.tv/ccc"),
         result);
+  }
+
+  // -------- Match video reconstruction (Unit 3) --------
+
+  private static TbaMatchVideo mv(String type, String key) {
+    return new TbaMatchVideo(type, key);
+  }
+
+  @Test
+  void reconstructMatchVideo_youtube() {
+    assertEquals(
+        Optional.of("https://www.youtube.com/watch?v=abc123"),
+        WebcastUrlReconstructor.reconstructMatchVideo(mv("youtube", "abc123"), "2026onto_qm12"));
+  }
+
+  @Test
+  void reconstructMatchVideo_tbaUsesEnclosingMatchKey() {
+    // The video's own key field is ignored; the enclosing match key produces the URL.
+    assertEquals(
+        Optional.of("https://www.thebluealliance.com/match/2026onto_qm12"),
+        WebcastUrlReconstructor.reconstructMatchVideo(mv("tba", "ignored"), "2026onto_qm12"));
+  }
+
+  @Test
+  void reconstructMatchVideo_unsupportedTypesReturnEmpty() {
+    for (String t :
+        List.of("iframe", "html5", "rtmp", "dacast", "ustream", "justin", "stemtv", "mms")) {
+      assertTrue(
+          WebcastUrlReconstructor.reconstructMatchVideo(mv(t, "anything"), "2026onto_qm1")
+              .isEmpty(),
+          "expected empty for unsupported match video type: " + t);
+    }
+  }
+
+  @Test
+  void reconstructMatchVideo_nullOrBlankYoutubeKeyReturnsEmpty() {
+    assertTrue(
+        WebcastUrlReconstructor.reconstructMatchVideo(mv("youtube", null), "2026onto_qm1")
+            .isEmpty());
+    assertTrue(
+        WebcastUrlReconstructor.reconstructMatchVideo(mv("youtube", ""), "2026onto_qm1").isEmpty());
+    assertTrue(
+        WebcastUrlReconstructor.reconstructMatchVideo(mv("youtube", "   "), "2026onto_qm1")
+            .isEmpty());
+  }
+
+  @Test
+  void reconstructMatchVideo_blankMatchKeyForTbaTypeReturnsEmpty() {
+    assertTrue(
+        WebcastUrlReconstructor.reconstructMatchVideo(mv("tba", "anything"), null).isEmpty());
+    assertTrue(
+        WebcastUrlReconstructor.reconstructMatchVideo(mv("tba", "anything"), "").isEmpty());
+  }
+
+  @Test
+  void reconstructMatchVideo_nullVideoOrType() {
+    assertTrue(
+        WebcastUrlReconstructor.reconstructMatchVideo(null, "2026onto_qm1").isEmpty());
+    assertTrue(
+        WebcastUrlReconstructor.reconstructMatchVideo(mv(null, "abc"), "2026onto_qm1").isEmpty());
+  }
+
+  @Test
+  void reconstructAndDedupMatchVideos_collapsesDuplicateYoutube() {
+    List<TbaMatchVideo> payload =
+        List.of(mv("youtube", "abc123"), mv("youtube", "abc123"), mv("tba", "ignored"));
+
+    List<String> result =
+        WebcastUrlReconstructor.reconstructAndDedupMatchVideos(payload, "2026onto_qm12");
+
+    assertEquals(
+        List.of(
+            "https://www.youtube.com/watch?v=abc123",
+            "https://www.thebluealliance.com/match/2026onto_qm12"),
+        result);
+  }
+
+  @Test
+  void reconstructAndDedupMatchVideos_preservesFirstSeenOrder() {
+    List<TbaMatchVideo> payload =
+        List.of(mv("tba", "ignored"), mv("youtube", "aaa"), mv("youtube", "bbb"));
+
+    List<String> result =
+        WebcastUrlReconstructor.reconstructAndDedupMatchVideos(payload, "2026onto_qm1");
+
+    assertEquals(
+        List.of(
+            "https://www.thebluealliance.com/match/2026onto_qm1",
+            "https://www.youtube.com/watch?v=aaa",
+            "https://www.youtube.com/watch?v=bbb"),
+        result);
+  }
+
+  @Test
+  void reconstructAndDedupMatchVideos_emptyAndNullInput() {
+    assertEquals(
+        List.of(),
+        WebcastUrlReconstructor.reconstructAndDedupMatchVideos(null, "2026onto_qm1"));
+    assertEquals(
+        List.of(),
+        WebcastUrlReconstructor.reconstructAndDedupMatchVideos(List.of(), "2026onto_qm1"));
+  }
+
+  @Test
+  void reconstructAndDedupMatchVideos_dropsUnsupportedTypes() {
+    List<TbaMatchVideo> payload =
+        List.of(mv("iframe", "abc"), mv("youtube", "abc123"), mv("html5", "xyz"));
+
+    List<String> result =
+        WebcastUrlReconstructor.reconstructAndDedupMatchVideos(payload, "2026onto_qm1");
+
+    assertEquals(List.of("https://www.youtube.com/watch?v=abc123"), result);
   }
 }

@@ -3,6 +3,7 @@ package ca.team1310.ravenbrain.tbaapi.service;
 import ca.team1310.ravenbrain.tbaapi.fetch.TbaCachingClient;
 import ca.team1310.ravenbrain.tbaapi.fetch.TbaRawResponse;
 import ca.team1310.ravenbrain.tbaapi.model.TbaEvent;
+import ca.team1310.ravenbrain.tbaapi.model.TbaMatch;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.Nullable;
 import io.micronaut.core.type.Argument;
@@ -11,6 +12,7 @@ import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 
@@ -106,6 +108,58 @@ public class TbaClientService {
     return EventFetch.ok(new EventFetchResult(response.id(), response.body(), parsed));
   }
 
+  /**
+   * Result of a TBA {@code /event/{key}/matches} fetch. Carries the cache row id, the raw body
+   * (for forensics; not currently persisted per-match because the full batch lives in
+   * {@code RB_TBA_RESPONSES}), and the parsed match list.
+   */
+  public record EventMatchesFetchResult(long responseId, String rawBody, List<TbaMatch> matches) {}
+
+  /** Holder mirroring {@link EventFetch} — exactly one of the two fields is non-null. */
+  public record EventMatchesFetch(
+      @Nullable EventMatchesFetchResult result, @Nullable EventFetchOutcome outcome) {
+    public static EventMatchesFetch ok(EventMatchesFetchResult r) {
+      return new EventMatchesFetch(r, null);
+    }
+
+    public static EventMatchesFetch skipped(EventFetchOutcome o) {
+      return new EventMatchesFetch(null, o);
+    }
+  }
+
+  /**
+   * Fetch and parse the full match list for a TBA event (one batch call covers every qm / qf / sf /
+   * f / ef match, including videos and alliance team keys). Mirrors {@link #getEvent(String)}.
+   *
+   * @throws TbaClientServiceException on JSON parse errors
+   */
+  @NonNull
+  public EventMatchesFetch getEventMatches(String eventKey) {
+    if (eventKey == null || eventKey.isBlank()) {
+      throw new TbaClientServiceException("TBA event key must not be null or blank");
+    }
+    String encoded = URLEncoder.encode(eventKey, StandardCharsets.UTF_8);
+    TbaRawResponse response = client.fetch("event/" + encoded + "/matches");
+    if (response == null) {
+      log.error("Unexpected null response from TBA for {} matches", eventKey);
+      return EventMatchesFetch.skipped(EventFetchOutcome.EMPTY_BODY);
+    }
+    if (response.processed()) {
+      log.debug("TBA match work already processed for {}", eventKey);
+      return EventMatchesFetch.skipped(EventFetchOutcome.ALREADY_PROCESSED);
+    }
+    if (response.statuscode() == 404) {
+      log.debug("TBA matches not found for {}", eventKey);
+      return EventMatchesFetch.skipped(EventFetchOutcome.NOT_FOUND);
+    }
+    if (response.body() == null || response.body().isBlank()) {
+      log.debug("No body for TBA matches response {}", eventKey);
+      return EventMatchesFetch.skipped(EventFetchOutcome.EMPTY_BODY);
+    }
+    List<TbaMatch> parsed = parseList(response.body(), TbaMatch.class);
+    return EventMatchesFetch.ok(new EventMatchesFetchResult(response.id(), response.body(), parsed));
+  }
+
   private @Nullable <T> T parse(@NonNull String string, @NonNull Class<T> type) {
     Objects.requireNonNull(type, "Type cannot be null");
     try {
@@ -113,6 +167,16 @@ public class TbaClientService {
     } catch (IOException e) {
       throw new TbaClientServiceException(
           "Failed to parse TBA JSON Response (" + e.getMessage() + "): " + string, e);
+    }
+  }
+
+  private <T> List<T> parseList(@NonNull String string, @NonNull Class<T> type) {
+    Objects.requireNonNull(type, "Type cannot be null");
+    try {
+      return objectMapper.readValue(string, Argument.listOf(type));
+    } catch (IOException e) {
+      throw new TbaClientServiceException(
+          "Failed to parse TBA JSON List Response (" + e.getMessage() + "): " + string, e);
     }
   }
 }

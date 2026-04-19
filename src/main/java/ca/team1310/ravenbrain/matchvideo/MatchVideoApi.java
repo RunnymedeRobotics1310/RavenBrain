@@ -16,24 +16,26 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class MatchVideoApi {
   private final MatchVideoService matchVideoService;
+  private final MatchVideoEnricher enricher;
 
-  public MatchVideoApi(MatchVideoService matchVideoService) {
+  public MatchVideoApi(MatchVideoService matchVideoService, MatchVideoEnricher enricher) {
     this.matchVideoService = matchVideoService;
+    this.enricher = enricher;
   }
 
   @Get("/{tournamentId}")
   @Produces(APPLICATION_JSON)
-  public List<MatchVideoRecord> getByTournament(@PathVariable String tournamentId) {
-    return matchVideoService.findAllByTournamentId(tournamentId);
+  public List<MatchVideoResponse> getByTournament(@PathVariable String tournamentId) {
+    return enricher.enrich(tournamentId);
   }
 
   @Get("/{tournamentId}/{level}/{match}")
   @Produces(APPLICATION_JSON)
-  public List<MatchVideoRecord> getByMatch(
+  public List<MatchVideoResponse> getByMatch(
       @PathVariable String tournamentId,
       @PathVariable String level,
       @PathVariable int match) {
-    return matchVideoService.findByMatch(tournamentId, level, match);
+    return enricher.enrich(tournamentId, level, match);
   }
 
   @Introspected

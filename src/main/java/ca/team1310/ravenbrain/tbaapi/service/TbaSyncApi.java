@@ -26,18 +26,25 @@ import lombok.extern.slf4j.Slf4j;
 @Secured(SecurityRule.IS_AUTHENTICATED)
 public class TbaSyncApi {
 
-  private final TbaEventSyncService syncService;
+  private final TbaEventSyncService eventSyncService;
+  private final TbaMatchSyncService matchSyncService;
   private final ExecutorService executorService;
   private final AtomicBoolean syncInProgress = new AtomicBoolean(false);
 
   TbaSyncApi(
-      TbaEventSyncService syncService,
+      TbaEventSyncService eventSyncService,
+      TbaMatchSyncService matchSyncService,
       @Named(TaskExecutors.IO) ExecutorService executorService) {
-    this.syncService = syncService;
+    this.eventSyncService = eventSyncService;
+    this.matchSyncService = matchSyncService;
     this.executorService = executorService;
   }
 
-  /** Trigger a TBA sync asynchronously. Returns 202 Accepted or 409 if one is already running. */
+  /**
+   * Trigger a TBA sync asynchronously — runs event sync then match sync sequentially under a
+   * single AtomicBoolean gate, each in its own try/catch so one failing does not block the other.
+   * Returns 202 Accepted or 409 if one is already running.
+   */
   @Post
   @Secured({"ROLE_SUPERUSER"})
   public HttpResponse<String> forceSync() {
@@ -47,9 +54,16 @@ public class TbaSyncApi {
     executorService.submit(
         () -> {
           try {
-            syncService.syncAllMappedTournaments();
-          } catch (Exception e) {
-            log.error("TBA force sync failed", e);
+            try {
+              eventSyncService.syncAllMappedTournaments();
+            } catch (Exception e) {
+              log.error("TBA force sync (events) failed", e);
+            }
+            try {
+              matchSyncService.syncAllActiveTournaments();
+            } catch (Exception e) {
+              log.error("TBA force sync (matches) failed", e);
+            }
           } finally {
             syncInProgress.set(false);
           }

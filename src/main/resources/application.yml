@@ -52,6 +52,6 @@ raven-eye:
     ttl-seconds: 59
   tba-api:
     key: ${TBA_KEY:tba_api_key}
-    base-url: ${TBA_BASE_URL:https://www.thebluealliance.com/api/v3}
+    base-url: https://www.thebluealliance.com/api/v3
     ttl-seconds: 59
     stale-threshold-minutes: 90

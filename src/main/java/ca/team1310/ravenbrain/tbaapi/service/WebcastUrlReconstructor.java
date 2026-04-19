@@ -1,5 +1,6 @@
 package ca.team1310.ravenbrain.tbaapi.service;
 
+import ca.team1310.ravenbrain.tbaapi.model.TbaMatchVideo;
 import ca.team1310.ravenbrain.tbaapi.model.TbaWebcast;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -119,6 +120,57 @@ public final class WebcastUrlReconstructor {
     LinkedHashSet<String> seen = new LinkedHashSet<>();
     for (TbaWebcast w : webcasts) {
       reconstruct(w).map(WebcastUrlReconstructor::canonicalize).ifPresent(seen::add);
+    }
+    return new ArrayList<>(seen);
+  }
+
+  /**
+   * Reconstruct an {@code https://} URL from a TBA Match video entry. Only two types carry usable
+   * URLs: {@code youtube} (reconstructed from the video key) and {@code tba} (points at TBA's own
+   * hosted match page — the video's {@code key} field is ignored; the enclosing match key is used
+   * instead). Other types ({@code iframe}, {@code html5}, {@code rtmp}, etc.) are dropped with a
+   * debug log — same philosophy as webcast reconstruction.
+   */
+  public static Optional<String> reconstructMatchVideo(TbaMatchVideo video, String tbaMatchKey) {
+    if (video == null) return Optional.empty();
+    String type = video.type();
+    if (type == null) {
+      return Optional.empty();
+    }
+
+    return switch (type) {
+      case "youtube" -> {
+        String key = video.key();
+        if (key == null || key.isBlank()) {
+          yield Optional.empty();
+        }
+        yield Optional.of("https://www.youtube.com/watch?v=" + key.trim());
+      }
+      case "tba" -> {
+        if (tbaMatchKey == null || tbaMatchKey.isBlank()) {
+          yield Optional.empty();
+        }
+        yield Optional.of("https://www.thebluealliance.com/match/" + tbaMatchKey.trim());
+      }
+      default -> {
+        log.debug("Dropping unsupported TBA match video type '{}'", type);
+        yield Optional.empty();
+      }
+    };
+  }
+
+  /**
+   * Reconstruct + canonicalize an entire TBA match videos list, preserving first-seen order and
+   * dropping intra-payload duplicates.
+   */
+  public static List<String> reconstructAndDedupMatchVideos(
+      List<TbaMatchVideo> videos, String tbaMatchKey) {
+    if (videos == null || videos.isEmpty()) return List.of();
+    LinkedHashSet<String> seen = new LinkedHashSet<>();
+    for (TbaMatchVideo v : videos) {
+      reconstructMatchVideo(v, tbaMatchKey)
+          .map(WebcastUrlReconstructor::canonicalize)
+          .ifPresent(seen::add);
     }
     return new ArrayList<>(seen);
   }
