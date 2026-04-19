@@ -28,9 +28,11 @@ public class TournamentEnricherTest {
     tbaEventRepo = mock(TbaEventRepo.class);
     when(tbaEventRepo.findByEventKeyIn(any())).thenReturn(List.of());
     Constructor<TournamentEnricher> ctor =
-        TournamentEnricher.class.getDeclaredConstructor(TbaEventRepo.class, long.class);
+        TournamentEnricher.class.getDeclaredConstructor(
+            TbaEventRepo.class, long.class, long.class, long.class);
     ctor.setAccessible(true);
-    enricher = ctor.newInstance(tbaEventRepo, 90L);
+    // staleThresholdMinutes=90, windowLeadHours=12, windowTailHours=10 (Unit 4 defaults)
+    enricher = ctor.newInstance(tbaEventRepo, 90L, 12L, 10L);
   }
 
   private TournamentRecord record(String manualJson, String tbaKey) {

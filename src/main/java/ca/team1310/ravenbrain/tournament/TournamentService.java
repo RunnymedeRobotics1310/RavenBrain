@@ -21,21 +21,36 @@ public abstract class TournamentService implements CrudRepository<TournamentReco
   public abstract List<TournamentRecord> findAllSortByStartTime();
 
   /**
-   * Find tournaments that are currently active or ended within the last 4 hours. This captures
-   * tournaments still in progress as well as those that recently concluded, allowing background
-   * tasks and schedule syncs to continue processing shortly after the event ends.
+   * Find tournaments currently in the active window: started in the past AND ended no more than
+   * {@code tailHours} ago. Callers typically use {@link TournamentWindow#findActive()} which reads
+   * the tail from {@code raven-eye.sync.tournament-window-tail-hours}.
    */
   @Query(
-      "SELECT * FROM RB_TOURNAMENT WHERE starttime < NOW() AND DATE_ADD(endtime, INTERVAL 4 HOUR) > NOW()")
-  public abstract List<TournamentRecord> findActiveTournaments();
+      "SELECT * FROM RB_TOURNAMENT WHERE starttime < NOW() "
+          + "AND DATE_ADD(endtime, INTERVAL :tailHours HOUR) > NOW()")
+  public abstract List<TournamentRecord> findActiveTournaments(int tailHours);
 
   /**
-   * Find tournaments starting within 24 hours or that ended within the last 4 hours. This
-   * captures upcoming, in-progress, and recently concluded tournaments for display purposes.
+   * Find tournaments in the upcoming-or-active window: starting within {@code leadHours} or ended
+   * within {@code tailHours}. Callers typically use {@link TournamentWindow#findUpcomingAndActive()}
+   * which reads both bounds from the unified sync-config block.
    */
   @Query(
-      "SELECT * FROM RB_TOURNAMENT WHERE DATE_SUB(starttime, INTERVAL 24 HOUR) < NOW() AND DATE_ADD(endtime, INTERVAL 4 HOUR) > NOW()")
-  public abstract List<TournamentRecord> findUpcomingAndActiveTournaments();
+      "SELECT * FROM RB_TOURNAMENT "
+          + "WHERE DATE_SUB(starttime, INTERVAL :leadHours HOUR) < NOW() "
+          + "AND DATE_ADD(endtime, INTERVAL :tailHours HOUR) > NOW()")
+  public abstract List<TournamentRecord> findUpcomingAndActiveTournaments(
+      int leadHours, int tailHours);
+
+  /**
+   * ETag version source for {@code /api/tournament} and its derivatives. Returns the greatest
+   * {@code updated_at} across all rows, or {@code null} when the table is empty. Controllers wrap
+   * this call and the body query in {@code @Transactional(readOnly = true,
+   * isolation = TransactionIsolation.REPEATABLE_READ)} so the ETag is snapshot-consistent with the
+   * body.
+   */
+  @Query("SELECT MAX(updated_at) FROM RB_TOURNAMENT")
+  public abstract Optional<Instant> findMaxUpdatedAt();
 
   @Query("SELECT season FROM RB_TOURNAMENT WHERE id = :tournamentId")
   public abstract int findYearForTournament(String tournamentId);

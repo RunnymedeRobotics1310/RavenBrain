@@ -2,14 +2,18 @@ package ca.team1310.ravenbrain.tournament;
 
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
+import ca.team1310.ravenbrain.http.ResponseEtags;
 import io.micronaut.context.annotation.Property;
 import io.micronaut.core.annotation.Introspected;
 import io.micronaut.core.annotation.Nullable;
+import io.micronaut.http.HttpRequest;
 import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
 import io.micronaut.serde.annotation.Serdeable;
+import io.micronaut.transaction.annotation.Transactional;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -27,19 +31,28 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class TournamentApi {
   private final TournamentService tournamentService;
+  private final TournamentWindow tournamentWindow;
   private final TeamTournamentService teamTournamentService;
   private final TournamentEnricher enricher;
   private final int teamNumber;
 
   public TournamentApi(
       TournamentService tournamentService,
+      TournamentWindow tournamentWindow,
       TeamTournamentService teamTournamentService,
       TournamentEnricher enricher,
       @Property(name = "raven-eye.team") int teamNumber) {
     this.tournamentService = tournamentService;
+    this.tournamentWindow = tournamentWindow;
     this.teamTournamentService = teamTournamentService;
     this.enricher = enricher;
     this.teamNumber = teamNumber;
+  }
+
+  /** ETag version source for tournament responses: max(updated_at) over RB_TOURNAMENT, as millis. */
+  private String tournamentEtagVersion() {
+    return Long.toString(
+        tournamentService.findMaxUpdatedAt().orElse(Instant.EPOCH).toEpochMilli());
   }
 
   @Introspected
@@ -74,36 +87,58 @@ public class TournamentApi {
   @Get
   @Produces(APPLICATION_JSON)
   @Secured(SecurityRule.IS_ANONYMOUS)
-  public List<TournamentResponse> getTournaments() {
-    return enricher.enrich(tournamentService.findAllSortByStartTime());
+  @Transactional(readOnly = true)
+  public HttpResponse<?> getTournaments(HttpRequest<?> request) {
+    return ResponseEtags.withWeakEtag(
+        request,
+        tournamentEtagVersion(),
+        () -> enricher.enrich(tournamentService.findAllSortByStartTime()));
   }
 
   @Get("/team-ids")
   @Produces(APPLICATION_JSON)
   @Secured(SecurityRule.IS_ANONYMOUS)
-  public List<String> getTeamTournamentIds() {
-    return teamTournamentService.findTournamentIdsForTeam(teamNumber);
+  @Transactional(readOnly = true)
+  public HttpResponse<?> getTeamTournamentIds(HttpRequest<?> request) {
+    return ResponseEtags.withWeakEtag(
+        request,
+        tournamentEtagVersion(),
+        () -> teamTournamentService.findTournamentIdsForTeam(teamNumber));
   }
 
   @Get("/active-team")
   @Produces(APPLICATION_JSON)
   @Secured(SecurityRule.IS_ANONYMOUS)
-  public List<TournamentResponse> getActiveTeamTournaments() {
-    Set<String> teamIds = Set.copyOf(teamTournamentService.findTournamentIdsForTeam(teamNumber));
-    return enricher.enrich(
-        tournamentService.findActiveTournaments().stream()
-            .filter(t -> teamIds.contains(t.id()))
-            .toList());
+  @Transactional(readOnly = true)
+  public HttpResponse<?> getActiveTeamTournaments(HttpRequest<?> request) {
+    return ResponseEtags.withWeakEtag(
+        request,
+        tournamentEtagVersion(),
+        () -> {
+          Set<String> teamIds =
+              Set.copyOf(teamTournamentService.findTournamentIdsForTeam(teamNumber));
+          return enricher.enrich(
+              tournamentWindow.findActive().stream()
+                  .filter(t -> teamIds.contains(t.id()))
+                  .toList());
+        });
   }
 
   @Get("/team")
   @Produces(APPLICATION_JSON)
-  public List<TournamentResponse> getTeamTournaments() {
-    Set<String> teamIds = Set.copyOf(teamTournamentService.findTournamentIdsForTeam(teamNumber));
-    return enricher.enrich(
-        tournamentService.findUpcomingAndActiveTournaments().stream()
-            .filter(t -> teamIds.contains(t.id()))
-            .toList());
+  @Transactional(readOnly = true)
+  public HttpResponse<?> getTeamTournaments(HttpRequest<?> request) {
+    return ResponseEtags.withWeakEtag(
+        request,
+        tournamentEtagVersion(),
+        () -> {
+          Set<String> teamIds =
+              Set.copyOf(teamTournamentService.findTournamentIdsForTeam(teamNumber));
+          return enricher.enrich(
+              tournamentWindow.findUpcomingAndActive().stream()
+                  .filter(t -> teamIds.contains(t.id()))
+                  .toList());
+        });
   }
 
   @Introspected

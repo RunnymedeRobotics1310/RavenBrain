@@ -6,6 +6,7 @@ import ca.team1310.ravenbrain.tbaapi.model.TbaMatchAlliance;
 import ca.team1310.ravenbrain.tournament.TeamTournamentService;
 import ca.team1310.ravenbrain.tournament.TournamentRecord;
 import ca.team1310.ravenbrain.tournament.TournamentService;
+import ca.team1310.ravenbrain.tournament.TournamentWindow;
 import ca.team1310.ravenbrain.tournament.WatchedTournamentService;
 import io.micronaut.context.annotation.Property;
 import io.micronaut.scheduling.annotation.Scheduled;
@@ -52,6 +53,7 @@ public class TbaMatchSyncService {
 
   private final TbaClientService tbaClientService;
   private final TournamentService tournamentService;
+  private final TournamentWindow tournamentWindow;
   private final TeamTournamentService teamTournamentService;
   private final WatchedTournamentService watchedTournamentService;
   private final TbaMatchVideoRepo tbaMatchVideoRepo;
@@ -60,12 +62,14 @@ public class TbaMatchSyncService {
   TbaMatchSyncService(
       TbaClientService tbaClientService,
       TournamentService tournamentService,
+      TournamentWindow tournamentWindow,
       TeamTournamentService teamTournamentService,
       WatchedTournamentService watchedTournamentService,
       TbaMatchVideoRepo tbaMatchVideoRepo,
       @Property(name = "raven-eye.team") int teamNumber) {
     this.tbaClientService = tbaClientService;
     this.tournamentService = tournamentService;
+    this.tournamentWindow = tournamentWindow;
     this.teamTournamentService = teamTournamentService;
     this.watchedTournamentService = watchedTournamentService;
     this.tbaMatchVideoRepo = tbaMatchVideoRepo;
@@ -76,7 +80,7 @@ public class TbaMatchSyncService {
    * Scheduled sync: every hour, refresh TBA match data for every watched/active tournament that
    * has a {@code tba_event_key}.
    */
-  @Scheduled(fixedDelay = "1h")
+  @Scheduled(fixedDelay = "${raven-eye.sync.tba-match-poll}")
   public void syncAllActiveTournaments() {
     List<TournamentRecord> targets = getActiveTournamentsToSync();
     if (targets.isEmpty()) {
@@ -121,7 +125,7 @@ public class TbaMatchSyncService {
     Set<String> ownerIds =
         Set.copyOf(teamTournamentService.findTournamentIdsForTeam(teamNumber));
     Set<String> watchedIds = watchedTournamentService.getWatchedTournamentIds();
-    return tournamentService.findUpcomingAndActiveTournaments().stream()
+    return tournamentWindow.findUpcomingAndActive().stream()
         .filter(t -> ownerIds.contains(t.id()) || watchedIds.contains(t.id()))
         .filter(t -> t.tbaEventKey() != null && !t.tbaEventKey().isBlank())
         .filter(

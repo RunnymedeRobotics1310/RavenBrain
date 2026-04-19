@@ -1,9 +1,11 @@
 package ca.team1310.ravenbrain.sequencetype;
 
 import io.micronaut.data.annotation.Join;
+import io.micronaut.data.annotation.Query;
 import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -28,4 +30,8 @@ public interface SequenceTypeRepository extends CrudRepository<SequenceType, Lon
   List<SequenceType> findByFrcyear(int frcyear);
 
   boolean existsByStrategyareaId(Long strategyareaId);
+
+  /** Weak-ETag version source for {@code GET /api/sequence-types} and its derivatives. */
+  @Query("SELECT MAX(updated_at) FROM RB_SEQUENCETYPE")
+  Optional<Instant> findMaxUpdatedAt();
 }

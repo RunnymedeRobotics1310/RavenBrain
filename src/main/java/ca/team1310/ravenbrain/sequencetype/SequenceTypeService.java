@@ -4,6 +4,7 @@ import ca.team1310.ravenbrain.eventlog.EventLogRepository;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.exceptions.HttpStatusException;
 import jakarta.inject.Singleton;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -31,6 +32,11 @@ public class SequenceTypeService {
 
   public List<SequenceType> list() {
     return sequenceTypeRepository.findAll();
+  }
+
+  /** Returns max(updated_at) across RB_SEQUENCETYPE, or {@link Instant#EPOCH} when empty. */
+  public Instant maxUpdatedAt() {
+    return sequenceTypeRepository.findMaxUpdatedAt().orElse(Instant.EPOCH);
   }
 
   public List<SequenceType> findByFrcyear(int frcyear) {

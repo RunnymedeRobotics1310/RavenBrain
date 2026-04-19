@@ -1,9 +1,12 @@
 package ca.team1310.ravenbrain.sequencetype;
 
+import ca.team1310.ravenbrain.http.ResponseEtags;
+import io.micronaut.http.HttpRequest;
+import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
-import java.util.List;
+import io.micronaut.transaction.annotation.Transactional;
 import java.util.Set;
 
 /**
@@ -20,14 +23,21 @@ public class SequenceTypeApi {
     this.sequenceTypeService = sequenceTypeService;
   }
 
+  private String etagVersion() {
+    return Long.toString(sequenceTypeService.maxUpdatedAt().toEpochMilli());
+  }
+
   @Get
-  public List<SequenceType> list() {
-    return sequenceTypeService.list();
+  @Transactional(readOnly = true)
+  public HttpResponse<?> list(HttpRequest<?> request) {
+    return ResponseEtags.withWeakEtag(request, etagVersion(), sequenceTypeService::list);
   }
 
   @Get("/year/{year}")
-  public List<SequenceType> findByFrcyear(int year) {
-    return sequenceTypeService.findByFrcyear(year);
+  @Transactional(readOnly = true)
+  public HttpResponse<?> findByFrcyear(int year, HttpRequest<?> request) {
+    return ResponseEtags.withWeakEtag(
+        request, etagVersion() + ":" + year, () -> sequenceTypeService.findByFrcyear(year));
   }
 
   @Get("/in-use")

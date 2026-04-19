@@ -5,7 +5,9 @@ import ca.team1310.ravenbrain.sequencetype.SequenceTypeRepository;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.exceptions.HttpStatusException;
 import jakarta.inject.Singleton;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author Junie
@@ -29,6 +31,11 @@ public class StrategyAreaService {
 
   public List<StrategyArea> list() {
     return strategyAreaRepository.findAll();
+  }
+
+  /** Returns max(updated_at) across RB_STRATEGYAREA, or {@link Instant#EPOCH} when empty. */
+  public Instant maxUpdatedAt() {
+    return strategyAreaRepository.findMaxUpdatedAt().orElse(Instant.EPOCH);
   }
 
   public StrategyArea findById(long id) {
