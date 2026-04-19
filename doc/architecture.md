@@ -56,6 +56,79 @@ As such, the communication between Raven Eye and Raven Brain is generally in the
 of occasional bulk synchronization as opposed to being a very chatty protocol.
 The `REST` services offered by Raven Brain reflect this.
 
+### Communication Model (Unit 9, network-communication-refinement)
+
+The protocol between Raven Eye and Raven Brain is **bulk synchronization over conditional
+HTTP GETs**, not a push / real-time protocol. Cadences are driven from RavenEye and gated by
+a server-defined tournament window. The concrete mechanics:
+
+- **No WebSockets, no SSE, no server-push of any kind.** Rationale:
+  servlet-mode architectural simplicity and student-contributor readability. (The "degrades
+  gracefully on flaky WiFi" argument is contested and deliberately not used as justification
+  — polling with staggered jitter degrades at least as well, and reconnect storms under a
+  push design are not an improvement at a tournament.)
+- **Weak ETags (`W/"<version>"`) on every cacheable GET.** Controllers emit the tag from a
+  cheap version source (typically `MAX(updated_at)` over the affected rows, or the `created`
+  column in `RB_REPORT_CACHE`), inside a `@Transactional(readOnly = true)` block so the ETag
+  and body are snapshot-consistent. Weak tags survive Cloudflare's recompression; strong tags
+  would not.
+- **`X-RavenBrain-Time`** on every response (epoch millis). RavenEye consumes this to maintain
+  a bounded client-server clock offset so time-sensitive comparisons (JWT expiration,
+  tournament-window membership, "N minutes ago" displays) stay correct on devices whose
+  clocks are wrong.
+- **`X-RavenBrain-Role-FP`** on 200 authenticated responses only. Short one-way fingerprint
+  (first 12 hex chars of SHA-256 over the sorted role list). Deliberately *not* in CORS
+  `exposed-headers` — browser JS cannot read it, so an XSS payload in the RavenEye origin
+  cannot harvest role data. The header exists solely so the client can detect a server-side
+  role change and refresh its view.
+- **Unified sync-cadence configuration** lives under `raven-eye.sync.*` in `application.yml`:
+  FRC poll intervals, RavenEye-to-RavenBrain poll interval, tournament-window lead/tail,
+  report-body TTL, skew-offset max-age. `@Scheduled` annotations in `EventSyncService`,
+  `TbaEventSyncService`, `TbaMatchSyncService` read from this block — no hardcoded cadences
+  in Java. RavenEye receives its own cadences from the server via
+  `GET /api/config/client-sync` (authenticated) and `GET /api/config/client-sync/public`
+  (anonymous, a subset safe for kiosk usage).
+- **Server-owned "tournament window".** `TournamentResponse.activeFrom` and `activeUntil`
+  are computed from the start/end times plus the configured lead/tail. RavenEye computes
+  `active` locally via its skew-corrected `serverNow()` — no ETag mismatch when the window
+  boundary crosses, because the boolean is never on the wire.
+- **Report metadata endpoint** (`GET /api/report/metadata`) publishes every `{cachekey,
+  created}` tuple from `RB_REPORT_CACHE` so RavenEye can version-check its locally-cached
+  report bodies against the server without pulling each body. Role-gated to
+  `EXPERTSCOUT/ADMIN/SUPERUSER`.
+- **End-to-end 304 verified through Cloudflare.** Weak-ETag passthrough was confirmed
+  2026-04-19 against the Vite-served asset layer at `raveneye.team1310.ca`; once RavenBrain
+  started emitting weak ETags, the same passthrough applies. Re-verify if the edge
+  configuration ever changes:
+
+    ```
+    # Capture the ETag of any cacheable GET:
+    ETAG=$(curl -sI https://ravenbrain.team1310.ca/api/tournament | awk -F'[ \r]' '/^etag:/ {print $2}')
+
+    # Send it back as If-None-Match and expect HTTP/2 304:
+    curl -sI -H "If-None-Match: ${ETAG}" https://ravenbrain.team1310.ca/api/tournament | head -1
+    ```
+
+### Data-Source Authority
+
+FRC, TBA, and Statbotics are the three external data sources the strat team consumes. Their
+roles are fixed:
+
+- **FRC API is authoritative** for match scores and match schedules. When FRC and any other
+  source disagree about who won a match or when it was played, FRC wins.
+- **TBA is the source** for derived event data — webcasts today, more over time — and
+  populates `RB_TBA_EVENT` and `RB_TBA_MATCH_VIDEO` on its own sync loop. The TBA data
+  foundation plan
+  (`RavenEye/docs/plans/2026-04-18-001-feat-tba-data-foundation-plan.md`,
+  currently halted awaiting this refinement) owns TBA's data model; the refinement
+  work only adjusted its sync cadences and tournament-window usage to the unified config.
+- **Statbotics** is designated for quantitative / derived analytics and statistics (EPA,
+  predicted alliance scores, etc.). Not yet integrated; the architecture here does not
+  preclude adding it.
+
+Origin: `RavenEye/docs/brainstorms/2026-04-18-network-communication-refinement-requirements.md`.
+Plan: `RavenEye/docs/plans/2026-04-19-001-feat-network-communication-refinement-plan.md`.
+
 ### Integrations
 
 Besides connecting to the *MySQL* datababse, Raven Brain also connects to other
