@@ -6,6 +6,7 @@ import io.micronaut.data.jdbc.annotation.JdbcRepository;
 import io.micronaut.data.model.query.builder.sql.Dialect;
 import io.micronaut.data.repository.CrudRepository;
 import jakarta.inject.Singleton;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
@@ -42,4 +43,12 @@ public abstract class ScheduleService implements CrudRepository<ScheduleRecord, 
   @Query(
       "SELECT * FROM RB_SCHEDULE WHERE tournamentid = :tournamentId AND level = 'Playoff' ORDER BY matchnum DESC LIMIT 2")
   public abstract List<ScheduleRecord> findLastTwoPlayoffMatches(String tournamentId);
+
+  /** Weak-ETag version source scoped to a single tournament's schedule. */
+  @Query("SELECT MAX(updated_at) FROM RB_SCHEDULE WHERE tournamentid = :tournamentId")
+  public abstract Optional<Instant> findMaxUpdatedAtForTournament(String tournamentId);
+
+  /** Weak-ETag version source for bulk-schedule responses across multiple tournaments. */
+  @Query("SELECT MAX(updated_at) FROM RB_SCHEDULE WHERE tournamentid IN (:tournamentIds)")
+  public abstract Optional<Instant> findMaxUpdatedAtForTournaments(List<String> tournamentIds);
 }

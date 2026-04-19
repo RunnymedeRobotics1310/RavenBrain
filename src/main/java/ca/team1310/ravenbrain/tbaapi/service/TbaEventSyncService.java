@@ -42,7 +42,7 @@ public class TbaEventSyncService {
   }
 
   /** Scheduled sync: every hour, refresh TBA data for all tournaments that are mapped to a key. */
-  @Scheduled(fixedDelay = "1h")
+  @Scheduled(fixedDelay = "${raven-eye.sync.tba-event-poll}")
   public void syncAllMappedTournaments() {
     List<TournamentRecord> mapped =
         tournamentService.findAll().stream()

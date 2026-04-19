@@ -1,9 +1,12 @@
 package ca.team1310.ravenbrain.strategyarea;
 
+import ca.team1310.ravenbrain.http.ResponseEtags;
+import io.micronaut.http.HttpRequest;
+import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
-import java.util.List;
+import io.micronaut.transaction.annotation.Transactional;
 
 /**
  * @author Junie
@@ -19,12 +22,18 @@ public class StrategyAreaApi {
     this.strategyAreaService = strategyAreaService;
   }
 
+  private String etagVersion() {
+    return Long.toString(strategyAreaService.maxUpdatedAt().toEpochMilli());
+  }
+
   @Get
-  public List<StrategyArea> list() {
-    return strategyAreaService.list();
+  @Transactional(readOnly = true)
+  public HttpResponse<?> list(HttpRequest<?> request) {
+    return ResponseEtags.withWeakEtag(request, etagVersion(), strategyAreaService::list);
   }
 
   @Get("/{id}")
+  @Transactional(readOnly = true)
   public StrategyArea get(long id) {
     return strategyAreaService.findById(id);
   }

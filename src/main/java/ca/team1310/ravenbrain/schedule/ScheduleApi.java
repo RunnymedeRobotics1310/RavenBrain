@@ -2,11 +2,16 @@ package ca.team1310.ravenbrain.schedule;
 
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
+import ca.team1310.ravenbrain.http.ResponseEtags;
 import ca.team1310.ravenbrain.report.TournamentReportService;
 import io.micronaut.context.annotation.Parameter;
+import io.micronaut.http.HttpRequest;
+import io.micronaut.http.HttpResponse;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
 import io.micronaut.security.rules.SecurityRule;
+import io.micronaut.transaction.annotation.Transactional;
+import java.time.Instant;
 import java.util.List;
 import java.util.TreeSet;
 import lombok.extern.slf4j.Slf4j;
@@ -35,8 +40,17 @@ public class ScheduleApi {
 
   @Get("/{tournamentId}")
   @Produces(APPLICATION_JSON)
-  public List<ScheduleRecord> getScheduleForTournament(@Parameter String tournamentId) {
-    return scheduleService.findAllByTournamentIdOrderByMatch(tournamentId);
+  @Transactional(readOnly = true)
+  public HttpResponse<?> getScheduleForTournament(
+      @Parameter String tournamentId, HttpRequest<?> request) {
+    String version =
+        Long.toString(
+            scheduleService
+                .findMaxUpdatedAtForTournament(tournamentId)
+                .orElse(Instant.EPOCH)
+                .toEpochMilli());
+    return ResponseEtags.withWeakEtag(
+        request, version, () -> scheduleService.findAllByTournamentIdOrderByMatch(tournamentId));
   }
 
   @Post("/bulk")
@@ -46,6 +60,9 @@ public class ScheduleApi {
     if (tournamentIds == null || tournamentIds.isEmpty()) {
       return List.of();
     }
+    // POST endpoint with a request body — not naturally cacheable via HTTP ETag (caches key on
+    // method+URL). Skip ETag wrapping for the bulk endpoint; clients that care about freshness
+    // use the per-tournament GET above.
     return scheduleService.findAllByTournamentIdInListOrderByTournamentId(tournamentIds);
   }
 

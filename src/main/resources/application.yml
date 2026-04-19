@@ -23,6 +23,8 @@ micronaut:
         all:
           exposed-headers:
             - X-RavenBrain-Version
+            - X-RavenBrain-Time
+            - ETag
     port: 8888
   servlet:
     async-supported: false
@@ -55,3 +57,33 @@ raven-eye:
     base-url: https://www.thebluealliance.com/api/v3
     ttl-seconds: 59
     stale-threshold-minutes: 90
+  # Unified sync-cadence block. All poll intervals and window bounds live here so
+  # there is one place to tune the FRC <-> RavenBrain <-> RavenEye traffic pattern.
+  # Values are consumed by:
+  #   - @Scheduled(fixedDelay = "${raven-eye.sync.*}") on server-side background jobs
+  #   - /api/config/client-sync endpoints that deliver cadences + window to RavenEye
+  #   - TournamentService lead/tail window parameterization
+  # The invariant stale-threshold-minutes >= 1.5 * cadence-minutes is validated at startup
+  # (see raven-eye.tba-api.stale-threshold-minutes above).
+  sync:
+    # How often RavenBrain polls the FRC API for match scores (applied via @Scheduled).
+    frc-scores-poll: "30s"
+    # How often RavenBrain polls the FRC API for match schedules (applied via @Scheduled).
+    frc-schedule-poll: "3m"
+    # How often RavenBrain polls TBA for event/webcast data (applied via @Scheduled).
+    tba-event-poll: "1h"
+    # How often RavenBrain polls TBA for match-video data (applied via @Scheduled).
+    tba-match-poll: "1h"
+    # How often RavenEye polls RavenBrain during an active tournament window (milliseconds).
+    # Delivered to the client via /api/config/client-sync.
+    raveneye-poll-ms: 30000
+    # Tournament-window "active" boundary. A tournament is considered active from
+    # (starttime - lead) through (endtime + tail).
+    tournament-window-lead-hours: 12
+    tournament-window-tail-hours: 10
+    # Report-body cache TTL on the client (days). Delivered via /api/config/client-sync.
+    report-body-ttl-days: 60
+    # Client skew-tolerance "last-good offset" max age, in hours. Matches the JWT access-token
+    # lifetime so an offline-for-hours scout with a skewed device still has a correct offset
+    # when their local JWT-expiration check runs.
+    skew-offset-max-age-hours: 12

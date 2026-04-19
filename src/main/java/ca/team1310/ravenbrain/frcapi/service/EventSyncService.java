@@ -18,6 +18,7 @@ import ca.team1310.ravenbrain.schedule.TeamScheduleService;
 import ca.team1310.ravenbrain.tournament.TeamTournamentService;
 import ca.team1310.ravenbrain.tournament.TournamentRecord;
 import ca.team1310.ravenbrain.tournament.TournamentService;
+import ca.team1310.ravenbrain.tournament.TournamentWindow;
 import ca.team1310.ravenbrain.tournament.WatchedTournamentService;
 import io.micronaut.context.annotation.Property;
 import io.micronaut.data.exceptions.DataAccessException;
@@ -52,6 +53,7 @@ import lombok.extern.slf4j.Slf4j;
 class EventSyncService {
   private final FrcClientService frcClientService;
   private final TournamentService tournamentService;
+  private final TournamentWindow tournamentWindow;
   private final TeamTournamentService teamTournamentService;
   private final WatchedTournamentService watchedTournamentService;
   private final int teamNumber;
@@ -61,6 +63,7 @@ class EventSyncService {
   EventSyncService(
       FrcClientService frcClientService,
       TournamentService tournamentService,
+      TournamentWindow tournamentWindow,
       TeamTournamentService teamTournamentService,
       WatchedTournamentService watchedTournamentService,
       @Property(name = "raven-eye.team") int teamNumber,
@@ -68,6 +71,7 @@ class EventSyncService {
       TeamScheduleService teamScheduleService) {
     this.frcClientService = frcClientService;
     this.tournamentService = tournamentService;
+    this.tournamentWindow = tournamentWindow;
     this.teamTournamentService = teamTournamentService;
     this.watchedTournamentService = watchedTournamentService;
     this.teamNumber = teamNumber;
@@ -84,7 +88,7 @@ class EventSyncService {
     log.info(
         "Force sync: tournaments loaded in {}s, now loading schedules and teams for active tournaments",
         (System.currentTimeMillis() - start) / 1000);
-    for (TournamentRecord t : tournamentService.findUpcomingAndActiveTournaments()) {
+    for (TournamentRecord t : tournamentWindow.findUpcomingAndActive()) {
       try {
         _populateScheduleForTournament(t);
         teamScheduleService.refreshCache(t.id());
@@ -131,7 +135,7 @@ class EventSyncService {
   @Scheduled(cron = "0 22 * * 1")
   void loadTeamsForTournaments() {
     log.info("Loading teams for upcoming and active tournaments");
-    for (TournamentRecord tournament : tournamentService.findUpcomingAndActiveTournaments()) {
+    for (TournamentRecord tournament : tournamentWindow.findUpcomingAndActive()) {
       loadTeamsForTournament(tournament);
     }
   }
@@ -250,7 +254,7 @@ class EventSyncService {
   private List<TournamentRecord> getOwnerTeamActiveTournaments() {
     Set<String> ownerTournamentIds =
         Set.copyOf(teamTournamentService.findTournamentIdsForTeam(teamNumber));
-    return tournamentService.findUpcomingAndActiveTournaments().stream()
+    return tournamentWindow.findUpcomingAndActive().stream()
         .filter(t -> ownerTournamentIds.contains(t.id()))
         .toList();
   }
@@ -263,7 +267,7 @@ class EventSyncService {
     Set<String> ownerIds =
         Set.copyOf(teamTournamentService.findTournamentIdsForTeam(teamNumber));
     Set<String> watchedIds = watchedTournamentService.getWatchedTournamentIds();
-    return tournamentService.findUpcomingAndActiveTournaments().stream()
+    return tournamentWindow.findUpcomingAndActive().stream()
         .filter(t -> ownerIds.contains(t.id()) || watchedIds.contains(t.id()))
         .toList();
   }
@@ -272,7 +276,7 @@ class EventSyncService {
    * Every three minutes, load the tournament schedule for active tournaments (owner team +
    * watched).
    */
-  @Scheduled(fixedDelay = "3m")
+  @Scheduled(fixedDelay = "${raven-eye.sync.frc-schedule-poll}")
   void loadScheduleForCurrentTournament() {
     log.debug("Loading tournament schedule for active tournaments (owner team + watched)");
     for (TournamentRecord tournamentRecord : getActiveTournamentsToSync()) {
@@ -290,7 +294,7 @@ class EventSyncService {
   }
 
   /** Every 30 seconds, sync scores for active tournaments (owner team + watched). */
-  @Scheduled(fixedDelay = "30s")
+  @Scheduled(fixedDelay = "${raven-eye.sync.frc-scores-poll}")
   void syncScoresForActiveTournaments() {
     for (TournamentRecord tournament : getActiveTournamentsToSync()) {
       boolean updated = false;
