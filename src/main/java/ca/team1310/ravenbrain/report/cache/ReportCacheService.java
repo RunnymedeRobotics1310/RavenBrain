@@ -2,6 +2,7 @@ package ca.team1310.ravenbrain.report.cache;
 
 import jakarta.inject.Singleton;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 
@@ -69,5 +70,15 @@ public class ReportCacheService {
   public void clearAll() {
     repository.deleteAll();
     log.info("Cleared all report cache entries");
+  }
+
+  /** All cache-key + created-timestamp tuples across the whole table. Backs Unit 6's metadata endpoint. */
+  public List<CachekeyCreated> allMetadata() {
+    return repository.findAllMetadata();
+  }
+
+  /** Weak-ETag version source for the metadata endpoint: the latest created across the cache. */
+  public Instant maxCreated() {
+    return repository.findMaxCreated().orElse(Instant.EPOCH);
   }
 }
