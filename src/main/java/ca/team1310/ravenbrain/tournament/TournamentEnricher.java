@@ -36,13 +36,21 @@ public class TournamentEnricher {
 
   private final TbaEventRepo tbaEventRepo;
   private final Duration staleThreshold;
+  private final Duration windowLead;
+  private final Duration windowTail;
 
   TournamentEnricher(
       TbaEventRepo tbaEventRepo,
       @Property(name = "raven-eye.tba-api.stale-threshold-minutes",
-          defaultValue = "90") long staleThresholdMinutes) {
+          defaultValue = "90") long staleThresholdMinutes,
+      @Property(name = "raven-eye.sync.tournament-window-lead-hours",
+          defaultValue = "12") long windowLeadHours,
+      @Property(name = "raven-eye.sync.tournament-window-tail-hours",
+          defaultValue = "10") long windowTailHours) {
     this.tbaEventRepo = tbaEventRepo;
     this.staleThreshold = Duration.ofMinutes(staleThresholdMinutes);
+    this.windowLead = Duration.ofHours(windowLeadHours);
+    this.windowTail = Duration.ofHours(windowTailHours);
   }
 
   /** Enrich a single tournament. */
@@ -96,6 +104,9 @@ public class TournamentEnricher {
       }
     }
 
+    Instant activeFrom = t.startTime() == null ? null : t.startTime().minus(windowLead);
+    Instant activeUntil = t.endTime() == null ? null : t.endTime().plus(windowTail);
+
     return new TournamentResponse(
         t.id(),
         t.code(),
@@ -108,7 +119,9 @@ public class TournamentEnricher {
         merged,
         tbaCanon,
         lastSync,
-        stale);
+        stale,
+        activeFrom,
+        activeUntil);
   }
 
   private static List<String> parseWebcasts(String json) {

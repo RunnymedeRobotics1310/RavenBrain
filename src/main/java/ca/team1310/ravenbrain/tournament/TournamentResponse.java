@@ -37,4 +37,18 @@ public record TournamentResponse(
     List<String> webcasts,
     List<String> webcastsFromTba,
     @Nullable Instant webcastsLastSync,
-    boolean webcastsStale) {}
+    boolean webcastsStale,
+    /**
+     * Server-computed tournament-window bounds: {@code startTime − leadHours} from
+     * {@code raven-eye.sync.tournament-window-lead-hours}.
+     */
+    Instant activeFrom,
+    /**
+     * Server-computed tournament-window bounds: {@code endTime + tailHours} from
+     * {@code raven-eye.sync.tournament-window-tail-hours}. The client computes its own
+     * {@code active} boolean by comparing these timestamps against {@code serverNow()}, which
+     * stays correct on devices with skewed clocks. Server intentionally does not emit a derived
+     * {@code active} field because its truth changes continuously with {@code now} — emitting it
+     * would mismatch the ETag, which is data-driven.
+     */
+    Instant activeUntil) {}
