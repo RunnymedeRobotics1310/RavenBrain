@@ -102,7 +102,6 @@ public class StatboticsClient {
               .uri(new URI(fullyQualifiedUri))
               .GET()
               .header("User-Agent", userAgent)
-              .header("Accept-Encoding", "gzip")
               .header("Accept", "application/json");
 
       HttpRequest request = rb.build();
