@@ -2,6 +2,7 @@ package ca.team1310.ravenbrain.quickcomment;
 
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
+import ca.team1310.ravenbrain.report.TournamentAggregatesService;
 import ca.team1310.ravenbrain.report.cache.ReportCacheService;
 import io.micronaut.data.exceptions.DataAccessException;
 import io.micronaut.http.annotation.*;
@@ -20,11 +21,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class QuickCommentApi {
   private final QuickCommentService quickCommentService;
+  private final TournamentAggregatesService tournamentAggregatesService;
   private final ReportCacheService reportCacheService;
 
   public QuickCommentApi(
-      QuickCommentService quickCommentService, ReportCacheService reportCacheService) {
+      QuickCommentService quickCommentService,
+      TournamentAggregatesService tournamentAggregatesService,
+      ReportCacheService reportCacheService) {
     this.quickCommentService = quickCommentService;
+    this.tournamentAggregatesService = tournamentAggregatesService;
     this.reportCacheService = reportCacheService;
   }
 
@@ -55,6 +60,7 @@ public class QuickCommentApi {
       }
     }
     reportCacheService.invalidateByPrefix("team-summary:");
+    tournamentAggregatesService.invalidateAll();
     return result;
   }
 
