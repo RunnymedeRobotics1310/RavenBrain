@@ -3,7 +3,9 @@ package ca.team1310.ravenbrain.eventlog;
 import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
 import ca.team1310.ravenbrain.report.CustomTournamentStatsService;
+import ca.team1310.ravenbrain.report.TournamentAggregatesService;
 import ca.team1310.ravenbrain.report.cache.ReportCacheService;
+import ca.team1310.ravenbrain.teamcapability.TeamCapabilityCache;
 import io.micronaut.data.exceptions.DataAccessException;
 import io.micronaut.http.HttpStatus;
 import io.micronaut.http.annotation.*;
@@ -24,15 +26,21 @@ import lombok.extern.slf4j.Slf4j;
 public class EventApi {
   private final EventLogService eventLogService;
   private final CustomTournamentStatsService customTournamentStatsService;
+  private final TournamentAggregatesService tournamentAggregatesService;
   private final ReportCacheService reportCacheService;
+  private final TeamCapabilityCache teamCapabilityCache;
 
   public EventApi(
       EventLogService eventLogService,
       CustomTournamentStatsService customTournamentStatsService,
-      ReportCacheService reportCacheService) {
+      TournamentAggregatesService tournamentAggregatesService,
+      ReportCacheService reportCacheService,
+      TeamCapabilityCache teamCapabilityCache) {
     this.eventLogService = eventLogService;
     this.customTournamentStatsService = customTournamentStatsService;
+    this.tournamentAggregatesService = tournamentAggregatesService;
     this.reportCacheService = reportCacheService;
+    this.teamCapabilityCache = teamCapabilityCache;
   }
 
   @Serdeable
@@ -65,6 +73,8 @@ public class EventApi {
     }
     for (var tournamentId : invalidatedTournaments) {
       customTournamentStatsService.invalidate(tournamentId);
+      tournamentAggregatesService.invalidate(tournamentId);
+      teamCapabilityCache.invalidate(tournamentId);
       reportCacheService.invalidateForTournament(tournamentId);
     }
     if (!invalidatedTournaments.isEmpty()) {
@@ -86,6 +96,8 @@ public class EventApi {
     eventLogService.deleteById(id);
     log.info("Deleted event log record id={} tournament={}", id, tournamentId);
     customTournamentStatsService.invalidate(tournamentId);
+    tournamentAggregatesService.invalidate(tournamentId);
+    teamCapabilityCache.invalidate(tournamentId);
     reportCacheService.invalidateForTournament(tournamentId);
     reportCacheService.invalidateByPrefix("team-summary:");
     reportCacheService.invalidateByPrefix("custom-stats:");

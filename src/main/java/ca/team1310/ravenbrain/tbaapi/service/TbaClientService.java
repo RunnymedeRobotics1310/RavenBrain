@@ -3,6 +3,7 @@ package ca.team1310.ravenbrain.tbaapi.service;
 import ca.team1310.ravenbrain.tbaapi.fetch.TbaCachingClient;
 import ca.team1310.ravenbrain.tbaapi.fetch.TbaRawResponse;
 import ca.team1310.ravenbrain.tbaapi.model.TbaEvent;
+import ca.team1310.ravenbrain.tbaapi.model.TbaEventOprs;
 import ca.team1310.ravenbrain.tbaapi.model.TbaMatch;
 import io.micronaut.core.annotation.NonNull;
 import io.micronaut.core.annotation.Nullable;
@@ -158,6 +159,59 @@ public class TbaClientService {
     }
     List<TbaMatch> parsed = parseList(response.body(), TbaMatch.class);
     return EventMatchesFetch.ok(new EventMatchesFetchResult(response.id(), response.body(), parsed));
+  }
+
+  /**
+   * Result of a TBA {@code /event/{key}/oprs} fetch. Carries the cache row id, the raw body (for
+   * forensics — not persisted, but useful for log-based debugging of partial-map responses), and
+   * the parsed OPR / DPR / CCWM maps.
+   */
+  public record EventOprsFetchResult(long responseId, String rawBody, TbaEventOprs oprs) {}
+
+  /** Holder mirroring {@link EventFetch} — exactly one of the two fields is non-null. */
+  public record EventOprsFetch(
+      @Nullable EventOprsFetchResult result, @Nullable EventFetchOutcome outcome) {
+    public static EventOprsFetch ok(EventOprsFetchResult r) {
+      return new EventOprsFetch(r, null);
+    }
+
+    public static EventOprsFetch skipped(EventFetchOutcome o) {
+      return new EventOprsFetch(null, o);
+    }
+  }
+
+  /**
+   * Fetch and parse the OPR / DPR / CCWM maps for a TBA event. Mirrors {@link #getEvent(String)}.
+   * Each metric block may be absent on partial data; the caller (sync service) transforms the
+   * three parallel maps into per-team rows and handles malformed team keys.
+   *
+   * @throws TbaClientServiceException on JSON parse errors
+   */
+  @NonNull
+  public EventOprsFetch getEventOprs(String eventKey) {
+    if (eventKey == null || eventKey.isBlank()) {
+      throw new TbaClientServiceException("TBA event key must not be null or blank");
+    }
+    String encoded = URLEncoder.encode(eventKey, StandardCharsets.UTF_8);
+    TbaRawResponse response = client.fetch("event/" + encoded + "/oprs");
+    if (response == null) {
+      log.error("Unexpected null response from TBA for {} oprs", eventKey);
+      return EventOprsFetch.skipped(EventFetchOutcome.EMPTY_BODY);
+    }
+    if (response.processed()) {
+      log.debug("TBA OPR work already processed for {}", eventKey);
+      return EventOprsFetch.skipped(EventFetchOutcome.ALREADY_PROCESSED);
+    }
+    if (response.statuscode() == 404) {
+      log.debug("TBA OPRs not found for {}", eventKey);
+      return EventOprsFetch.skipped(EventFetchOutcome.NOT_FOUND);
+    }
+    if (response.body() == null || response.body().isBlank()) {
+      log.debug("No body for TBA OPR response {}", eventKey);
+      return EventOprsFetch.skipped(EventFetchOutcome.EMPTY_BODY);
+    }
+    TbaEventOprs parsed = parse(response.body(), TbaEventOprs.class);
+    return EventOprsFetch.ok(new EventOprsFetchResult(response.id(), response.body(), parsed));
   }
 
   private @Nullable <T> T parse(@NonNull String string, @NonNull Class<T> type) {

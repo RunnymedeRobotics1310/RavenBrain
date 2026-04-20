@@ -18,6 +18,8 @@ public interface EventLogRepository extends CrudRepository<EventLogRecord, Long>
   List<EventLogRecord> findAllByTeamNumberAndTournamentIdOrderByTimestampAsc(
       int teamNumber, String tournamentId);
 
+  List<EventLogRecord> findAllByTournamentId(String tournamentId);
+
   boolean existsByUserId(long userId);
 
   boolean existsByEventType(String eventType);
