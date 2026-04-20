@@ -57,6 +57,14 @@ raven-eye:
     base-url: https://www.thebluealliance.com/api/v3
     ttl-seconds: 59
     stale-threshold-minutes: 90
+  # Statbotics API — unauthenticated community EPA / breakdown feed.
+  # TTL-only caching; no ETag / Last-Modified (the provider does not emit them).
+  # User-agent template: the literal token {version} is substituted at startup with the
+  # running RavenBrain version (manifest Implementation-Version, via Application.getVersion()).
+  statbotics-api:
+    base-url: https://api.statbotics.io
+    ttl-seconds: 60
+    user-agent: "StratApp/{version} (+https://raveneye.team1310.ca)"
   # Unified sync-cadence block. All poll intervals and window bounds live here so
   # there is one place to tune the FRC <-> RavenBrain <-> RavenEye traffic pattern.
   # Values are consumed by:
@@ -74,6 +82,8 @@ raven-eye:
     tba-event-poll: "1h"
     # How often RavenBrain polls TBA for match-video data (applied via @Scheduled).
     tba-match-poll: "1h"
+    # How often RavenBrain polls Statbotics for per-team-per-event EPA data (applied via @Scheduled).
+    statbotics-team-event-poll: "1h"
     # How often RavenEye polls RavenBrain during an active tournament window (milliseconds).
     # Delivered to the client via /api/config/client-sync.
     raveneye-poll-ms: 30000
