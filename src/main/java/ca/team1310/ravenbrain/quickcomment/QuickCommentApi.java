@@ -4,6 +4,7 @@ import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
 import ca.team1310.ravenbrain.report.TournamentAggregatesService;
 import ca.team1310.ravenbrain.report.cache.ReportCacheService;
+import ca.team1310.ravenbrain.teamcapability.TeamCapabilityCache;
 import io.micronaut.data.exceptions.DataAccessException;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
@@ -23,14 +24,17 @@ public class QuickCommentApi {
   private final QuickCommentService quickCommentService;
   private final TournamentAggregatesService tournamentAggregatesService;
   private final ReportCacheService reportCacheService;
+  private final TeamCapabilityCache teamCapabilityCache;
 
   public QuickCommentApi(
       QuickCommentService quickCommentService,
       TournamentAggregatesService tournamentAggregatesService,
-      ReportCacheService reportCacheService) {
+      ReportCacheService reportCacheService,
+      TeamCapabilityCache teamCapabilityCache) {
     this.quickCommentService = quickCommentService;
     this.tournamentAggregatesService = tournamentAggregatesService;
     this.reportCacheService = reportCacheService;
+    this.teamCapabilityCache = teamCapabilityCache;
   }
 
   @Serdeable
@@ -61,6 +65,7 @@ public class QuickCommentApi {
     }
     reportCacheService.invalidateByPrefix("team-summary:");
     tournamentAggregatesService.invalidateAll();
+    teamCapabilityCache.invalidateAll();
     return result;
   }
 

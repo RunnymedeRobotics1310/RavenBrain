@@ -3,6 +3,7 @@ package ca.team1310.ravenbrain.tbaapi.service;
 import ca.team1310.ravenbrain.tbaapi.fetch.TbaClientException;
 import ca.team1310.ravenbrain.tbaapi.model.TbaEvent;
 import ca.team1310.ravenbrain.tbaapi.model.TbaEventOprs;
+import ca.team1310.ravenbrain.teamcapability.TeamCapabilityCache;
 import ca.team1310.ravenbrain.tournament.TournamentRecord;
 import ca.team1310.ravenbrain.tournament.TournamentService;
 import io.micronaut.scheduling.annotation.Scheduled;
@@ -36,16 +37,19 @@ public class TbaEventSyncService {
   private final TournamentService tournamentService;
   private final TbaEventRepo tbaEventRepo;
   private final TbaEventOprsRepo tbaEventOprsRepo;
+  private final TeamCapabilityCache teamCapabilityCache;
 
   TbaEventSyncService(
       TbaClientService tbaClientService,
       TournamentService tournamentService,
       TbaEventRepo tbaEventRepo,
-      TbaEventOprsRepo tbaEventOprsRepo) {
+      TbaEventOprsRepo tbaEventOprsRepo,
+      TeamCapabilityCache teamCapabilityCache) {
     this.tbaClientService = tbaClientService;
     this.tournamentService = tournamentService;
     this.tbaEventRepo = tbaEventRepo;
     this.tbaEventOprsRepo = tbaEventOprsRepo;
+    this.teamCapabilityCache = teamCapabilityCache;
   }
 
   /** Scheduled sync: every hour, refresh TBA data for all tournaments that are mapped to a key. */
@@ -148,6 +152,10 @@ public class TbaEventSyncService {
       TbaClientService.EventOprsFetch fetch = tbaClientService.getEventOprs(tbaEventKey);
       if (fetch.result() != null) {
         persistOprsSuccess(tbaEventKey, fetch.result());
+        // Invalidate the whole team-capability cache: OPR rows are keyed by tba_event_key, not
+        // tournament id, and resolving the tournament here would add a round-trip on every
+        // successful OPR sync. The cache repopulates lazily on the next GET.
+        teamCapabilityCache.invalidateAll();
         return true;
       }
       int status =

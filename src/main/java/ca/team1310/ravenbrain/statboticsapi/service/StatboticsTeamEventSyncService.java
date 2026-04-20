@@ -4,6 +4,7 @@ import ca.team1310.ravenbrain.statboticsapi.fetch.StatboticsClientException;
 import ca.team1310.ravenbrain.statboticsapi.model.StatboticsTeamEvent;
 import ca.team1310.ravenbrain.statboticsapi.model.StatboticsTeamEventBreakdown;
 import ca.team1310.ravenbrain.statboticsapi.model.StatboticsTeamEventEpa;
+import ca.team1310.ravenbrain.teamcapability.TeamCapabilityCache;
 import ca.team1310.ravenbrain.tournament.TeamTournamentService;
 import ca.team1310.ravenbrain.tournament.TournamentRecord;
 import ca.team1310.ravenbrain.tournament.TournamentService;
@@ -58,6 +59,7 @@ public class StatboticsTeamEventSyncService {
   private final WatchedTournamentService watchedTournamentService;
   private final StatboticsTeamEventRepo repo;
   private final ObjectMapper objectMapper;
+  private final TeamCapabilityCache teamCapabilityCache;
   private final int teamNumber;
   private final int breakdownJsonMaxBytes;
 
@@ -69,6 +71,7 @@ public class StatboticsTeamEventSyncService {
       WatchedTournamentService watchedTournamentService,
       StatboticsTeamEventRepo repo,
       ObjectMapper objectMapper,
+      TeamCapabilityCache teamCapabilityCache,
       @Property(name = "raven-eye.team") int teamNumber,
       @Property(
               name = "raven-eye.statbotics-api.breakdown-json-max-bytes",
@@ -81,6 +84,7 @@ public class StatboticsTeamEventSyncService {
     this.watchedTournamentService = watchedTournamentService;
     this.repo = repo;
     this.objectMapper = objectMapper;
+    this.teamCapabilityCache = teamCapabilityCache;
     this.teamNumber = teamNumber;
     this.breakdownJsonMaxBytes = breakdownJsonMaxBytes;
   }
@@ -162,6 +166,11 @@ public class StatboticsTeamEventSyncService {
       if (fetch.result() != null) {
         int written = persistTeamEvents(tbaEventKey, tournamentId, fetch.result().teamEvents());
         clientService.markProcessed(fetch.result().responseId());
+        if (tournamentId != null) {
+          teamCapabilityCache.invalidate(tournamentId);
+        } else {
+          teamCapabilityCache.invalidateAll();
+        }
         return written;
       }
       int status =

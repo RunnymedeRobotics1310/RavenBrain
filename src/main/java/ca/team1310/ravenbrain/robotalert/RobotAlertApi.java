@@ -4,6 +4,7 @@ import static io.micronaut.http.MediaType.APPLICATION_JSON;
 
 import ca.team1310.ravenbrain.report.TournamentAggregatesService;
 import ca.team1310.ravenbrain.report.cache.ReportCacheService;
+import ca.team1310.ravenbrain.teamcapability.TeamCapabilityCache;
 import io.micronaut.data.exceptions.DataAccessException;
 import io.micronaut.http.annotation.*;
 import io.micronaut.security.annotation.Secured;
@@ -20,14 +21,17 @@ public class RobotAlertApi {
   private final RobotAlertService robotAlertService;
   private final TournamentAggregatesService tournamentAggregatesService;
   private final ReportCacheService reportCacheService;
+  private final TeamCapabilityCache teamCapabilityCache;
 
   public RobotAlertApi(
       RobotAlertService robotAlertService,
       TournamentAggregatesService tournamentAggregatesService,
-      ReportCacheService reportCacheService) {
+      ReportCacheService reportCacheService,
+      TeamCapabilityCache teamCapabilityCache) {
     this.robotAlertService = robotAlertService;
     this.tournamentAggregatesService = tournamentAggregatesService;
     this.reportCacheService = reportCacheService;
+    this.teamCapabilityCache = teamCapabilityCache;
   }
 
   @Serdeable
@@ -61,6 +65,7 @@ public class RobotAlertApi {
     reportCacheService.invalidateByPrefix("team-summary:");
     for (String tournamentId : invalidatedTournaments) {
       tournamentAggregatesService.invalidate(tournamentId);
+      teamCapabilityCache.invalidate(tournamentId);
     }
     return result;
   }
