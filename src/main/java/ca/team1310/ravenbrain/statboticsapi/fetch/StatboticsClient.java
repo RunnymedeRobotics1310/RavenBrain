@@ -4,6 +4,7 @@ import ca.team1310.ravenbrain.Application;
 import io.micronaut.context.annotation.Property;
 import jakarta.annotation.PostConstruct;
 import jakarta.inject.Singleton;
+import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -11,6 +12,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.zip.GZIPInputStream;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -102,6 +104,7 @@ public class StatboticsClient {
               .uri(new URI(fullyQualifiedUri))
               .GET()
               .header("User-Agent", userAgent)
+              .header("Accept-Encoding", "gzip")
               .header("Accept", "application/json");
 
       HttpRequest request = rb.build();
@@ -110,20 +113,22 @@ public class StatboticsClient {
       }
 
       HttpClient client = HttpClient.newHttpClient();
-      HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+      HttpResponse<byte[]> response =
+          client.send(request, HttpResponse.BodyHandlers.ofByteArray());
 
       int code = response.statusCode();
       log.debug("Response Status: {} for {}", code, uri);
+      String body = decodeBody(response);
 
       switch (code) {
         case 200:
           return new StatboticsRawResponse(
-              null, Instant.now(), Instant.now(), null, false, code, uri, response.body());
+              null, Instant.now(), Instant.now(), null, false, code, uri, body);
         case 404:
           return new StatboticsRawResponse(
-              null, Instant.now(), Instant.now(), null, false, code, uri, response.body());
+              null, Instant.now(), Instant.now(), null, false, code, uri, body);
         default:
-          throw new StatboticsClientException("Response " + code + ": " + response.body());
+          throw new StatboticsClientException("Response " + code + ": " + body);
       }
 
     } catch (java.net.ConnectException e) {
@@ -135,6 +140,27 @@ public class StatboticsClient {
       String detail = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
       throw new StatboticsClientException(
           "Exception retrieving response for " + uri + ": " + detail, e);
+    }
+  }
+
+  /**
+   * Decode the response body, decompressing when {@code Content-Encoding: gzip} is advertised.
+   * We ask for gzip because Statbotics lacks conditional-request support — every poll downloads
+   * the full payload — and being gzip-aware keeps us a polite citizen of a volunteer-run API.
+   * Java's {@code HttpClient} does not auto-decompress, so we do it here.
+   */
+  private static String decodeBody(HttpResponse<byte[]> response) throws java.io.IOException {
+    byte[] raw = response.body();
+    if (raw == null || raw.length == 0) return "";
+    boolean gzipped =
+        response
+            .headers()
+            .firstValue("Content-Encoding")
+            .map(v -> v.toLowerCase().contains("gzip"))
+            .orElse(false);
+    if (!gzipped) return new String(raw, StandardCharsets.UTF_8);
+    try (GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream(raw))) {
+      return new String(gis.readAllBytes(), StandardCharsets.UTF_8);
     }
   }
 
